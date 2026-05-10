@@ -3,6 +3,7 @@ import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import Avatar from '../../components/ui/Avatar'
 import { supabase } from '../../lib/supabase'
+import { createStripePaymentLink, slackNotify, trackEvent } from '../../lib/integrations'
 
 const STATUS_COLORS = {
     paid: 'bg-green-50 text-green-700 border-green-100 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800',
@@ -25,6 +26,7 @@ export default function SalesSubscriptionsPage() {
     const [statusFilter, setStatusFilter] = useState('all')
     const [stats, setStats] = useState({ totalRevenue: 0, pending: 0, overdue: 0, count: 0 })
     const [toast, setToast] = useState(null)
+    const [generatingLink, setGeneratingLink] = useState(null)
 
     const showToast = (msg, type = 'success') => {
         setToast({ msg, type })
@@ -67,6 +69,32 @@ export default function SalesSubscriptionsPage() {
         if (activeTab === 'invoices') fetchInvoices()
         if (activeTab === 'promotions') fetchPromotions()
     }, [activeTab, fetchInvoices, fetchPromotions])
+
+    const handleGeneratePaymentLink = async (inv) => {
+        setGeneratingLink(inv.id)
+        const result = await createStripePaymentLink({
+            invoice_id: inv.id,
+            amount: Number(inv.amount),
+            currency: (inv.currency || 'USD').toLowerCase(),
+            description: inv.invoice_number || `Invoice ${inv.id.slice(0, 8).toUpperCase()}`,
+            customer_email: inv.profiles?.email,
+        })
+        if (result.success) {
+            showToast('Payment link created — opening in new tab')
+            window.open(result.url, '_blank')
+            slackNotify('payment.received', {
+                client: inv.profiles?.full_name || 'Unknown',
+                amount: inv.amount,
+                currency: inv.currency || 'USD',
+                invoice_number: inv.invoice_number,
+            })
+            trackEvent('payment_link_generated', { amount: inv.amount })
+            fetchInvoices()
+        } else {
+            showToast(result.error || 'Failed to create payment link', 'error')
+        }
+        setGeneratingLink(null)
+    }
 
     const exportCSV = () => {
         const headers = ['Invoice #', 'Client', 'Amount', 'Status', 'Due Date', 'Created']
@@ -149,16 +177,16 @@ export default function SalesSubscriptionsPage() {
                             <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
                                 <thead className="bg-slate-50 dark:bg-slate-800/50">
                                     <tr>
-                                        {['Invoice', 'Client', 'Amount', 'Status', 'Due Date', 'Created'].map(h => (
+                                        {['Invoice', 'Client', 'Amount', 'Status', 'Due Date', 'Created', 'Actions'].map(h => (
                                             <th key={h} className="px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{h}</th>
                                         ))}
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-200 dark:divide-slate-800">
                                     {loading ? (
-                                        [1, 2, 3, 4].map(i => <tr key={i}><td colSpan={6} className="px-6 py-4"><div className="h-6 animate-pulse rounded bg-slate-100 dark:bg-slate-800" /></td></tr>)
+                                        [1, 2, 3, 4].map(i => <tr key={i}><td colSpan={7} className="px-6 py-4"><div className="h-6 animate-pulse rounded bg-slate-100 dark:bg-slate-800" /></td></tr>)
                                     ) : invoices.length === 0 ? (
-                                        <tr><td colSpan={6} className="px-6 py-16 text-center text-sm text-slate-400">
+                                        <tr><td colSpan={7} className="px-6 py-16 text-center text-sm text-slate-400">
                                             <span className="material-symbols-outlined text-[48px] block mb-2">receipt_long</span>
                                             No invoices found.
                                         </td></tr>
@@ -187,6 +215,28 @@ export default function SalesSubscriptionsPage() {
                                             </td>
                                             <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">
                                                 {new Date(inv.created_at).toLocaleDateString()}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                {inv.payment_link ? (
+                                                    <a href={inv.payment_link} target="_blank" rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 hover:underline">
+                                                        <span className="material-symbols-outlined text-[14px]">link</span>
+                                                        Pay Link
+                                                    </a>
+                                                ) : inv.status !== 'paid' && inv.status !== 'cancelled' ? (
+                                                    <button
+                                                        onClick={() => handleGeneratePaymentLink(inv)}
+                                                        disabled={generatingLink === inv.id}
+                                                        className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline disabled:opacity-50"
+                                                    >
+                                                        <span className={`material-symbols-outlined text-[14px] ${generatingLink === inv.id ? 'animate-spin' : ''}`}>
+                                                            {generatingLink === inv.id ? 'sync' : 'add_link'}
+                                                        </span>
+                                                        {generatingLink === inv.id ? 'Creating...' : 'Stripe Link'}
+                                                    </button>
+                                                ) : (
+                                                    <span className="text-xs text-slate-400">—</span>
+                                                )}
                                             </td>
                                         </tr>
                                     ))}

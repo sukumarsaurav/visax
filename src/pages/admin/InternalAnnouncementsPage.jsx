@@ -3,6 +3,7 @@ import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
+import { slackNotify, trackEvent } from '../../lib/integrations'
 
 const priorityColors = {
     high: 'bg-red-50 text-red-700 border-red-100 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800',
@@ -73,6 +74,10 @@ export default function InternalAnnouncementsPage() {
             showToast('Failed: ' + error.message, 'error')
         } else {
             showToast(asDraft ? 'Saved as draft' : 'Announcement published!')
+            if (!asDraft) {
+                slackNotify('announcement.published', { title: form.title, is_global: form.is_global })
+                trackEvent('announcement_published', { priority: form.priority, is_global: form.is_global })
+            }
             setShowDrawer(false)
             setForm({ title: '', content: '', priority: 'normal', is_global: true })
             fetchAnnouncements()

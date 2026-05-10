@@ -21,6 +21,11 @@ const INTEGRATION_META = [
             { key: 'country', label: 'Country', icon: 'public' },
             { key: 'email', label: 'Email', icon: 'mail' },
         ],
+        features: [
+            { icon: 'add_link', label: 'Generate payment links for invoices', where: 'Sales → Invoices table → "Stripe Link" button' },
+            { icon: 'receipt_long', label: 'One-click Stripe-hosted checkout per invoice', where: 'Opens in new tab, auto-saves URL back to invoice' },
+            { icon: 'webhook', label: 'Webhook verification for payment events', where: 'Requires webhook_secret to verify incoming events' },
+        ],
         docs: 'https://stripe.com/docs/keys',
     },
     {
@@ -38,6 +43,11 @@ const INTEGRATION_META = [
             { key: 'portal_id', label: 'Portal ID', icon: 'tag' },
             { key: 'currency', label: 'Currency', icon: 'attach_money' },
             { key: 'time_zone', label: 'Timezone', icon: 'schedule' },
+        ],
+        features: [
+            { icon: 'contacts', label: 'Sync new user registrations as CRM contacts', where: 'Triggered when user role is saved in User Management' },
+            { icon: 'person_search', label: 'Track lead pipeline from application approval', where: 'Application Review → Approve triggers HubSpot deal' },
+            { icon: 'history', label: 'Activity timeline synced from platform events', where: 'Consultations, payments, and status changes' },
         ],
         docs: 'https://developers.hubspot.com/docs/api/private-apps',
     },
@@ -58,6 +68,11 @@ const INTEGRATION_META = [
             { key: 'account_type', label: 'Plan', icon: 'workspace_premium' },
         ],
         docs: 'https://developers.zoom.us/docs/internal-apps/',
+        features: [
+            { icon: 'video_call', label: 'Auto-create Zoom meetings when consultations are booked', where: 'Consultant → Appointments → Book generates a meeting link' },
+            { icon: 'link', label: 'Join & host links stored on each booking', where: 'Clients get join_url, consultants get start_url' },
+            { icon: 'lock', label: 'Waiting room enabled on all meetings by default', where: 'Configurable in Zoom dashboard per meeting' },
+        ],
     },
     {
         id: 'mailchimp',
@@ -75,6 +90,11 @@ const INTEGRATION_META = [
             { key: 'total_subscribers', label: 'Subscribers', icon: 'group' },
             { key: 'lists_count', label: 'Lists', icon: 'list' },
         ],
+        features: [
+            { icon: 'person_add', label: 'Sync new users to your audience on registration', where: 'Triggered on User Management → Save User' },
+            { icon: 'sell', label: 'Auto-tag users by role (client, consultant, agency)', where: 'Tags applied automatically based on profile role' },
+            { icon: 'unsubscribe', label: 'Unsubscribe suspended users from campaigns', where: 'User Management → Suspend triggers unsubscribe' },
+        ],
         docs: 'https://mailchimp.com/developer/marketing/guides/quick-start/',
     },
     {
@@ -91,6 +111,12 @@ const INTEGRATION_META = [
             { key: 'measurement_id', label: 'Measurement ID', icon: 'tag' },
             { key: 'note', label: 'Note', icon: 'info' },
         ],
+        features: [
+            { icon: 'travel_explore', label: 'Automatic page_view on every route change', where: 'Injected globally in App.jsx via gtag.js' },
+            { icon: 'check_circle', label: 'application_approved / application_rejected events', where: 'Application Review admin actions' },
+            { icon: 'payments', label: 'payment_link_generated event with amount', where: 'Sales → Generate Stripe Link' },
+            { icon: 'person', label: 'user_updated and user_suspended events', where: 'User Management admin actions' },
+        ],
         docs: 'https://developers.google.com/analytics/devguides/collection/ga4',
     },
     {
@@ -105,7 +131,13 @@ const INTEGRATION_META = [
         ],
         infoFields: [
             { key: 'account_name', label: 'Workspace', icon: 'business' },
-            { key: 'webhook_url', label: 'Channel', icon: 'tag' },
+            { key: 'webhook_url', label: 'Webhook', icon: 'tag' },
+        ],
+        features: [
+            { icon: 'check_circle', label: 'Notify on application approved / rejected', where: 'Application Review → Approve or Reject button' },
+            { icon: 'block', label: 'Notify when a user is suspended', where: 'User Management → Suspend User' },
+            { icon: 'campaign', label: 'Notify when an announcement is published', where: 'Announcements → Publish (not draft)' },
+            { icon: 'payments', label: 'Notify when a Stripe payment link is created', where: 'Sales → Generate Stripe Link on invoice' },
         ],
         docs: 'https://api.slack.com/messaging/webhooks',
     },
@@ -394,6 +426,29 @@ export default function SystemIntegrationsPage() {
                                                                     ? connectedInfo[f.key].toLocaleString()
                                                                     : String(connectedInfo[f.key])}
                                                             </p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Features this integration powers */}
+                                    {selectedMeta.features && (
+                                        <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                                            <div className="px-4 py-3 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2">
+                                                <span className="material-symbols-outlined text-primary text-[18px]">electric_bolt</span>
+                                                <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                                                    {connectedInfo ? 'Active Features' : 'Features unlocked after connecting'}
+                                                </span>
+                                            </div>
+                                            <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                                                {selectedMeta.features.map((f, i) => (
+                                                    <div key={i} className="flex items-start gap-3 px-4 py-3">
+                                                        <span className={`material-symbols-outlined text-[18px] mt-0.5 flex-shrink-0 ${connectedInfo ? 'text-emerald-500' : 'text-slate-400'}`}>{f.icon}</span>
+                                                        <div>
+                                                            <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{f.label}</p>
+                                                            <p className="text-xs text-slate-400 mt-0.5">{f.where}</p>
                                                         </div>
                                                     </div>
                                                 ))}

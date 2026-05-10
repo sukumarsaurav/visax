@@ -75,6 +75,11 @@ export default function UserManagementPage() {
             showToast('Failed to save changes: ' + error.message, 'error')
         } else {
             showToast('User updated successfully')
+            // Sync role change to Mailchimp
+            if (selectedUser.email) {
+                mailchimpSync({ email: selectedUser.email, full_name: editForm.full_name, role: editForm.role })
+            }
+            trackEvent('user_updated', { role: editForm.role })
             fetchUsers()
             setDrawerOpen(false)
         }
@@ -90,6 +95,10 @@ export default function UserManagementPage() {
             showToast('Action failed: ' + error.message, 'error')
         } else {
             showToast(`User ${newStatus === 'suspended' ? 'suspended' : 'reactivated'}`)
+            if (newStatus === 'suspended') {
+                slackNotify('user.suspended', { name: selectedUser.full_name, email: selectedUser.email })
+                trackEvent('user_suspended')
+            }
             fetchUsers()
             setDrawerOpen(false)
         }
