@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Client Services Directory - ImmiConnect</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#136dec",
+              "background-light": "#f6f7f8",
+              "background-dark": "#101822",
+            },
+            fontFamily: {
+              "display": ["Manrope", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-[#0d131b] antialiased">
+<div class="relative flex min-h-screen flex-col overflow-x-hidden">
+<!-- Header -->
+<header class="sticky top-0 z-50 flex items-center justify-between border-b border-[#e7ecf3] bg-white px-6 py-3 shadow-sm lg:px-10 dark:bg-[#1a2634] dark:border-[#2d3b4a] dark:text-white">
+<div class="flex items-center gap-4">
+<div class="size-8 text-primary">
+<svg class="size-full" fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M36.7273 44C33.9891 44 31.6043 39.8386 30.3636 33.69C29.123 39.8386 26.7382 44 24 44C21.2618 44 18.877 39.8386 17.6364 33.69C16.3957 39.8386 14.0109 44 11.2727 44C7.25611 44 4 35.0457 4 24C4 12.9543 7.25611 4 11.2727 4C14.0109 4 16.3957 8.16144 17.6364 14.31C18.877 8.16144 21.2618 4 24 4C26.7382 4 29.123 8.16144 30.3636 14.31C31.6043 8.16144 33.9891 4 36.7273 4C40.7439 4 44 12.9543 44 24C44 35.0457 40.7439 44 36.7273 44Z" fill="currentColor"></path>
+</svg>
+</div>
+<h2 class="text-xl font-bold leading-tight tracking-tight">ImmiConnect</h2>
+</div>
+<div class="hidden flex-1 justify-end gap-8 md:flex">
+<nav class="flex items-center gap-9">
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">Home</a>
+<a class="text-sm font-medium hover:text-primary transition-colors text-primary" href="#">Services</a>
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">Professionals</a>
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">Resources</a>
+</nav>
+<div class="flex gap-2">
+<button class="flex h-10 min-w-[84px] cursor-pointer items-center justify-center rounded-lg bg-primary px-4 text-sm font-bold text-white shadow-sm hover:bg-blue-700 transition-colors">
+                        Sign Up
+                    </button>
+<button class="flex h-10 min-w-[84px] cursor-pointer items-center justify-center rounded-lg border border-[#e7ecf3] bg-white px-4 text-sm font-bold text-[#0d131b] hover:bg-gray-50 transition-colors">
+                        Log In
+                    </button>
+</div>
+</div>
+<!-- Mobile Menu Icon -->
+<button class="md:hidden text-[#0d131b] dark:text-white">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</header>
+<!-- Main Content Wrapper -->
+<main class="flex flex-1 flex-col">
+<!-- Hero Search Section -->
+<section class="relative bg-[#101822] py-16 md:py-24">
+<!-- Background Image with Overlay -->
+<div class="absolute inset-0 z-0 opacity-40 mix-blend-overlay">
+<img alt="Background" class="h-full w-full object-cover" data-alt="Abstract blurry office background showing people working" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAkqHkugOqWD76g56s8oHcEcTPcFPxJ8vya-dwbbld2VV5z3YcqUjfbpFCBOwP1c-faCnUhCyqospemoi4FbqmwC1kDXoc9VAoLfcX9Db8qARUNlZPU5WKeZi1ecqqNXla9WjXP4Gd1P_7oH26Ovo32QmgqrwJGqMBQLYRsCpxIXApFk3zw-LNDhxR8rGG_645w5ZG4YY23WmJN69enzdjaktN-CQeZEpSQQuFc4ap1pXxJDPp-CwSbq6X-g9L3gs4O43ZnnF_h_mE"/>
+</div>
+<div class="layout-container relative z-10 mx-auto flex w-full max-w-7xl flex-col px-4 md:px-10">
+<div class="mx-auto flex w-full max-w-[800px] flex-col gap-6 text-center">
+<div class="flex flex-col gap-3">
+<h1 class="text-4xl font-black leading-tight tracking-tight text-white md:text-5xl lg:text-6xl">
+                                Find the Right Immigration<br class="hidden md:block"/> Help for Your Journey
+                            </h1>
+<p class="text-base font-medium text-slate-200 md:text-lg">
+                                Browse services offered by verified professionals and agencies tailored to your needs.
+                            </p>
+</div>
+<!-- Search Bar -->
+<div class="mx-auto flex w-full max-w-[600px] flex-col gap-2">
+<div class="relative flex h-14 w-full items-center overflow-hidden rounded-xl bg-white shadow-lg ring-1 ring-black/5 focus-within:ring-2 focus-within:ring-primary md:h-16">
+<div class="flex h-full w-14 items-center justify-center text-[#4c6c9a]">
+<span class="material-symbols-outlined">search</span>
+</div>
+<input class="h-full flex-1 border-0 bg-transparent p-0 text-base text-[#0d131b] placeholder:text-[#4c6c9a] focus:ring-0 md:text-lg" placeholder="Search 'Student Visa', 'Green Card', 'Asylum'..." type="text"/>
+<div class="p-2">
+<button class="flex h-full items-center justify-center rounded-lg bg-primary px-6 text-base font-bold text-white hover:bg-blue-700 transition-colors">
+                                        Search
+                                    </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Layout: Sidebar + Grid -->
+<div class="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 md:flex-row md:px-10 lg:gap-12 lg:py-12">
+<!-- Sidebar Filters -->
+<aside class="flex w-full flex-col gap-6 md:w-64 lg:w-72 md:shrink-0">
+<!-- Filters Container -->
+<div class="sticky top-24 flex flex-col gap-6 rounded-xl border border-[#e7ecf3] bg-white p-5 shadow-sm dark:bg-[#1a2634] dark:border-[#2d3b4a]">
+<div class="flex items-center justify-between">
+<h3 class="text-lg font-bold text-[#0d131b] dark:text-white">Filters</h3>
+<button class="text-sm font-medium text-primary hover:underline">Reset</button>
+</div>
+<div class="flex flex-col gap-4">
+<!-- Filter Group -->
+<div class="flex flex-col gap-2">
+<label class="text-xs font-bold uppercase tracking-wider text-[#4c6c9a]">Immigration Type</label>
+<div class="flex flex-col gap-2">
+<label class="flex cursor-pointer items-center gap-3 rounded-lg bg-[#f6f7f8] px-3 py-2 hover:bg-[#e7ecf3] dark:bg-[#253241] dark:hover:bg-[#2d3b4a]">
+<input checked="" class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" type="checkbox"/>
+<span class="text-sm font-medium text-[#0d131b] dark:text-white">All Types</span>
+</label>
+<label class="flex cursor-pointer items-center gap-3 px-3 py-2 hover:bg-[#f6f7f8] rounded-lg dark:hover:bg-[#253241]">
+<input class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" type="checkbox"/>
+<span class="text-sm font-medium text-[#0d131b] dark:text-white">Work Visas</span>
+</label>
+<label class="flex cursor-pointer items-center gap-3 px-3 py-2 hover:bg-[#f6f7f8] rounded-lg dark:hover:bg-[#253241]">
+<input class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" type="checkbox"/>
+<span class="text-sm font-medium text-[#0d131b] dark:text-white">Family Sponsorship</span>
+</label>
+</div>
+</div>
+<hr class="border-[#e7ecf3] dark:border-[#2d3b4a]"/>
+<!-- Filter Group -->
+<div class="flex flex-col gap-2">
+<label class="text-xs font-bold uppercase tracking-wider text-[#4c6c9a]">Destination</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg text-[#4c6c9a]">public</span>
+<select class="w-full appearance-none rounded-lg border border-[#cfd9e7] bg-white py-2.5 pl-10 pr-4 text-sm font-medium text-[#0d131b] focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:bg-[#1a2634] dark:border-[#2d3b4a] dark:text-white">
+<option>United States</option>
+<option>Canada</option>
+<option>United Kingdom</option>
+<option>Australia</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-lg text-[#4c6c9a] pointer-events-none">expand_more</span>
+</div>
+</div>
+<hr class="border-[#e7ecf3] dark:border-[#2d3b4a]"/>
+<!-- Filter Group -->
+<div class="flex flex-col gap-2">
+<label class="text-xs font-bold uppercase tracking-wider text-[#4c6c9a]">Language</label>
+<div class="flex flex-wrap gap-2">
+<button class="rounded-full border border-[#cfd9e7] bg-white px-3 py-1 text-xs font-medium text-[#0d131b] hover:border-primary hover:text-primary dark:bg-[#1a2634] dark:border-[#2d3b4a] dark:text-white">English</button>
+<button class="rounded-full border border-[#cfd9e7] bg-white px-3 py-1 text-xs font-medium text-[#0d131b] hover:border-primary hover:text-primary dark:bg-[#1a2634] dark:border-[#2d3b4a] dark:text-white">Spanish</button>
+<button class="rounded-full border border-[#cfd9e7] bg-white px-3 py-1 text-xs font-medium text-[#0d131b] hover:border-primary hover:text-primary dark:bg-[#1a2634] dark:border-[#2d3b4a] dark:text-white">Mandarin</button>
+<button class="rounded-full border border-[#cfd9e7] bg-white px-3 py-1 text-xs font-medium text-[#0d131b] hover:border-primary hover:text-primary dark:bg-[#1a2634] dark:border-[#2d3b4a] dark:text-white">Hindi</button>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<div class="flex flex-1 flex-col">
+<!-- Chips Navigation -->
+<div class="mb-8 overflow-x-auto pb-2 scrollbar-hide">
+<div class="flex gap-3">
+<button class="whitespace-nowrap rounded-lg bg-[#136dec] px-5 py-2 text-sm font-bold text-white shadow-md">
+                                All Services
+                            </button>
+<button class="whitespace-nowrap rounded-lg bg-white px-5 py-2 text-sm font-medium text-[#0d131b] shadow-sm ring-1 ring-inset ring-gray-200 hover:bg-gray-50 dark:bg-[#1a2634] dark:text-white dark:ring-[#2d3b4a]">
+                                Visa Applications
+                            </button>
+<button class="whitespace-nowrap rounded-lg bg-white px-5 py-2 text-sm font-medium text-[#0d131b] shadow-sm ring-1 ring-inset ring-gray-200 hover:bg-gray-50 dark:bg-[#1a2634] dark:text-white dark:ring-[#2d3b4a]">
+                                Citizenship
+                            </button>
+<button class="whitespace-nowrap rounded-lg bg-white px-5 py-2 text-sm font-medium text-[#0d131b] shadow-sm ring-1 ring-inset ring-gray-200 hover:bg-gray-50 dark:bg-[#1a2634] dark:text-white dark:ring-[#2d3b4a]">
+                                Asylum
+                            </button>
+<button class="whitespace-nowrap rounded-lg bg-white px-5 py-2 text-sm font-medium text-[#0d131b] shadow-sm ring-1 ring-inset ring-gray-200 hover:bg-gray-50 dark:bg-[#1a2634] dark:text-white dark:ring-[#2d3b4a]">
+                                Family Sponsorship
+                            </button>
+<button class="whitespace-nowrap rounded-lg bg-white px-5 py-2 text-sm font-medium text-[#0d131b] shadow-sm ring-1 ring-inset ring-gray-200 hover:bg-gray-50 dark:bg-[#1a2634] dark:text-white dark:ring-[#2d3b4a]">
+                                Business
+                            </button>
+</div>
+</div>
+<!-- Featured Services Section -->
+<div class="mb-10 flex flex-col gap-6">
+<div class="flex items-center justify-between">
+<h2 class="text-2xl font-bold tracking-tight text-[#0d131b] dark:text-white">Featured Services</h2>
+<a class="text-sm font-bold text-primary hover:underline" href="#">View All Featured</a>
+</div>
+<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+<!-- Featured Card 1 -->
+<div class="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-[#e7ecf3] bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md dark:bg-[#1a2634] dark:border-[#2d3b4a]">
+<div class="absolute right-0 top-0 rounded-bl-lg bg-[#FFD700]/20 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-[#B8860B]">
+                                    Popular
+                                </div>
+<div class="mb-4">
+<div class="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+<span class="material-symbols-outlined text-2xl">school</span>
+</div>
+<h3 class="mb-2 text-lg font-bold text-[#0d131b] dark:text-white">F-1 Student Visa Consultation</h3>
+<p class="mb-4 text-sm leading-relaxed text-[#4c6c9a]">Complete guidance for international students applying for US studies, including interview prep.</p>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined fill text-lg text-yellow-400">star</span>
+<span class="text-sm font-bold text-[#0d131b] dark:text-white">4.9</span>
+<span class="text-xs text-[#4c6c9a]">(342 reviews)</span>
+</div>
+</div>
+<div class="mt-auto border-t border-[#f0f2f5] pt-4 dark:border-[#2d3b4a]">
+<div class="mb-3 flex items-center gap-2">
+<div class="flex -space-x-2">
+<img alt="Professional" class="inline-block h-6 w-6 rounded-full ring-2 ring-white" data-alt="Portrait of professional woman" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDMkZZnaiNFXXuzeHdrUGt9WJ_OJEjCdO4xekzNHLV4TUFJQcAIFgKvG16FFTcZc5RSI2Q9RMxxq19aDunhrxDJJjadtZz_vPAP2SDrukVWHHSIuzdcMeEhK32HEef2amcEBkO7XUr41eLKwAjWgzPpEzWSvll4rOkGRNHLl3VwP4g7MPxnyjw7W8ft8y8WvScZO2fsxGtazsUgruhjI9cWp5VJXpv3H2UYHhSNQmEq5GNf9QzeyVGxUINktgRkiL-O_t-zfRB2bfQ"/>
+<img alt="Professional" class="inline-block h-6 w-6 rounded-full ring-2 ring-white" data-alt="Portrait of professional man" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAJBb7X9h3M-2zt87do1n7Shv1LUSVy_igUgEp489ajwftPX9Bwegl9UCpYAE_L3UB6BKDXhpRWrnU5I15lVe7Lieq5o-NvR5HCi-iiNByfOQQwuxwGT0yx4HK5fKI0LOdJJLmSHkARs_jkYpRJ4XrSw_zmzyyaIw2W8AbMy2WnSxgbhWAbuOYn6hO3-LFOgcpLxRZ_vtRAXf0PH4QtJNPcmd10-tktRiT9ch7oRRs29N8oau2cEBcO8AKLu1JkmgHizxmobP1rmAg"/>
+<div class="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-[10px] font-medium text-slate-500 ring-2 ring-white">+24</div>
+</div>
+<span class="text-xs font-medium text-[#4c6c9a]">Verified Pros</span>
+</div>
+<button class="w-full rounded-lg bg-primary py-2.5 text-sm font-bold text-white transition-colors hover:bg-blue-700">View Professionals</button>
+</div>
+</div>
+<!-- Featured Card 2 -->
+<div class="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-[#e7ecf3] bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md dark:bg-[#1a2634] dark:border-[#2d3b4a]">
+<div class="mb-4">
+<div class="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-green-50 text-green-600">
+<span class="material-symbols-outlined text-2xl">work</span>
+</div>
+<h3 class="mb-2 text-lg font-bold text-[#0d131b] dark:text-white">H-1B Specialty Occupation</h3>
+<p class="mb-4 text-sm leading-relaxed text-[#4c6c9a]">Expert legal assistance for employers and employees navigating the H-1B visa process.</p>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined fill text-lg text-yellow-400">star</span>
+<span class="text-sm font-bold text-[#0d131b] dark:text-white">4.8</span>
+<span class="text-xs text-[#4c6c9a]">(189 reviews)</span>
+</div>
+</div>
+<div class="mt-auto border-t border-[#f0f2f5] pt-4 dark:border-[#2d3b4a]">
+<div class="mb-3 flex items-center gap-2">
+<span class="text-xs text-[#4c6c9a]">Offered by <span class="font-bold text-[#0d131b] dark:text-white">Global Mobility Law Group</span></span>
+</div>
+<button class="w-full rounded-lg bg-white border border-primary py-2.5 text-sm font-bold text-primary transition-colors hover:bg-blue-50">View Details</button>
+</div>
+</div>
+<!-- Featured Card 3 -->
+<div class="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-[#e7ecf3] bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md dark:bg-[#1a2634] dark:border-[#2d3b4a]">
+<div class="mb-4">
+<div class="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-purple-50 text-purple-600">
+<span class="material-symbols-outlined text-2xl">family_restroom</span>
+</div>
+<h3 class="mb-2 text-lg font-bold text-[#0d131b] dark:text-white">Family Green Card Petition</h3>
+<p class="mb-4 text-sm leading-relaxed text-[#4c6c9a]">Reunite with your loved ones. Comprehensive filing service for immediate relatives.</p>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined fill text-lg text-yellow-400">star</span>
+<span class="text-sm font-bold text-[#0d131b] dark:text-white">4.9</span>
+<span class="text-xs text-[#4c6c9a]">(512 reviews)</span>
+</div>
+</div>
+<div class="mt-auto border-t border-[#f0f2f5] pt-4 dark:border-[#2d3b4a]">
+<div class="mb-3 flex items-center gap-2">
+<div class="flex -space-x-2">
+<img alt="Professional" class="inline-block h-6 w-6 rounded-full ring-2 ring-white" data-alt="Portrait of professional woman" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0VcSox3rpdrcdRDGWA5AXl_3gIf-zd9vSxwrpJf1ij8btRUzT1yTHmj8L9275owbWuetUo2nQhs82SJpJH73v6s10OmSul8QEYoKtf0hJQX_ZWttuKD6DF0zSByGNdYNFfbbDfdHWgnRPMvv_LNlFmTB66dfK0aahYiwLjNH0gnb22SJrrCHK5yjiucZsTr7vvtNxoTtFY5DhxCT80iX2-K2RFCpcDefwfeYTqucSSe4oxqDWiH2KPKwNiL-dWmE2ejjZOl8GEYU"/>
+<div class="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-[10px] font-medium text-slate-500 ring-2 ring-white">+8</div>
+</div>
+<span class="text-xs font-medium text-[#4c6c9a]">Verified Pros</span>
+</div>
+<button class="w-full rounded-lg bg-primary py-2.5 text-sm font-bold text-white transition-colors hover:bg-blue-700">View Professionals</button>
+</div>
+</div>
+</div>
+</div>
+<!-- All Services List -->
+<div class="flex flex-col gap-6">
+<div class="flex items-center justify-between border-b border-[#e7ecf3] pb-4 dark:border-[#2d3b4a]">
+<h2 class="text-2xl font-bold tracking-tight text-[#0d131b] dark:text-white">All Services</h2>
+<div class="flex items-center gap-2 text-sm text-[#4c6c9a]">
+<span>Sort by:</span>
+<select class="bg-transparent font-bold text-[#0d131b] focus:outline-none dark:text-white">
+<option>Recommended</option>
+<option>Highest Rated</option>
+<option>Newest</option>
+</select>
+</div>
+</div>
+<!-- Service Card Row -->
+<div class="flex flex-col gap-4">
+<!-- Card 1 -->
+<div class="flex flex-col gap-4 rounded-xl border border-[#e7ecf3] bg-white p-5 shadow-sm transition-all hover:shadow-md sm:flex-row sm:items-center dark:bg-[#1a2634] dark:border-[#2d3b4a]">
+<div class="flex shrink-0 items-center justify-center rounded-lg bg-orange-50 p-3 text-orange-600 sm:h-16 sm:w-16">
+<span class="material-symbols-outlined text-3xl">gavel</span>
+</div>
+<div class="flex flex-1 flex-col gap-1">
+<div class="flex flex-wrap items-center gap-2">
+<h3 class="text-lg font-bold text-[#0d131b] dark:text-white">Asylum Application Defense</h3>
+<span class="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-600 dark:bg-[#253241] dark:text-slate-300">Legal Rep</span>
+</div>
+<p class="text-sm text-[#4c6c9a] line-clamp-2">Representation in removal proceedings and affirmative asylum applications before USCIS.</p>
+<div class="mt-1 flex items-center gap-4 text-xs font-medium text-[#4c6c9a]">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">schedule</span> Available Immediately</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">translate</span> English, Spanish</span>
+</div>
+</div>
+<div class="flex shrink-0 flex-col gap-3 sm:w-40 sm:items-end">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined fill text-sm text-yellow-400">star</span>
+<span class="text-sm font-bold text-[#0d131b] dark:text-white">4.7</span>
+</div>
+<button class="w-full rounded-lg bg-[#e7ecf3] px-4 py-2 text-sm font-bold text-[#0d131b] transition-colors hover:bg-[#dbe2eb] dark:bg-[#253241] dark:text-white dark:hover:bg-[#2d3b4a]">See Details</button>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="flex flex-col gap-4 rounded-xl border border-[#e7ecf3] bg-white p-5 shadow-sm transition-all hover:shadow-md sm:flex-row sm:items-center dark:bg-[#1a2634] dark:border-[#2d3b4a]">
+<div class="flex shrink-0 items-center justify-center rounded-lg bg-blue-50 p-3 text-blue-600 sm:h-16 sm:w-16">
+<span class="material-symbols-outlined text-3xl">description</span>
+</div>
+<div class="flex flex-1 flex-col gap-1">
+<div class="flex flex-wrap items-center gap-2">
+<h3 class="text-lg font-bold text-[#0d131b] dark:text-white">Document Translation Services</h3>
+<span class="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-600 dark:bg-[#253241] dark:text-slate-300">Certified</span>
+</div>
+<p class="text-sm text-[#4c6c9a] line-clamp-2">USCIS-certified translations for birth certificates, diplomas, and legal documents in 50+ languages.</p>
+<div class="mt-1 flex items-center gap-4 text-xs font-medium text-[#4c6c9a]">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">bolt</span> 24hr Turnaround</span>
+</div>
+</div>
+<div class="flex shrink-0 flex-col gap-3 sm:w-40 sm:items-end">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined fill text-sm text-yellow-400">star</span>
+<span class="text-sm font-bold text-[#0d131b] dark:text-white">5.0</span>
+</div>
+<button class="w-full rounded-lg bg-[#e7ecf3] px-4 py-2 text-sm font-bold text-[#0d131b] transition-colors hover:bg-[#dbe2eb] dark:bg-[#253241] dark:text-white dark:hover:bg-[#2d3b4a]">See Details</button>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="flex flex-col gap-4 rounded-xl border border-[#e7ecf3] bg-white p-5 shadow-sm transition-all hover:shadow-md sm:flex-row sm:items-center dark:bg-[#1a2634] dark:border-[#2d3b4a]">
+<div class="flex shrink-0 items-center justify-center rounded-lg bg-red-50 p-3 text-red-600 sm:h-16 sm:w-16">
+<span class="material-symbols-outlined text-3xl">flight_takeoff</span>
+</div>
+<div class="flex flex-1 flex-col gap-1">
+<div class="flex flex-wrap items-center gap-2">
+<h3 class="text-lg font-bold text-[#0d131b] dark:text-white">Investor Visa (EB-5) Consulting</h3>
+</div>
+<p class="text-sm text-[#4c6c9a] line-clamp-2">Connect with specialized attorneys and regional centers for investment-based immigration.</p>
+<div class="mt-1 flex items-center gap-4 text-xs font-medium text-[#4c6c9a]">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">group</span> 5 Agencies</span>
+</div>
+</div>
+<div class="flex shrink-0 flex-col gap-3 sm:w-40 sm:items-end">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined fill text-sm text-yellow-400">star</span>
+<span class="text-sm font-bold text-[#0d131b] dark:text-white">4.9</span>
+</div>
+<button class="w-full rounded-lg bg-[#e7ecf3] px-4 py-2 text-sm font-bold text-[#0d131b] transition-colors hover:bg-[#dbe2eb] dark:bg-[#253241] dark:text-white dark:hover:bg-[#2d3b4a]">See Details</button>
+</div>
+</div>
+</div>
+<!-- Load More -->
+<div class="mt-4 flex justify-center">
+<button class="flex items-center gap-2 rounded-lg border border-[#cfd9e7] bg-white px-6 py-3 text-sm font-bold text-[#0d131b] hover:bg-gray-50 dark:bg-[#1a2634] dark:border-[#2d3b4a] dark:text-white dark:hover:bg-[#253241]">
+                                Show More Services
+                                <span class="material-symbols-outlined text-sm">expand_more</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="mt-auto border-t border-[#e7ecf3] bg-white pt-16 pb-8 dark:bg-[#1a2634] dark:border-[#2d3b4a]">
+<div class="layout-container mx-auto flex w-full max-w-7xl flex-col gap-10 px-10">
+<div class="flex flex-col justify-between gap-10 md:flex-row">
+<div class="flex max-w-sm flex-col gap-4">
+<div class="flex items-center gap-3 text-[#0d131b] dark:text-white">
+<div class="size-6 text-primary">
+<svg class="size-full" fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M36.7273 44C33.9891 44 31.6043 39.8386 30.3636 33.69C29.123 39.8386 26.7382 44 24 44C21.2618 44 18.877 39.8386 17.6364 33.69C16.3957 39.8386 14.0109 44 11.2727 44C7.25611 44 4 35.0457 4 24C4 12.9543 7.25611 4 11.2727 4C14.0109 4 16.3957 8.16144 17.6364 14.31C18.877 8.16144 21.2618 4 24 4C26.7382 4 29.123 8.16144 30.3636 14.31C31.6043 8.16144 33.9891 4 36.7273 4C40.7439 4 44 12.9543 44 24C44 35.0457 40.7439 44 36.7273 44Z" fill="currentColor"></path>
+</svg>
+</div>
+<h3 class="text-xl font-bold">ImmiConnect</h3>
+</div>
+<p class="text-sm leading-normal text-[#4c6c9a]">
+                            Making immigration services accessible, transparent, and trustworthy for everyone moving across borders.
+                        </p>
+</div>
+<div class="grid grid-cols-2 gap-10 sm:grid-cols-3">
+<div class="flex flex-col gap-4">
+<h4 class="text-sm font-bold uppercase tracking-wider text-[#0d131b] dark:text-white">Platform</h4>
+<div class="flex flex-col gap-2">
+<a class="text-sm font-medium text-[#4c6c9a] hover:text-primary" href="#">Browse Services</a>
+<a class="text-sm font-medium text-[#4c6c9a] hover:text-primary" href="#">Find Professionals</a>
+<a class="text-sm font-medium text-[#4c6c9a] hover:text-primary" href="#">How it Works</a>
+</div>
+</div>
+<div class="flex flex-col gap-4">
+<h4 class="text-sm font-bold uppercase tracking-wider text-[#0d131b] dark:text-white">Company</h4>
+<div class="flex flex-col gap-2">
+<a class="text-sm font-medium text-[#4c6c9a] hover:text-primary" href="#">About Us</a>
+<a class="text-sm font-medium text-[#4c6c9a] hover:text-primary" href="#">Careers</a>
+<a class="text-sm font-medium text-[#4c6c9a] hover:text-primary" href="#">Blog</a>
+</div>
+</div>
+<div class="flex flex-col gap-4">
+<h4 class="text-sm font-bold uppercase tracking-wider text-[#0d131b] dark:text-white">Support</h4>
+<div class="flex flex-col gap-2">
+<a class="text-sm font-medium text-[#4c6c9a] hover:text-primary" href="#">Help Center</a>
+<a class="text-sm font-medium text-[#4c6c9a] hover:text-primary" href="#">Terms of Service</a>
+<a class="text-sm font-medium text-[#4c6c9a] hover:text-primary" href="#">Privacy Policy</a>
+</div>
+</div>
+</div>
+</div>
+<div class="flex flex-col items-center justify-between gap-4 border-t border-[#e7ecf3] pt-8 md:flex-row dark:border-[#2d3b4a]">
+<p class="text-sm text-[#4c6c9a]">© 2024 ImmiConnect Inc. All rights reserved.</p>
+<div class="flex gap-4">
+<a class="text-[#4c6c9a] hover:text-primary" href="#"><span class="material-symbols-outlined">call</span></a>
+<a class="text-[#4c6c9a] hover:text-primary" href="#"><span class="material-symbols-outlined">mail</span></a>
+</div>
+</div>
+</div>
+</footer>
+</div>
+</body></html>

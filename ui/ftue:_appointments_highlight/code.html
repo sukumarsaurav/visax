@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FTUE - Appointments Highlight</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Config -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#136dec",
+              "background-light": "#f6f7f8",
+              "background-dark": "#101822",
+            },
+            fontFamily: {
+              "display": ["Manrope", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+            boxShadow: {
+                'glow': '0 0 20px 5px rgba(19, 109, 236, 0.3)',
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        /* Custom scrollbar for cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-white antialiased overflow-hidden">
+<!-- App Layout -->
+<div class="flex h-screen w-full relative">
+<!-- Sidebar -->
+<aside class="w-64 bg-white dark:bg-[#1A2633] border-r border-[#e7ecf3] dark:border-slate-700 flex flex-col z-0">
+<div class="p-6 pb-2">
+<div class="flex gap-3 items-center">
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-12" data-alt="User profile picture showing a smiling man" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBEtcNrQp2iNijiyIUpMy9SQ3hXcQt6Ac4dl1KcGKMVawpD1f5kGabQ_fdMI94B50BPJFnfQoAdSWFYufplPc7ulWj1q36JypC8wE26-_dquAhxECfLBaFEdBiuzMksndC4926xt25h-oL5cmulOX6N9UaIwVleUdFt-CjDZxJFeALFu18DTu6Q7JvaQGk1gACkb4Ao6Jd6N2sK7QCTOFfWYdY-Leggeoq-A9EgihXJD9Y_S-8Nc9od5NsTGKkpTOKrBG9VlmiGlYc");'></div>
+<div class="flex flex-col">
+<h1 class="text-[#0d131b] dark:text-white text-base font-bold leading-normal">Welcome, Alex</h1>
+<p class="text-[#4c6c9a] text-sm font-normal leading-normal">Client Dashboard</p>
+</div>
+</div>
+</div>
+<nav class="flex flex-col gap-2 p-4 flex-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-[#e7ecf3] dark:bg-slate-700 group" href="#">
+<span class="material-symbols-outlined text-[#0d131b] dark:text-white icon-fill">dashboard</span>
+<p class="text-[#0d131b] dark:text-white text-sm font-bold leading-normal">Dashboard</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined text-[#4c6c9a] dark:text-slate-400">calendar_month</span>
+<p class="text-[#0d131b] dark:text-slate-200 text-sm font-medium leading-normal">Appointments</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined text-[#4c6c9a] dark:text-slate-400">description</span>
+<p class="text-[#0d131b] dark:text-slate-200 text-sm font-medium leading-normal">Documents</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined text-[#4c6c9a] dark:text-slate-400">chat</span>
+<p class="text-[#0d131b] dark:text-slate-200 text-sm font-medium leading-normal">Messages</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined text-[#4c6c9a] dark:text-slate-400">settings</span>
+<p class="text-[#0d131b] dark:text-slate-200 text-sm font-medium leading-normal">Settings</p>
+</a>
+</nav>
+<div class="p-4 mt-auto">
+<button class="flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-blue-600 transition-colors shadow-sm">
+<span class="truncate">Book Consultation</span>
+</button>
+</div>
+</aside>
+<!-- Main Content Column -->
+<div class="flex-1 flex flex-col min-w-0 bg-background-light dark:bg-background-dark relative z-0">
+<!-- Top Header -->
+<header class="flex items-center justify-between border-b border-[#e7ecf3] dark:border-slate-700 px-8 py-4 bg-white dark:bg-[#1A2633]">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3 text-primary">
+<span class="material-symbols-outlined text-3xl">travel_explore</span>
+<h2 class="text-[#0d131b] dark:text-white text-xl font-extrabold leading-tight tracking-tight">ImmiMarket</h2>
+</div>
+<div class="hidden md:flex flex-col min-w-40 h-10 w-96">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full bg-[#e7ecf3] dark:bg-slate-800">
+<div class="text-[#4c6c9a] flex items-center justify-center pl-4 rounded-l-lg">
+<span class="material-symbols-outlined">search</span>
+</div>
+<input class="w-full bg-transparent border-none text-[#0d131b] dark:text-white focus:ring-0 placeholder:text-[#4c6c9a] px-3 text-sm" placeholder="Search appointments, documents..."/>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-6 hidden sm:flex">
+<a class="text-[#0d131b] dark:text-slate-300 text-sm font-medium hover:text-primary transition-colors" href="#">Help Center</a>
+<button class="text-[#0d131b] dark:text-slate-300 hover:text-primary transition-colors relative">
+<span class="material-symbols-outlined text-2xl">notifications</span>
+<span class="absolute top-0 right-0 size-2 bg-red-500 rounded-full border border-white"></span>
+</button>
+</div>
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-10 border border-slate-200" data-alt="Small user avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBTMAHLnb6HDy085nl7e9MpGJ7zRLJEsZUwdrr25gY_JJR2n-6k8i4HwmFcdJKbAL7jdz_chpzrbL5-wXiezxJJ6zVsN5Xx0r8vbMPKmVkuOuH3HRyd3eVJaezQi14wVXhtSWWFeMfjhEiFgBhF6NjI1shSy9HKgIG8HWdvVhiYJDgZ0rEevfQp5JTUdy_Slvs7wvVgyGuKfFqbtzdrXbdga0Q3KcrnRhprs1R5QMh34Vb-oezYXlFEb7lvHNdHmCYqTsfAwuhnlAY");'></div>
+</div>
+</header>
+<!-- Scrollable Page Content -->
+<div class="flex-1 overflow-y-auto p-8 relative">
+<div class="max-w-6xl mx-auto flex flex-col gap-8">
+<!-- Page Heading -->
+<div class="flex flex-wrap justify-between items-end gap-3">
+<div class="flex flex-col gap-1">
+<h2 class="text-[#0d131b] dark:text-white tracking-tight text-3xl font-bold leading-tight">Dashboard</h2>
+<p class="text-[#4c6c9a] dark:text-slate-400 text-base font-normal">Overview of your immigration journey</p>
+</div>
+<div class="flex gap-2 text-sm text-[#4c6c9a] dark:text-slate-400">
+<span>Last login: Today, 9:41 AM</span>
+</div>
+</div>
+<!-- Stats Row -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="flex flex-col gap-3 rounded-xl p-6 bg-white dark:bg-[#1A2633] border border-[#cfd9e7] dark:border-slate-700 shadow-sm">
+<div class="flex justify-between items-start">
+<p class="text-[#4c6c9a] dark:text-slate-400 text-sm font-bold uppercase tracking-wider">Pending Actions</p>
+<span class="material-symbols-outlined text-orange-500">pending_actions</span>
+</div>
+<p class="text-[#0d131b] dark:text-white text-3xl font-bold leading-tight">2</p>
+</div>
+<div class="flex flex-col gap-3 rounded-xl p-6 bg-white dark:bg-[#1A2633] border border-[#cfd9e7] dark:border-slate-700 shadow-sm">
+<div class="flex justify-between items-start">
+<p class="text-[#4c6c9a] dark:text-slate-400 text-sm font-bold uppercase tracking-wider">Consultations</p>
+<span class="material-symbols-outlined text-green-500">check_circle</span>
+</div>
+<p class="text-[#0d131b] dark:text-white text-3xl font-bold leading-tight">5</p>
+</div>
+<div class="flex flex-col gap-3 rounded-xl p-6 bg-white dark:bg-[#1A2633] border border-[#cfd9e7] dark:border-slate-700 shadow-sm">
+<div class="flex justify-between items-start">
+<p class="text-[#4c6c9a] dark:text-slate-400 text-sm font-bold uppercase tracking-wider">Documents Verified</p>
+<span class="material-symbols-outlined text-primary">verified</span>
+</div>
+<p class="text-[#0d131b] dark:text-white text-3xl font-bold leading-tight">12</p>
+</div>
+</div>
+<!-- Main Content Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start relative">
+<!-- COLUMN 1: HIGHLIGHTED SECTION -->
+<!-- Z-50 and Relative ensures this sits above the overlay -->
+<div class="flex flex-col gap-6 relative z-50">
+<!-- Card Component -->
+<div class="rounded-xl bg-white dark:bg-[#1A2633] p-5 shadow-2xl ring-4 ring-primary ring-opacity-100 ring-offset-4 ring-offset-background-light dark:ring-offset-background-dark transition-all duration-300">
+<div class="flex flex-col gap-5">
+<div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-4">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-primary">
+<span class="material-symbols-outlined">calendar_today</span>
+</div>
+<div class="flex flex-col">
+<p class="text-[#0d131b] dark:text-white text-lg font-bold leading-tight">Upcoming Appointment</p>
+<p class="text-[#4c6c9a] dark:text-slate-400 text-xs font-semibold uppercase tracking-wide">Next in 2 days</p>
+</div>
+</div>
+<button class="text-slate-400 hover:text-primary">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+<div class="flex flex-col md:flex-row gap-5">
+<!-- Image -->
+<div class="w-full md:w-32 h-32 md:h-auto bg-center bg-no-repeat bg-cover rounded-lg shrink-0" data-alt="Professional headshot of immigration lawyer Sarah Jenkins" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDMjHDNHCnfmeg6LCUphcmP-s_W1ExYIRM5l0toaUU3AYXfJxasWdAa_wsJ8P24zmZoPLoGA7wJDMdOexFtTVlMrfohT79AbmL3mDN6aKGy08KokeDunQxINurL4h_kwALYSL9x8bu79devd3IZLhw1-a5bL_xGSuHM17mTy32NfH_pfRkxfuepCwM2HHb8q6514LId1NYiZwdF0cX9bF49ppSF6o1mXASc_fVmmfRTBvHnM0fipayybIAOBKLfEmnyf1ZzCaUrPPY");'>
+</div>
+<!-- Details -->
+<div class="flex flex-col justify-between flex-1 gap-4">
+<div>
+<h3 class="text-[#0d131b] dark:text-white font-bold text-base mb-1">Immigration Law Consultation</h3>
+<p class="text-[#4c6c9a] dark:text-slate-400 text-sm">with Sarah Jenkins, Esq.</p>
+<div class="flex items-center gap-2 mt-2 text-sm text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-lg">schedule</span>
+<span>Oct 24, 10:00 AM - 11:00 AM</span>
+</div>
+</div>
+<button class="flex items-center justify-center gap-2 rounded-lg h-9 px-4 bg-[#e7ecf3] hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-[#0d131b] dark:text-white text-sm font-bold transition-colors w-fit">
+<span class="material-symbols-outlined text-lg">videocam</span>
+<span>Join Meeting</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- COACH MARK / POPOVER -->
+<!-- Absolute positioned relative to the container above -->
+<div class="absolute left-0 right-0 top-[105%] md:left-[105%] md:top-0 md:w-80 z-50 animate-in fade-in slide-in-from-bottom-4 duration-500">
+<div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-5 border border-slate-100 dark:border-slate-600 relative">
+<!-- Decorative Arrow (Hidden on mobile, visible on desktop left side) -->
+<div class="hidden md:block absolute top-8 -left-2 w-4 h-4 bg-white dark:bg-slate-800 border-l border-b border-slate-100 dark:border-slate-600 transform rotate-45"></div>
+<!-- Decorative Arrow (Visible on mobile top side) -->
+<div class="block md:hidden absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white dark:bg-slate-800 border-t border-l border-slate-100 dark:border-slate-600 transform rotate-45"></div>
+<div class="flex flex-col gap-3 relative z-10">
+<div class="flex justify-between items-center mb-1">
+<span class="text-xs font-bold text-primary tracking-wider uppercase">Tour • Step 1 of 4</span>
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+<span class="material-symbols-outlined text-lg">close</span>
+</button>
+</div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white leading-tight">Track Your Consultations</h3>
+<p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                                            View and manage all your scheduled consultations here. You can easily reschedule or join video calls directly from this card when it's time.
+                                        </p>
+<div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+<button class="text-sm font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors">
+                                                Skip Tour
+                                            </button>
+<button class="flex items-center gap-1 bg-primary hover:bg-blue-600 text-white text-sm font-bold py-2 px-4 rounded-lg shadow-md transition-all hover:shadow-lg">
+                                                Next
+                                                <span class="material-symbols-outlined text-sm font-bold">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- COLUMN 2: DUMMY CONTENT (Blurred/Dimmed) -->
+<div class="flex flex-col gap-6 opacity-40 select-none">
+<div class="rounded-xl bg-white dark:bg-[#1A2633] p-5 border border-[#cfd9e7] dark:border-slate-700">
+<div class="flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<h3 class="text-[#0d131b] dark:text-white font-bold text-lg">Recent Documents</h3>
+<a class="text-primary text-sm font-bold" href="#">View All</a>
+</div>
+<div class="flex flex-col gap-3">
+<div class="flex items-center gap-3 p-3 rounded-lg border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+<div class="text-red-500 bg-red-50 dark:bg-red-900/20 p-2 rounded">
+<span class="material-symbols-outlined">picture_as_pdf</span>
+</div>
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-900 dark:text-white">Visa_Application_Form.pdf</span>
+<span class="text-xs text-slate-500">Uploaded 2 hours ago</span>
+</div>
+</div>
+<div class="flex items-center gap-3 p-3 rounded-lg border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+<div class="text-blue-500 bg-blue-50 dark:bg-blue-900/20 p-2 rounded">
+<span class="material-symbols-outlined">description</span>
+</div>
+<div class="flex flex-col">
+<span class="text-sm font-bold text-slate-900 dark:text-white">Passport_Copy.jpg</span>
+<span class="text-xs text-slate-500">Uploaded yesterday</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="rounded-xl bg-primary/10 border border-primary/20 p-5">
+<div class="flex flex-col gap-3">
+<h3 class="text-primary font-bold text-lg">Need Help?</h3>
+<p class="text-sm text-slate-600 dark:text-slate-300">Our support team is available 24/7 to assist you with your application process.</p>
+<button class="text-primary font-bold text-sm text-left">Contact Support →</button>
+</div>
+</div>
+</div>
+</div> <!-- End Grid -->
+</div>
+</div>
+</div>
+<!-- Backdrop Overlay -->
+<!-- Fixed position, high z-index but below the highlighted card (z-40 vs z-50) -->
+<div class="fixed inset-0 bg-[#0d131b]/60 backdrop-blur-[2px] z-40 transition-opacity duration-300"></div>
+</div>
+</body></html>

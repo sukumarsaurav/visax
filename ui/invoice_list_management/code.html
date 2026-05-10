@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Invoice List Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&amp;family=Noto+Sans:wght@300..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#136dec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101822",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"],
+                        "body": ["Noto Sans", "sans-serif"],
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-[#0d131b] dark:text-white font-display">
+<div class="flex h-screen w-full overflow-hidden">
+<!-- Sidebar -->
+<aside class="flex w-72 flex-col justify-between border-r border-[#cfd9e7] dark:border-gray-800 bg-white dark:bg-[#15202b] hidden lg:flex">
+<div class="flex flex-col gap-4 p-4">
+<div class="flex gap-3 items-center mb-6">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" data-alt="Abstract blue gradient logo for Immigration Pro" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCz1dODRU9AjT7ejoGBMTUraeni8ytddgqAA8blJEPtAdZSi_ZG2ZJcrziFt6w-FAL2j9odslxbDsjFMwDxQ_fTD18IqTUGNfgBSB6dJSlIRk8ubBgoJWVown_QCu4vdU9msC7bEVLBGoWYeYtJPi6tJAYkIOnCnzb-S_BsYy4-GA1GtAT_BkYm3DeYj_Kmvv1nP41C-wQoBIv5qsp_wAzWTbX9BT-Z0AvV9nD5N_O6IJD-NbCSPR-ZkuQvG9H3ylQ_pOg8Hc03RwM");'></div>
+<div class="flex flex-col">
+<h1 class="text-base font-medium leading-normal dark:text-white">Immigration Pro</h1>
+<p class="text-[#4c6c9a] text-sm font-normal leading-normal">Agency Portal</p>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[#e7ecf3] dark:hover:bg-gray-700 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[#4c6c9a] group-hover:text-primary" style="font-size: 24px;">dashboard</span>
+<p class="text-[#0d131b] dark:text-gray-300 text-sm font-medium leading-normal">Dashboard</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[#e7ecf3] dark:hover:bg-gray-700 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[#4c6c9a] group-hover:text-primary" style="font-size: 24px;">group</span>
+<p class="text-[#0d131b] dark:text-gray-300 text-sm font-medium leading-normal">Clients</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[#e7ecf3] dark:hover:bg-gray-700 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[#4c6c9a] group-hover:text-primary" style="font-size: 24px;">work</span>
+<p class="text-[#0d131b] dark:text-gray-300 text-sm font-medium leading-normal">Cases</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary" href="#">
+<span class="material-symbols-outlined text-primary" style="font-size: 24px; font-variation-settings: 'FILL' 1;">description</span>
+<p class="text-primary text-sm font-medium leading-normal">Invoices</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-[#e7ecf3] dark:hover:bg-gray-700 transition-colors group" href="#">
+<span class="material-symbols-outlined text-[#4c6c9a] group-hover:text-primary" style="font-size: 24px;">settings</span>
+<p class="text-[#0d131b] dark:text-gray-300 text-sm font-medium leading-normal">Settings</p>
+</a>
+</div>
+</div>
+<div class="p-4 border-t border-[#cfd9e7] dark:border-gray-800">
+<div class="flex items-center gap-3 px-3 py-2">
+<div class="rounded-full bg-gray-200 h-8 w-8 flex items-center justify-center">
+<span class="material-symbols-outlined text-gray-500 text-sm">person</span>
+</div>
+<div>
+<p class="text-sm font-medium dark:text-white">Jane Doe</p>
+<p class="text-xs text-[#4c6c9a]">Consultant</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col h-full overflow-hidden bg-background-light dark:bg-background-dark relative">
+<!-- Mobile Header (Visible only on small screens) -->
+<div class="lg:hidden flex items-center justify-between p-4 bg-white dark:bg-[#15202b] border-b border-[#cfd9e7] dark:border-gray-800">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">menu</span>
+<h1 class="text-lg font-bold">Immigration Pro</h1>
+</div>
+</div>
+<!-- Scrollable Content Area -->
+<div class="flex-1 overflow-y-auto">
+<div class="layout-content-container flex flex-col max-w-[1200px] mx-auto w-full p-4 md:p-6 lg:p-8 gap-6">
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div class="flex flex-col gap-1">
+<h1 class="text-[#0d131b] dark:text-white text-3xl md:text-4xl font-extrabold leading-tight tracking-[-0.033em]">Invoices</h1>
+<p class="text-[#4c6c9a] text-base font-normal leading-normal">Manage your billing, track payments, and create new invoices.</p>
+</div>
+<button class="flex items-center justify-center gap-2 rounded-lg h-12 px-6 bg-primary hover:bg-blue-600 text-white text-sm font-bold leading-normal transition-all shadow-sm active:scale-95">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span>Create New Invoice</span>
+</button>
+</div>
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="flex flex-col gap-2 rounded-xl p-6 bg-white dark:bg-[#15202b] border border-[#cfd9e7] dark:border-gray-800 shadow-sm">
+<div class="flex items-center justify-between">
+<p class="text-[#4c6c9a] text-sm font-medium uppercase tracking-wider">Total Outstanding</p>
+<span class="material-symbols-outlined text-[#4c6c9a] bg-gray-50 dark:bg-gray-800 p-1.5 rounded-full" style="font-size: 20px;">account_balance_wallet</span>
+</div>
+<div class="flex items-end gap-3 mt-1">
+<p class="text-[#0d131b] dark:text-white text-3xl font-bold leading-tight">$12,450.00</p>
+<div class="flex items-center gap-1 text-[#07883b] bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded text-xs font-medium mb-1">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+<span>+5%</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-2 rounded-xl p-6 bg-white dark:bg-[#15202b] border border-[#cfd9e7] dark:border-gray-800 shadow-sm">
+<div class="flex items-center justify-between">
+<p class="text-[#4c6c9a] text-sm font-medium uppercase tracking-wider">Overdue Amount</p>
+<span class="material-symbols-outlined text-[#4c6c9a] bg-gray-50 dark:bg-gray-800 p-1.5 rounded-full" style="font-size: 20px;">warning</span>
+</div>
+<div class="flex items-end gap-3 mt-1">
+<p class="text-[#0d131b] dark:text-white text-3xl font-bold leading-tight">$1,200.00</p>
+<div class="flex items-center gap-1 text-[#e73908] bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded text-xs font-medium mb-1">
+<span>2 Invoices</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-2 rounded-xl p-6 bg-white dark:bg-[#15202b] border border-[#cfd9e7] dark:border-gray-800 shadow-sm">
+<div class="flex items-center justify-between">
+<p class="text-[#4c6c9a] text-sm font-medium uppercase tracking-wider">Paid this Month</p>
+<span class="material-symbols-outlined text-[#4c6c9a] bg-gray-50 dark:bg-gray-800 p-1.5 rounded-full" style="font-size: 20px;">check_circle</span>
+</div>
+<div class="flex items-end gap-3 mt-1">
+<p class="text-[#0d131b] dark:text-white text-3xl font-bold leading-tight">$8,500.00</p>
+<div class="flex items-center gap-1 text-[#07883b] bg-green-50 dark:bg-green-900/20 px-2 py-0.5 rounded text-xs font-medium mb-1">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+<span>+12%</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Filters & Search Bar -->
+<div class="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between bg-white dark:bg-[#15202b] p-4 rounded-xl border border-[#cfd9e7] dark:border-gray-800 shadow-sm">
+<!-- Search -->
+<div class="relative w-full lg:max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#4c6c9a]">search</span>
+<input class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-[#cfd9e7] dark:border-gray-700 bg-white dark:bg-gray-900 text-[#0d131b] dark:text-white placeholder-[#4c6c9a] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm font-medium" placeholder="Search by invoice #, client name..." type="text"/>
+</div>
+<!-- Filters -->
+<div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+<!-- Status Filter -->
+<div class="relative group min-w-[140px] flex-1 lg:flex-none">
+<select class="w-full appearance-none pl-3 pr-8 py-2.5 rounded-lg border border-[#cfd9e7] dark:border-gray-700 bg-white dark:bg-gray-900 text-[#0d131b] dark:text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer">
+<option>All Statuses</option>
+<option>Paid</option>
+<option>Pending</option>
+<option>Overdue</option>
+<option>Draft</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[#4c6c9a] text-[20px]">expand_more</span>
+</div>
+<!-- Date Range -->
+<div class="relative group min-w-[160px] flex-1 lg:flex-none">
+<button class="w-full flex items-center justify-between px-3 py-2.5 rounded-lg border border-[#cfd9e7] dark:border-gray-700 bg-white dark:bg-gray-900 text-[#0d131b] dark:text-white text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800">
+<span class="truncate">Last 30 Days</span>
+<span class="material-symbols-outlined text-[#4c6c9a] text-[20px]">calendar_today</span>
+</button>
+</div>
+<!-- Filter Toggle Button (for advanced) -->
+<button class="p-2.5 rounded-lg border border-[#cfd9e7] dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-[#4c6c9a]">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+</div>
+</div>
+<!-- Invoices Table -->
+<div class="flex flex-col rounded-xl border border-[#cfd9e7] dark:border-gray-800 bg-white dark:bg-[#15202b] shadow-sm overflow-hidden">
+<!-- Tabs -->
+<div class="flex border-b border-[#cfd9e7] dark:border-gray-800 overflow-x-auto scrollbar-hide">
+<button class="px-6 py-4 text-sm font-bold text-primary border-b-2 border-primary whitespace-nowrap">All Invoices</button>
+<button class="px-6 py-4 text-sm font-medium text-[#4c6c9a] hover:text-[#0d131b] dark:hover:text-white whitespace-nowrap transition-colors">Pending Payment</button>
+<button class="px-6 py-4 text-sm font-medium text-[#4c6c9a] hover:text-[#0d131b] dark:hover:text-white whitespace-nowrap transition-colors">Paid</button>
+<button class="px-6 py-4 text-sm font-medium text-[#4c6c9a] hover:text-[#0d131b] dark:hover:text-white whitespace-nowrap transition-colors">Drafts</button>
+</div>
+<!-- Table Header -->
+<div class="hidden md:grid grid-cols-12 gap-4 p-4 border-b border-[#cfd9e7] dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 text-xs font-semibold text-[#4c6c9a] uppercase tracking-wider">
+<div class="col-span-1 flex items-center gap-2">
+<input class="rounded border-gray-300 text-primary focus:ring-primary/20 h-4 w-4" type="checkbox"/>
+<span>#</span>
+</div>
+<div class="col-span-3">Client</div>
+<div class="col-span-2">Date Issued</div>
+<div class="col-span-2">Due Date</div>
+<div class="col-span-2 text-right">Amount</div>
+<div class="col-span-1 text-center">Status</div>
+<div class="col-span-1 text-right">Actions</div>
+</div>
+<!-- Table Rows -->
+<div class="flex flex-col divide-y divide-[#cfd9e7] dark:divide-gray-800">
+<!-- Row 1 -->
+<div class="flex flex-col md:grid md:grid-cols-12 gap-4 p-4 items-center hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
+<div class="w-full md:w-auto md:col-span-1 flex items-center justify-between md:justify-start gap-3">
+<div class="flex items-center gap-3">
+<input class="rounded border-gray-300 text-primary focus:ring-primary/20 h-4 w-4" type="checkbox"/>
+<span class="text-sm font-medium text-[#0d131b] dark:text-white">#2024</span>
+</div>
+<!-- Mobile Status -->
+<div class="md:hidden px-2.5 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-bold border border-green-200 dark:border-green-800">
+                                        Paid
+                                    </div>
+</div>
+<div class="w-full md:w-auto md:col-span-3 flex items-center gap-3">
+<div class="h-9 w-9 rounded-full bg-cover bg-center shrink-0" data-alt="Portrait of Maria Garcia" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAg9Y8EKJTnRf4DY5_ZOFtv52Cos3LFt5RX5H9BJ9HWUgQZ74AH2plg-t9enK8NntBsy2dOgIAhap0t7hDLxySgC-naMrUJ8ECVfL0avwdS7_7TVH8yCOQoHXOiDW2q3vg6j46sHu-WqKFhaX6X6MbXI7wCH9BdMDuKH0vZp-JE8CteR9BNOt3dFYbSy8nT-6iAnQpSrjoI88fh2FQXNdNvlCy_Sl4yeta44pyK9NfW7wTZntnUKLbiN9enqD5XT25OFXKHSl2PEK4");'></div>
+<div class="flex flex-col">
+<p class="text-sm font-bold text-[#0d131b] dark:text-white group-hover:text-primary transition-colors cursor-pointer">Maria Garcia</p>
+<p class="text-xs text-[#4c6c9a]">Case: Family Petition (I-130)</p>
+</div>
+</div>
+<div class="w-full md:w-auto md:col-span-2 flex md:block justify-between">
+<span class="md:hidden text-xs text-[#4c6c9a] uppercase font-bold">Issued</span>
+<span class="text-sm text-[#0d131b] dark:text-gray-300">Oct 24, 2023</span>
+</div>
+<div class="w-full md:w-auto md:col-span-2 flex md:block justify-between">
+<span class="md:hidden text-xs text-[#4c6c9a] uppercase font-bold">Due</span>
+<span class="text-sm text-[#0d131b] dark:text-gray-300">Nov 07, 2023</span>
+</div>
+<div class="w-full md:w-auto md:col-span-2 flex md:block justify-between md:text-right">
+<span class="md:hidden text-xs text-[#4c6c9a] uppercase font-bold">Amount</span>
+<span class="text-sm font-bold text-[#0d131b] dark:text-white">$1,500.00</span>
+</div>
+<div class="hidden md:flex md:col-span-1 justify-center">
+<div class="px-2.5 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-bold border border-green-200 dark:border-green-800">
+                                        Paid
+                                    </div>
+</div>
+<div class="w-full md:w-auto md:col-span-1 flex justify-end gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 rounded-lg text-[#4c6c9a] hover:bg-primary/10 hover:text-primary transition-colors" title="Download PDF">
+<span class="material-symbols-outlined text-[20px]">download</span>
+</button>
+<button class="p-1.5 rounded-lg text-[#4c6c9a] hover:bg-primary/10 hover:text-primary transition-colors" title="More Actions">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Row 2 -->
+<div class="flex flex-col md:grid md:grid-cols-12 gap-4 p-4 items-center hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
+<div class="w-full md:w-auto md:col-span-1 flex items-center justify-between md:justify-start gap-3">
+<div class="flex items-center gap-3">
+<input class="rounded border-gray-300 text-primary focus:ring-primary/20 h-4 w-4" type="checkbox"/>
+<span class="text-sm font-medium text-[#0d131b] dark:text-white">#2025</span>
+</div>
+<div class="md:hidden px-2.5 py-1 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 text-xs font-bold border border-orange-200 dark:border-orange-800">
+                                        Pending
+                                    </div>
+</div>
+<div class="w-full md:w-auto md:col-span-3 flex items-center gap-3">
+<div class="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold shrink-0">JL</div>
+<div class="flex flex-col">
+<p class="text-sm font-bold text-[#0d131b] dark:text-white group-hover:text-primary transition-colors cursor-pointer">John Lee</p>
+<p class="text-xs text-[#4c6c9a]">Case: Visa Application (H-1B)</p>
+</div>
+</div>
+<div class="w-full md:w-auto md:col-span-2 flex md:block justify-between">
+<span class="md:hidden text-xs text-[#4c6c9a] uppercase font-bold">Issued</span>
+<span class="text-sm text-[#0d131b] dark:text-gray-300">Oct 26, 2023</span>
+</div>
+<div class="w-full md:w-auto md:col-span-2 flex md:block justify-between">
+<span class="md:hidden text-xs text-[#4c6c9a] uppercase font-bold">Due</span>
+<span class="text-sm text-[#0d131b] dark:text-gray-300">Nov 09, 2023</span>
+</div>
+<div class="w-full md:w-auto md:col-span-2 flex md:block justify-between md:text-right">
+<span class="md:hidden text-xs text-[#4c6c9a] uppercase font-bold">Amount</span>
+<span class="text-sm font-bold text-[#0d131b] dark:text-white">$3,200.00</span>
+</div>
+<div class="hidden md:flex md:col-span-1 justify-center">
+<div class="px-2.5 py-1 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 text-xs font-bold border border-orange-200 dark:border-orange-800">
+                                        Pending
+                                    </div>
+</div>
+<div class="w-full md:w-auto md:col-span-1 flex justify-end gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 rounded-lg text-[#4c6c9a] hover:bg-primary/10 hover:text-primary transition-colors" title="Send Reminder">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+</button>
+<button class="p-1.5 rounded-lg text-[#4c6c9a] hover:bg-primary/10 hover:text-primary transition-colors" title="More Actions">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Row 3 -->
+<div class="flex flex-col md:grid md:grid-cols-12 gap-4 p-4 items-center hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group bg-red-50/30 dark:bg-red-900/5">
+<div class="w-full md:w-auto md:col-span-1 flex items-center justify-between md:justify-start gap-3">
+<div class="flex items-center gap-3">
+<input class="rounded border-gray-300 text-primary focus:ring-primary/20 h-4 w-4" type="checkbox"/>
+<span class="text-sm font-medium text-[#0d131b] dark:text-white">#2021</span>
+</div>
+<div class="md:hidden px-2.5 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-bold border border-red-200 dark:border-red-800">
+                                        Overdue
+                                    </div>
+</div>
+<div class="w-full md:w-auto md:col-span-3 flex items-center gap-3">
+<div class="h-9 w-9 rounded-full bg-cover bg-center shrink-0" data-alt="Portrait of Ahmed Hassan" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuArCN7oSsve4VFtSYp0wbktUN6xJ5huDlCZSD4p3akBHlEtBU4OLv_MN8tgqWfjM9wziL6RoLpKz8H6k_EJWW1CwWo13m9CDoSJ1M4OlV34wGOaaqjOb1iuUlwgzh590fzcFEj7d-FO1y6aeYFaMDC0ajchXMJx8GyznEEE24NUHZq3iowf60qdwLJKFIncgfaCMNWiqhbXxP_3YQxtrCHvQDxt7XvYnZzAdsl5OVJMKO4Os6Edf6kgN0d5qNs6RRGPOhUYWC2FQDg");'></div>
+<div class="flex flex-col">
+<p class="text-sm font-bold text-[#0d131b] dark:text-white group-hover:text-primary transition-colors cursor-pointer">Ahmed Hassan</p>
+<p class="text-xs text-[#4c6c9a]">Case: Citizenship</p>
+</div>
+</div>
+<div class="w-full md:w-auto md:col-span-2 flex md:block justify-between">
+<span class="md:hidden text-xs text-[#4c6c9a] uppercase font-bold">Issued</span>
+<span class="text-sm text-[#0d131b] dark:text-gray-300">Oct 10, 2023</span>
+</div>
+<div class="w-full md:w-auto md:col-span-2 flex md:block justify-between">
+<span class="md:hidden text-xs text-[#4c6c9a] uppercase font-bold">Due</span>
+<span class="text-sm text-red-600 dark:text-red-400 font-medium">Oct 24, 2023</span>
+</div>
+<div class="w-full md:w-auto md:col-span-2 flex md:block justify-between md:text-right">
+<span class="md:hidden text-xs text-[#4c6c9a] uppercase font-bold">Amount</span>
+<span class="text-sm font-bold text-[#0d131b] dark:text-white">$600.00</span>
+</div>
+<div class="hidden md:flex md:col-span-1 justify-center">
+<div class="px-2.5 py-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-bold border border-red-200 dark:border-red-800">
+                                        Overdue
+                                    </div>
+</div>
+<div class="w-full md:w-auto md:col-span-1 flex justify-end gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 rounded-lg text-primary bg-primary/10 hover:bg-primary hover:text-white transition-colors" title="Send Reminder">
+<span class="material-symbols-outlined text-[20px]">send</span>
+</button>
+<button class="p-1.5 rounded-lg text-[#4c6c9a] hover:bg-primary/10 hover:text-primary transition-colors" title="More Actions">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Row 4 -->
+<div class="flex flex-col md:grid md:grid-cols-12 gap-4 p-4 items-center hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
+<div class="w-full md:w-auto md:col-span-1 flex items-center justify-between md:justify-start gap-3">
+<div class="flex items-center gap-3">
+<input class="rounded border-gray-300 text-primary focus:ring-primary/20 h-4 w-4" type="checkbox"/>
+<span class="text-sm font-medium text-[#0d131b] dark:text-white">#2026</span>
+</div>
+<div class="md:hidden px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400 text-xs font-bold border border-gray-200 dark:border-gray-700">
+                                        Draft
+                                    </div>
+</div>
+<div class="w-full md:w-auto md:col-span-3 flex items-center gap-3">
+<div class="h-9 w-9 rounded-full bg-cover bg-center shrink-0" data-alt="Portrait of Sarah Chen" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDEq9-I3j9beeKvPUliDa6b33--ThK8k7oeVnHunw7DZG_umpXBTeUrtiwAPFwE8s9uVOqskl8iWo7HWJIAKJarkAypj67Tvxj3jlxfUlECc7_1RJtWJB1Hy7oB3ULNNOcLTPjPt6lKcRqsECyJJvPsXq3Wdvemt_zLzvZvbTJZIzjnOVG53vE88fsFI3VO6S0YX-mbUJwK_0QqFHCXUGv0mnRO1zoeIPbkjx2HkSsqkAP3chcQquxC3_h7zf8o5FyMFlWx_rCCHl4");'></div>
+<div class="flex flex-col">
+<p class="text-sm font-bold text-[#0d131b] dark:text-white group-hover:text-primary transition-colors cursor-pointer">Sarah Chen</p>
+<p class="text-xs text-[#4c6c9a]">Case: Green Card Renewal</p>
+</div>
+</div>
+<div class="w-full md:w-auto md:col-span-2 flex md:block justify-between">
+<span class="md:hidden text-xs text-[#4c6c9a] uppercase font-bold">Issued</span>
+<span class="text-sm text-[#0d131b] dark:text-gray-300">--</span>
+</div>
+<div class="w-full md:w-auto md:col-span-2 flex md:block justify-between">
+<span class="md:hidden text-xs text-[#4c6c9a] uppercase font-bold">Due</span>
+<span class="text-sm text-[#0d131b] dark:text-gray-300">--</span>
+</div>
+<div class="w-full md:w-auto md:col-span-2 flex md:block justify-between md:text-right">
+<span class="md:hidden text-xs text-[#4c6c9a] uppercase font-bold">Amount</span>
+<span class="text-sm font-bold text-[#0d131b] dark:text-white">$850.00</span>
+</div>
+<div class="hidden md:flex md:col-span-1 justify-center">
+<div class="px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400 text-xs font-bold border border-gray-200 dark:border-gray-700">
+                                        Draft
+                                    </div>
+</div>
+<div class="w-full md:w-auto md:col-span-1 flex justify-end gap-2 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 rounded-lg text-primary hover:bg-primary/10 transition-colors" title="Edit Draft">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="p-1.5 rounded-lg text-[#4c6c9a] hover:bg-primary/10 hover:text-primary transition-colors" title="More Actions">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Pagination -->
+<div class="p-4 border-t border-[#cfd9e7] dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+<p class="text-sm text-[#4c6c9a]">Showing <span class="font-medium text-[#0d131b] dark:text-white">1</span> to <span class="font-medium text-[#0d131b] dark:text-white">4</span> of <span class="font-medium text-[#0d131b] dark:text-white">128</span> results</p>
+<div class="flex items-center gap-1">
+<button class="p-2 rounded-lg border border-[#cfd9e7] dark:border-gray-700 bg-white dark:bg-gray-800 text-[#4c6c9a] hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-[20px]">chevron_left</span>
+</button>
+<button class="w-9 h-9 flex items-center justify-center rounded-lg bg-primary text-white text-sm font-medium">1</button>
+<button class="w-9 h-9 flex items-center justify-center rounded-lg border border-[#cfd9e7] dark:border-gray-700 bg-white dark:bg-gray-800 text-[#4c6c9a] hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium">2</button>
+<button class="w-9 h-9 flex items-center justify-center rounded-lg border border-[#cfd9e7] dark:border-gray-700 bg-white dark:bg-gray-800 text-[#4c6c9a] hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium">3</button>
+<span class="text-[#4c6c9a] px-1">...</span>
+<button class="w-9 h-9 flex items-center justify-center rounded-lg border border-[#cfd9e7] dark:border-gray-700 bg-white dark:bg-gray-800 text-[#4c6c9a] hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium">8</button>
+<button class="p-2 rounded-lg border border-[#cfd9e7] dark:border-gray-700 bg-white dark:bg-gray-800 text-[#4c6c9a] hover:bg-gray-50 dark:hover:bg-gray-700">
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

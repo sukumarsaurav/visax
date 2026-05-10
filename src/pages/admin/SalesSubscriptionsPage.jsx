@@ -1,0 +1,249 @@
+import { useState, useEffect, useCallback } from 'react'
+import Card from '../../components/ui/Card'
+import Button from '../../components/ui/Button'
+import Avatar from '../../components/ui/Avatar'
+import { supabase } from '../../lib/supabase'
+
+const STATUS_COLORS = {
+    paid: 'bg-green-50 text-green-700 border-green-100 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800',
+    pending: 'bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800',
+    overdue: 'bg-red-50 text-red-700 border-red-100 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800',
+    draft: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700',
+    cancelled: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700',
+}
+
+const PAGE_SIZE = 10
+
+export default function SalesSubscriptionsPage() {
+    const [activeTab, setActiveTab] = useState('invoices')
+    const [invoices, setInvoices] = useState([])
+    const [promotions, setPromotions] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [page, setPage] = useState(0)
+    const [total, setTotal] = useState(0)
+    const [search, setSearch] = useState('')
+    const [statusFilter, setStatusFilter] = useState('all')
+    const [stats, setStats] = useState({ totalRevenue: 0, pending: 0, overdue: 0, count: 0 })
+    const [toast, setToast] = useState(null)
+
+    const showToast = (msg, type = 'success') => {
+        setToast({ msg, type })
+        setTimeout(() => setToast(null), 3000)
+    }
+
+    const fetchInvoices = useCallback(async () => {
+        setLoading(true)
+        let query = supabase
+            .from('invoices')
+            .select('*, profiles!invoices_client_id_fkey(full_name, email, avatar_url)', { count: 'exact' })
+            .order('created_at', { ascending: false })
+            .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
+
+        if (statusFilter !== 'all') query = query.eq('status', statusFilter)
+
+        const { data, count } = await query
+        const list = data || []
+        setInvoices(list)
+        setTotal(count || 0)
+
+        // Stats
+        const { data: allData } = await supabase.from('invoices').select('amount, status')
+        const all = allData || []
+        setStats({
+            totalRevenue: all.filter(i => i.status === 'paid').reduce((s, i) => s + Number(i.amount || 0), 0),
+            pending: all.filter(i => i.status === 'pending').length,
+            overdue: all.filter(i => i.status === 'overdue').length,
+            count: all.length,
+        })
+        setLoading(false)
+    }, [page, statusFilter])
+
+    const fetchPromotions = useCallback(async () => {
+        const { data } = await supabase.from('promotions').select('*').order('created_at', { ascending: false })
+        setPromotions(data || [])
+    }, [])
+
+    useEffect(() => {
+        if (activeTab === 'invoices') fetchInvoices()
+        if (activeTab === 'promotions') fetchPromotions()
+    }, [activeTab, fetchInvoices, fetchPromotions])
+
+    const exportCSV = () => {
+        const headers = ['Invoice #', 'Client', 'Amount', 'Status', 'Due Date', 'Created']
+        const rows = invoices.map(i => [i.invoice_number || i.id.slice(0, 8), i.profiles?.full_name || i.profiles?.email || '', `$${i.amount}`, i.status, i.due_date || '', new Date(i.created_at).toLocaleDateString()])
+        const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
+        const blob = new Blob([csv], { type: 'text/csv' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url; a.download = 'invoices.csv'; a.click()
+        URL.revokeObjectURL(url)
+    }
+
+    const totalPages = Math.ceil(total / PAGE_SIZE)
+
+    return (
+        <div className="flex flex-col gap-6">
+            {toast && (
+                <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-semibold text-white ${toast.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
+                    {toast.msg}
+                </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3">
+                <Button variant="outline" icon="download" onClick={exportCSV}>Report</Button>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                    { label: 'Total Revenue', value: `$${stats.totalRevenue.toLocaleString()}`, icon: 'payments', color: 'emerald' },
+                    { label: 'Total Invoices', value: stats.count, icon: 'receipt_long', color: 'blue' },
+                    { label: 'Pending', value: stats.pending, icon: 'pending_actions', color: 'amber' },
+                    { label: 'Overdue', value: stats.overdue, icon: 'warning', color: 'red' },
+                ].map(s => (
+                    <Card key={s.label} className="flex items-start justify-between">
+                        <div>
+                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">{s.label}</p>
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{s.value}</h3>
+                        </div>
+                        <div className={`p-3 rounded-lg ${s.color === 'emerald' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' : s.color === 'blue' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' : s.color === 'amber' ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600' : 'bg-red-50 dark:bg-red-900/20 text-red-600'}`}>
+                            <span className="material-symbols-outlined">{s.icon}</span>
+                        </div>
+                    </Card>
+                ))}
+            </div>
+
+            {/* Tabs */}
+            <div className="border-b border-slate-200 dark:border-slate-700">
+                <nav className="-mb-px flex gap-6">
+                    {[
+                        { id: 'invoices', label: 'Invoices' },
+                        { id: 'promotions', label: 'Promotions' },
+                    ].map(tab => (
+                        <button key={tab.id} onClick={() => { setActiveTab(tab.id) }}
+                            className={`pb-4 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}>
+                            {tab.label}
+                        </button>
+                    ))}
+                </nav>
+            </div>
+
+            {activeTab === 'invoices' && (
+                <>
+                    {/* Filters */}
+                    <Card className="flex flex-col sm:flex-row gap-3 items-center">
+                        <div className="flex gap-2 overflow-x-auto">
+                            {['all', 'paid', 'pending', 'overdue', 'cancelled'].map(s => (
+                                <button key={s} onClick={() => { setStatusFilter(s); setPage(0) }}
+                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap ${statusFilter === s ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 hover:bg-slate-200'} capitalize`}>
+                                    {s === 'all' ? 'All' : s}
+                                </button>
+                            ))}
+                        </div>
+                    </Card>
+
+                    {/* Table */}
+                    <Card className="p-0 overflow-hidden flex flex-col">
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
+                                <thead className="bg-slate-50 dark:bg-slate-800/50">
+                                    <tr>
+                                        {['Invoice', 'Client', 'Amount', 'Status', 'Due Date', 'Created'].map(h => (
+                                            <th key={h} className="px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">{h}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-200 dark:divide-slate-800">
+                                    {loading ? (
+                                        [1, 2, 3, 4].map(i => <tr key={i}><td colSpan={6} className="px-6 py-4"><div className="h-6 animate-pulse rounded bg-slate-100 dark:bg-slate-800" /></td></tr>)
+                                    ) : invoices.length === 0 ? (
+                                        <tr><td colSpan={6} className="px-6 py-16 text-center text-sm text-slate-400">
+                                            <span className="material-symbols-outlined text-[48px] block mb-2">receipt_long</span>
+                                            No invoices found.
+                                        </td></tr>
+                                    ) : invoices.map(inv => (
+                                        <tr key={inv.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                            <td className="px-6 py-4 font-mono text-sm font-semibold text-slate-900 dark:text-white">
+                                                {inv.invoice_number || `#${inv.id.slice(0, 8).toUpperCase()}`}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar size="sm" alt={inv.profiles?.full_name} src={inv.profiles?.avatar_url} />
+                                                    <div>
+                                                        <p className="text-sm font-bold text-slate-900 dark:text-white">{inv.profiles?.full_name || 'Unknown'}</p>
+                                                        <p className="text-xs text-slate-400">{inv.profiles?.email}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 font-bold text-slate-900 dark:text-white">
+                                                ${Number(inv.amount || 0).toFixed(2)} <span className="text-xs font-normal text-slate-400">{inv.currency || 'USD'}</span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`px-2.5 py-1 text-xs font-bold rounded-full border capitalize ${STATUS_COLORS[inv.status] || STATUS_COLORS.draft}`}>{inv.status}</span>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">
+                                                {inv.due_date ? new Date(inv.due_date).toLocaleDateString() : '—'}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">
+                                                {new Date(inv.created_at).toLocaleDateString()}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div className="border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30 px-6 py-4 flex items-center justify-between">
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                                Showing <span className="font-bold text-slate-900 dark:text-white">{Math.min(page * PAGE_SIZE + 1, total)}</span>–<span className="font-bold text-slate-900 dark:text-white">{Math.min((page + 1) * PAGE_SIZE, total)}</span> of <span className="font-bold text-slate-900 dark:text-white">{total}</span>
+                            </p>
+                            <div className="flex gap-1">
+                                <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
+                                    className="px-3 py-2 rounded-l-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 disabled:opacity-40">
+                                    <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+                                </button>
+                                <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}
+                                    className="px-3 py-2 rounded-r-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 disabled:opacity-40">
+                                    <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+                                </button>
+                            </div>
+                        </div>
+                    </Card>
+                </>
+            )}
+
+            {activeTab === 'promotions' && (
+                <Card className="p-0 overflow-hidden">
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+                        <h3 className="font-bold text-slate-900 dark:text-white">Active Promotions</h3>
+                        <a href="/admin/referral-program" className="text-sm text-primary font-semibold hover:underline">Manage →</a>
+                    </div>
+                    <table className="w-full text-left text-sm">
+                        <thead className="bg-slate-50 dark:bg-slate-800">
+                            <tr>
+                                {['Code', 'Discount', 'Redemptions', 'Expires', 'Status'].map(h => (
+                                    <th key={h} className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-slate-500">{h}</th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
+                            {promotions.length === 0 ? (
+                                <tr><td colSpan={5} className="px-6 py-12 text-center text-sm text-slate-400">No promotions created yet.</td></tr>
+                            ) : promotions.map(p => (
+                                <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                    <td className="px-6 py-4 font-mono font-bold text-slate-900 dark:text-white">{p.code}</td>
+                                    <td className="px-6 py-4 font-bold text-primary">{p.discount_percent}% off</td>
+                                    <td className="px-6 py-4 text-slate-600 dark:text-slate-400">{p.redemption_count || 0}{p.max_redemptions ? ` / ${p.max_redemptions}` : ''}</td>
+                                    <td className="px-6 py-4 text-slate-500">{p.expires_at ? new Date(p.expires_at).toLocaleDateString() : 'Never'}</td>
+                                    <td className="px-6 py-4">
+                                        <span className={`px-2.5 py-1 text-xs font-bold rounded-full border capitalize ${p.status === 'active' ? 'bg-green-50 text-green-700 border-green-100' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>{p.status}</span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </Card>
+            )}
+        </div>
+    )
+}

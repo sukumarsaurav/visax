@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ImmiMatch - Client Comparison Tool</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#136dec",
+                        "primary-hover": "#0f5bbd",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101822",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: "Public Sans", sans-serif;
+        }
+        /* Custom scrollbar for horizontal table scrolling if needed */
+        .hide-scrollbar::-webkit-scrollbar {
+            height: 6px;
+        }
+        .hide-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .hide-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark min-h-screen flex flex-col font-display text-[#0d131b]">
+<!-- Top Navigation Bar -->
+<header class="sticky top-0 z-50 bg-slate-50 border-b border-[#e7ecf3] px-4 md:px-10 py-3">
+<div class="max-w-[1280px] mx-auto flex items-center justify-between whitespace-nowrap">
+<div class="flex items-center gap-8">
+<a class="flex items-center gap-4 text-[#0d131b] hover:opacity-80 transition-opacity" href="#">
+<div class="size-8 text-primary">
+<svg fill="currentColor" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M44 11.2727C44 14.0109 39.8386 16.3957 33.69 17.6364C39.8386 18.877 44 21.2618 44 24C44 26.7382 39.8386 29.123 33.69 30.3636C39.8386 31.6043 44 33.9891 44 36.7273C44 40.7439 35.0457 44 24 44C12.9543 44 4 40.7439 4 36.7273C4 33.9891 8.16144 31.6043 14.31 30.3636C8.16144 29.123 4 26.7382 4 24C4 21.2618 8.16144 18.877 14.31 17.6364C8.16144 16.3957 4 14.0109 4 11.2727C4 7.25611 12.9543 4 24 4C35.0457 4 44 7.25611 44 11.2727Z"></path>
+</svg>
+</div>
+<h2 class="text-[#0d131b] text-xl font-bold leading-tight tracking-tight">ImmiMatch</h2>
+</a>
+<div class="hidden lg:flex items-center gap-9 ml-4">
+<a class="text-[#0d131b] text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">Find Professionals</a>
+<a class="text-[#0d131b] text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">Agencies</a>
+<a class="text-[#0d131b] text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">Resources</a>
+<a class="text-[#0d131b] text-sm font-medium leading-normal hover:text-primary transition-colors" href="#">My Case</a>
+</div>
+</div>
+<div class="flex flex-1 justify-end gap-4 sm:gap-8 items-center">
+<label class="hidden md:flex flex-col min-w-40 !h-10 max-w-64">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full relative">
+<div class="absolute left-3 top-1/2 -translate-y-1/2 text-[#4c6c9a]">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+<input class="flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-[#0d131b] focus:outline-0 focus:ring-2 focus:ring-primary/20 border border-transparent bg-[#e7ecf3] focus:bg-white focus:border-primary h-full placeholder:text-[#4c6c9a] px-4 pl-10 text-sm font-normal leading-normal transition-all" placeholder="Search..." value=""/>
+</div>
+</label>
+<div class="flex gap-2">
+<button class="flex size-10 items-center justify-center rounded-full bg-[#e7ecf3] md:hidden">
+<span class="material-symbols-outlined">search</span>
+</button>
+<button class="hidden sm:flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-[#e7ecf3] hover:bg-[#dbe2eb] text-[#0d131b] text-sm font-bold leading-normal transition-colors">
+<span class="truncate">Log In</span>
+</button>
+<div class="size-10 rounded-full bg-slate-200 overflow-hidden border border-slate-300">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="User avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSi2ohHl3ZXbananG-whKtTJKZ8P8JhMT2Q1z2Hl3k4Z115J8FbUYitfPShJ3fzriV-u6txmFpQabOn91UonVWbhvqZXvns4Ah_UPBTI3b4IbsxsF8Z3jq7p9RtVKyiYkRg6LS6vejbQFhaX7_XsEsj8qqTkeP3a-wrdBD0_4MzOE-kbx0O2W1qfKhT_bCyYVgxMatHmBpVcFW01VqHkB-O6Q8YQ4ES1rxVGagZCVjAYsWjnoJRJCdNbZW6tFe8PlZQ1hF3QE4L1A"/>
+</div>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 w-full max-w-[1280px] mx-auto px-4 md:px-10 py-8 flex flex-col gap-6">
+<!-- Page Header & Actions -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2 border-b border-slate-200">
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-2 text-[#4c6c9a] text-sm font-medium">
+<a class="hover:text-primary" href="#">Home</a>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<a class="hover:text-primary" href="#">Search</a>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-[#0d131b]">Compare</span>
+</div>
+<h1 class="text-[#0d131b] text-3xl md:text-4xl font-bold leading-tight">Compare Professionals</h1>
+<p class="text-[#4c6c9a] text-base font-normal max-w-2xl">Reviewing 3 selections side-by-side to find your best match. Compare credentials, fees, and success rates.</p>
+</div>
+<div class="flex items-center gap-3">
+<button class="group flex items-center justify-center rounded-lg h-10 px-4 bg-white border border-[#cfd9e7] hover:border-[#b0bxc9] hover:bg-slate-50 text-[#0d131b] text-sm font-bold shadow-sm transition-all">
+<span class="material-symbols-outlined mr-2 text-[20px] text-[#4c6c9a] group-hover:text-primary">share</span>
+<span>Share</span>
+</button>
+<button class="group flex items-center justify-center rounded-lg h-10 px-4 bg-white border border-[#cfd9e7] hover:border-red-200 hover:bg-red-50 text-red-600 text-sm font-bold shadow-sm transition-all">
+<span class="material-symbols-outlined mr-2 text-[20px]">delete</span>
+<span>Clear All</span>
+</button>
+</div>
+</div>
+<!-- Comparison Controls -->
+<div class="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-xl shadow-sm border border-[#e7ecf3]">
+<div class="flex items-center gap-2">
+<label class="flex items-center gap-3 cursor-pointer group">
+<div class="relative">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</div>
+<span class="text-sm font-medium text-gray-900 group-hover:text-primary transition-colors">Highlight Differences</span>
+</label>
+<div class="h-4 w-px bg-slate-300 mx-2"></div>
+<span class="text-sm text-[#4c6c9a]">3 of 4 slots used</span>
+</div>
+<button class="flex items-center justify-center rounded-lg h-9 px-4 bg-[#e7ecf3] hover:bg-[#dbe2eb] text-[#0d131b] text-sm font-medium transition-colors">
+<span class="material-symbols-outlined mr-1.5 text-[18px]">add</span>
+                Add another professional
+            </button>
+</div>
+<!-- Comparison Table Container -->
+<div class="@container w-full overflow-hidden rounded-xl border border-[#cfd9e7] bg-white shadow-sm">
+<div class="overflow-x-auto hide-scrollbar">
+<table class="w-full min-w-[800px] table-fixed border-collapse">
+<thead>
+<tr class="bg-slate-50 border-b border-[#cfd9e7]">
+<!-- Attributes Column Header -->
+<th class="w-48 md:w-60 p-5 text-left align-bottom">
+<span class="text-xs font-bold uppercase tracking-wider text-[#4c6c9a]">Criteria</span>
+</th>
+<!-- Professional 1 -->
+<th class="w-64 md:w-72 p-0 align-top border-l border-[#cfd9e7] bg-white relative group">
+<div class="absolute top-2 right-2 z-10">
+<button class="p-1 rounded-full text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors" title="Remove">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<div class="p-5 flex flex-col gap-3 items-center text-center h-full">
+<div class="relative w-20 h-20">
+<img alt="Professional headshot of Maria Gonzalez" class="w-full h-full object-cover rounded-full border-2 border-white shadow-md" data-alt="Professional headshot of Maria Gonzalez" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkGTr4CY71WTkqe64uwihCNJ4N-rlbu5suqfu8c9BsZDrjQo1P-C0m3VUbkXa4NE6NzjeU3-HaeZuEnmPNWD2sTqO-xfV3QFr7xnNwDbDKrAgDKe6K6b6xEFEX9cPJYtxif0pBDMF5iOK2fyI1jwWiD61Uqx7BTcNm1LdeENktreb_kocKwJi6KKWlPdefRLS24SqB44wwi03zQPn-hfmcBtmS98I5mOoOmBksp8mGcDW7IfDZZpFhFNtHgHPmZVmVz1hIlNZoryI"/>
+<div class="absolute bottom-0 right-0 bg-green-500 rounded-full p-0.5 border-2 border-white" title="Verified">
+<span class="material-symbols-outlined text-white text-[12px] font-bold block">check</span>
+</div>
+</div>
+<div>
+<h3 class="text-[#0d131b] text-lg font-bold leading-tight">Maria Gonzalez</h3>
+<p class="text-[#4c6c9a] text-sm">Immigration Attorney</p>
+</div>
+<div class="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded text-yellow-700 text-xs font-bold border border-yellow-100">
+<span class="material-symbols-outlined text-[14px] fill-current">local_fire_department</span>
+                                        Best Match
+                                    </div>
+</div>
+</th>
+<!-- Professional 2 -->
+<th class="w-64 md:w-72 p-0 align-top border-l border-[#cfd9e7] bg-white relative group">
+<div class="absolute top-2 right-2 z-10">
+<button class="p-1 rounded-full text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors" title="Remove">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<div class="p-5 flex flex-col gap-3 items-center text-center h-full">
+<div class="relative w-20 h-20">
+<div class="w-full h-full rounded-lg bg-indigo-50 flex items-center justify-center border border-indigo-100 text-indigo-600 font-bold text-2xl">GP</div>
+</div>
+<div>
+<h3 class="text-[#0d131b] text-lg font-bold leading-tight">Global Pathways</h3>
+<p class="text-[#4c6c9a] text-sm">Large Agency</p>
+</div>
+</div>
+</th>
+<!-- Professional 3 -->
+<th class="w-64 md:w-72 p-0 align-top border-l border-[#cfd9e7] bg-white relative group">
+<div class="absolute top-2 right-2 z-10">
+<button class="p-1 rounded-full text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors" title="Remove">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<div class="p-5 flex flex-col gap-3 items-center text-center h-full">
+<div class="relative w-20 h-20">
+<img alt="Professional headshot of David Chen" class="w-full h-full object-cover rounded-full border-2 border-white shadow-md" data-alt="Professional headshot of David Chen" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBXEDdTjdVH58UCazpke1SOnZN3LQwHRzr2vwMXda2oybp4kdcVCFbxADKobXrqGIYBcFoybxgCZeLqFLdgduErtv0FEqq6qF9JVgSx8qiDYFKM3EBbHDje0N5d4XEp_NMI-HwYScBBiLAb4pRo-bSzColoqx6cGwrHDp8JKIYNiEtfk0epp7wu463OG-QJT2S3t0EIGacojZFCbAb83qxTPSSIy1ZJFA0tVCRLdkylvsRwyB6H08feuLrlGUwYKu8cCQreN0MQWDQ"/>
+</div>
+<div>
+<h3 class="text-[#0d131b] text-lg font-bold leading-tight">David Chen</h3>
+<p class="text-[#4c6c9a] text-sm">Visa Consultant</p>
+</div>
+</div>
+</th>
+<!-- Add New Slot -->
+<th class="w-64 md:w-72 p-0 align-top border-l border-[#cfd9e7] bg-slate-50/50">
+<div class="p-5 flex flex-col gap-3 items-center justify-center text-center h-full min-h-[180px]">
+<button class="group flex flex-col items-center gap-3 w-full h-full justify-center p-4 rounded-xl border-2 border-dashed border-slate-300 hover:border-primary hover:bg-primary/5 transition-all cursor-pointer">
+<div class="size-12 rounded-full bg-white border border-slate-200 flex items-center justify-center group-hover:border-primary group-hover:text-primary transition-colors text-slate-400">
+<span class="material-symbols-outlined text-[24px]">add</span>
+</div>
+<span class="text-sm font-medium text-slate-500 group-hover:text-primary">Add Professional</span>
+</button>
+</div>
+</th>
+</tr>
+</thead>
+<tbody class="text-sm">
+<!-- Ratings Row -->
+<tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+<td class="p-5 font-medium text-[#4c6c9a]">Overall Rating</td>
+<td class="p-5 text-center border-l border-slate-100">
+<div class="flex flex-col items-center gap-1">
+<div class="flex items-center text-yellow-400 gap-0.5">
+<span class="material-symbols-outlined text-[18px] fill-current">star</span>
+<span class="material-symbols-outlined text-[18px] fill-current">star</span>
+<span class="material-symbols-outlined text-[18px] fill-current">star</span>
+<span class="material-symbols-outlined text-[18px] fill-current">star</span>
+<span class="material-symbols-outlined text-[18px] fill-current">star</span>
+</div>
+<span class="text-xs font-semibold text-[#0d131b]">5.0 <span class="text-[#4c6c9a] font-normal">(120 reviews)</span></span>
+</div>
+</td>
+<td class="p-5 text-center border-l border-slate-100">
+<div class="flex flex-col items-center gap-1">
+<div class="flex items-center text-yellow-400 gap-0.5">
+<span class="material-symbols-outlined text-[18px] fill-current">star</span>
+<span class="material-symbols-outlined text-[18px] fill-current">star</span>
+<span class="material-symbols-outlined text-[18px] fill-current">star</span>
+<span class="material-symbols-outlined text-[18px] fill-current">star</span>
+<span class="material-symbols-outlined text-[18px] fill-current text-slate-300">star</span>
+</div>
+<span class="text-xs font-semibold text-[#0d131b]">4.2 <span class="text-[#4c6c9a] font-normal">(85 reviews)</span></span>
+</div>
+</td>
+<td class="p-5 text-center border-l border-slate-100">
+<div class="flex flex-col items-center gap-1">
+<div class="flex items-center text-yellow-400 gap-0.5">
+<span class="material-symbols-outlined text-[18px] fill-current">star</span>
+<span class="material-symbols-outlined text-[18px] fill-current">star</span>
+<span class="material-symbols-outlined text-[18px] fill-current">star</span>
+<span class="material-symbols-outlined text-[18px] fill-current">star</span>
+<span class="material-symbols-outlined text-[18px] fill-current">star_half</span>
+</div>
+<span class="text-xs font-semibold text-[#0d131b]">4.8 <span class="text-[#4c6c9a] font-normal">(42 reviews)</span></span>
+</div>
+</td>
+<td class="p-5 border-l border-slate-100 bg-slate-50/30"></td>
+</tr>
+<!-- Experience Row -->
+<tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+<td class="p-5 font-medium text-[#4c6c9a]">Experience</td>
+<td class="p-5 text-center border-l border-slate-100 font-medium text-[#0d131b]">12 Years</td>
+<td class="p-5 text-center border-l border-slate-100 font-medium text-[#0d131b]">20+ Years</td>
+<td class="p-5 text-center border-l border-slate-100 font-medium text-[#0d131b]">5 Years</td>
+<td class="p-5 border-l border-slate-100 bg-slate-50/30"></td>
+</tr>
+<!-- Services Row -->
+<tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+<td class="p-5 font-medium text-[#4c6c9a]">Primary Services</td>
+<td class="p-5 text-center border-l border-slate-100">
+<div class="flex flex-wrap gap-2 justify-center">
+<span class="px-2 py-1 bg-slate-100 text-[#4c6c9a] text-xs rounded-md">Family Visas</span>
+<span class="px-2 py-1 bg-slate-100 text-[#4c6c9a] text-xs rounded-md">Green Cards</span>
+<span class="px-2 py-1 bg-slate-100 text-[#4c6c9a] text-xs rounded-md">Citizenship</span>
+</div>
+</td>
+<td class="p-5 text-center border-l border-slate-100">
+<div class="flex flex-wrap gap-2 justify-center">
+<span class="px-2 py-1 bg-slate-100 text-[#4c6c9a] text-xs rounded-md">H1-B</span>
+<span class="px-2 py-1 bg-slate-100 text-[#4c6c9a] text-xs rounded-md">Corporate</span>
+<span class="px-2 py-1 bg-slate-100 text-[#4c6c9a] text-xs rounded-md">Asylum</span>
+</div>
+</td>
+<td class="p-5 text-center border-l border-slate-100">
+<div class="flex flex-wrap gap-2 justify-center">
+<span class="px-2 py-1 bg-slate-100 text-[#4c6c9a] text-xs rounded-md">Student Visas</span>
+<span class="px-2 py-1 bg-slate-100 text-[#4c6c9a] text-xs rounded-md">Tourist</span>
+</div>
+</td>
+<td class="p-5 border-l border-slate-100 bg-slate-50/30"></td>
+</tr>
+<!-- Fees Row (Highlighted) -->
+<tr class="border-b border-slate-100 bg-yellow-50/40 relative">
+<td class="p-5 font-medium text-[#4c6c9a]">
+                                Consultation Fee
+                                <span class="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full bg-yellow-100 text-yellow-600 text-[10px]" title="Difference highlighted">
+<span class="material-symbols-outlined text-[10px]">priority_high</span>
+</span>
+</td>
+<td class="p-5 text-center border-l border-slate-100">
+<span class="text-lg font-bold text-[#0d131b]">$150</span>
+<span class="text-xs text-[#4c6c9a] block">per hour</span>
+</td>
+<td class="p-5 text-center border-l border-slate-100">
+<span class="text-lg font-bold text-[#0d131b]">$200</span>
+<span class="text-xs text-[#4c6c9a] block">flat fee</span>
+</td>
+<td class="p-5 text-center border-l border-slate-100">
+<span class="text-lg font-bold text-green-600">Free</span>
+<span class="text-xs text-[#4c6c9a] block">15 mins</span>
+</td>
+<td class="p-5 border-l border-slate-100 bg-slate-50/30"></td>
+</tr>
+<!-- Languages Row -->
+<tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+<td class="p-5 font-medium text-[#4c6c9a]">Languages</td>
+<td class="p-5 text-center border-l border-slate-100 text-[#0d131b]">English, Spanish</td>
+<td class="p-5 text-center border-l border-slate-100 text-[#0d131b]">English, French, Mandarin</td>
+<td class="p-5 text-center border-l border-slate-100 text-[#0d131b]">English, Mandarin</td>
+<td class="p-5 border-l border-slate-100 bg-slate-50/30"></td>
+</tr>
+<!-- Success Rate Row -->
+<tr class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+<td class="p-5 font-medium text-[#4c6c9a]">Success Rate</td>
+<td class="p-5 text-center border-l border-slate-100">
+<div class="flex items-center gap-2 justify-center">
+<div class="w-16 h-2 bg-slate-200 rounded-full overflow-hidden">
+<div class="h-full bg-green-500 rounded-full" style="width: 98%"></div>
+</div>
+<span class="text-sm font-bold text-[#0d131b]">98%</span>
+</div>
+</td>
+<td class="p-5 text-center border-l border-slate-100">
+<div class="flex items-center gap-2 justify-center">
+<div class="w-16 h-2 bg-slate-200 rounded-full overflow-hidden">
+<div class="h-full bg-green-500 rounded-full" style="width: 95%"></div>
+</div>
+<span class="text-sm font-bold text-[#0d131b]">95%</span>
+</div>
+</td>
+<td class="p-5 text-center border-l border-slate-100">
+<div class="flex items-center gap-2 justify-center">
+<div class="w-16 h-2 bg-slate-200 rounded-full overflow-hidden">
+<div class="h-full bg-green-500 rounded-full" style="width: 92%"></div>
+</div>
+<span class="text-sm font-bold text-[#0d131b]">92%</span>
+</div>
+</td>
+<td class="p-5 border-l border-slate-100 bg-slate-50/30"></td>
+</tr>
+<!-- Call to Action Footer -->
+<tr class="bg-slate-50">
+<td class="p-5"></td>
+<td class="p-5 border-l border-slate-200">
+<div class="flex flex-col gap-2">
+<button class="w-full h-10 bg-primary hover:bg-primary-hover text-white rounded-lg font-bold text-sm transition-colors shadow-sm">Book Consultation</button>
+<button class="w-full h-9 bg-white border border-[#cfd9e7] hover:bg-slate-50 text-[#0d131b] rounded-lg font-medium text-sm transition-colors">View Profile</button>
+</div>
+</td>
+<td class="p-5 border-l border-slate-200">
+<div class="flex flex-col gap-2">
+<button class="w-full h-10 bg-primary hover:bg-primary-hover text-white rounded-lg font-bold text-sm transition-colors shadow-sm">Book Consultation</button>
+<button class="w-full h-9 bg-white border border-[#cfd9e7] hover:bg-slate-50 text-[#0d131b] rounded-lg font-medium text-sm transition-colors">View Profile</button>
+</div>
+</td>
+<td class="p-5 border-l border-slate-200">
+<div class="flex flex-col gap-2">
+<button class="w-full h-10 bg-primary hover:bg-primary-hover text-white rounded-lg font-bold text-sm transition-colors shadow-sm">Book Consultation</button>
+<button class="w-full h-9 bg-white border border-[#cfd9e7] hover:bg-slate-50 text-[#0d131b] rounded-lg font-medium text-sm transition-colors">View Profile</button>
+</div>
+</td>
+<td class="p-5 border-l border-slate-200 bg-slate-50/30"></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Sticky Footer for Mobile (Optional, hidden on Desktop) -->
+<div class="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-40">
+<button class="w-full h-12 bg-primary text-white rounded-lg font-bold text-base shadow-lg">
+                View Best Match (Maria Gonzalez)
+            </button>
+</div>
+</main>
+</body></html>

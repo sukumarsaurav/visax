@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Email Verification</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;family=Noto+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#136dec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101822",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"],
+                        "body": ["Noto Sans", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-white antialiased min-h-screen flex flex-col transition-colors duration-200">
+<!-- Header / Navbar -->
+<nav class="w-full border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#151f2b]">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex items-center justify-between h-16">
+<!-- Branding -->
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center size-8 rounded bg-primary text-white shadow-sm">
+<span class="material-symbols-outlined text-xl">security</span>
+</div>
+<span class="text-lg font-bold tracking-tight text-slate-900 dark:text-white">Immigrant Marketplace</span>
+</div>
+<!-- Support Link -->
+<div class="hidden md:flex items-center gap-6">
+<a class="text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors" href="#">Help</a>
+</div>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8">
+<!-- Verification Card -->
+<div class="w-full max-w-[480px] bg-white dark:bg-[#151f2b] rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 p-6 sm:p-10 flex flex-col items-center text-center relative overflow-hidden group/card">
+<!-- Decorative Top Gradient -->
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50"></div>
+<!-- Icon -->
+<div class="mb-6 rounded-full bg-primary/10 p-4 inline-flex items-center justify-center ring-1 ring-primary/20">
+<span class="material-symbols-outlined text-4xl text-primary">mark_email_read</span>
+</div>
+<!-- Page Heading -->
+<h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-3">Verify your email</h1>
+<p class="text-slate-500 dark:text-slate-400 mb-8 leading-relaxed text-sm sm:text-base">
+                We've sent a 6-digit verification code to <br/>
+<span class="font-bold text-slate-900 dark:text-white">alex.morgan@example.com</span>.
+            </p>
+<!-- Confirmation Code Input -->
+<div class="w-full mb-8">
+<fieldset class="flex gap-2 sm:gap-3 justify-center">
+<!-- Inline Javascript handles auto-focus movement for better UX -->
+<input aria-label="Digit 1" autocomplete="one-time-code" autofocus="" class="w-10 h-12 sm:w-12 sm:h-14 text-center text-xl font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:border-primary focus:ring-4 focus:ring-primary/10 focus:bg-white dark:focus:bg-slate-800 outline-none transition-all placeholder-transparent dark:text-white shadow-sm" inputmode="numeric" maxlength="1" oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value.length &gt;= 1) { if(this.nextElementSibling) this.nextElementSibling.focus(); }" onkeydown="if(event.key==='Backspace' &amp;&amp; !this.value) { if(this.previousElementSibling) this.previousElementSibling.focus(); }" pattern="[0-9]*" type="text"/>
+<input aria-label="Digit 2" autocomplete="one-time-code" class="w-10 h-12 sm:w-12 sm:h-14 text-center text-xl font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:border-primary focus:ring-4 focus:ring-primary/10 focus:bg-white dark:focus:bg-slate-800 outline-none transition-all placeholder-transparent dark:text-white shadow-sm" inputmode="numeric" maxlength="1" oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value.length &gt;= 1) { if(this.nextElementSibling) this.nextElementSibling.focus(); }" onkeydown="if(event.key==='Backspace' &amp;&amp; !this.value) { if(this.previousElementSibling) this.previousElementSibling.focus(); }" pattern="[0-9]*" type="text"/>
+<input aria-label="Digit 3" autocomplete="one-time-code" class="w-10 h-12 sm:w-12 sm:h-14 text-center text-xl font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:border-primary focus:ring-4 focus:ring-primary/10 focus:bg-white dark:focus:bg-slate-800 outline-none transition-all placeholder-transparent dark:text-white shadow-sm" inputmode="numeric" maxlength="1" oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value.length &gt;= 1) { if(this.nextElementSibling) this.nextElementSibling.focus(); }" onkeydown="if(event.key==='Backspace' &amp;&amp; !this.value) { if(this.previousElementSibling) this.previousElementSibling.focus(); }" pattern="[0-9]*" type="text"/>
+<input aria-label="Digit 4" autocomplete="one-time-code" class="w-10 h-12 sm:w-12 sm:h-14 text-center text-xl font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:border-primary focus:ring-4 focus:ring-primary/10 focus:bg-white dark:focus:bg-slate-800 outline-none transition-all placeholder-transparent dark:text-white shadow-sm" inputmode="numeric" maxlength="1" oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value.length &gt;= 1) { if(this.nextElementSibling) this.nextElementSibling.focus(); }" onkeydown="if(event.key==='Backspace' &amp;&amp; !this.value) { if(this.previousElementSibling) this.previousElementSibling.focus(); }" pattern="[0-9]*" type="text"/>
+<input aria-label="Digit 5" autocomplete="one-time-code" class="w-10 h-12 sm:w-12 sm:h-14 text-center text-xl font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:border-primary focus:ring-4 focus:ring-primary/10 focus:bg-white dark:focus:bg-slate-800 outline-none transition-all placeholder-transparent dark:text-white shadow-sm" inputmode="numeric" maxlength="1" oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value.length &gt;= 1) { if(this.nextElementSibling) this.nextElementSibling.focus(); }" onkeydown="if(event.key==='Backspace' &amp;&amp; !this.value) { if(this.previousElementSibling) this.previousElementSibling.focus(); }" pattern="[0-9]*" type="text"/>
+<input aria-label="Digit 6" autocomplete="one-time-code" class="w-10 h-12 sm:w-12 sm:h-14 text-center text-xl font-bold rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:border-primary focus:ring-4 focus:ring-primary/10 focus:bg-white dark:focus:bg-slate-800 outline-none transition-all placeholder-transparent dark:text-white shadow-sm" inputmode="numeric" maxlength="1" oninput="this.value=this.value.replace(/[^0-9]/g,''); if(this.value.length &gt;= 1) { if(this.nextElementSibling) this.nextElementSibling.focus(); }" onkeydown="if(event.key==='Backspace' &amp;&amp; !this.value) { if(this.previousElementSibling) this.previousElementSibling.focus(); }" pattern="[0-9]*" type="text"/>
+</fieldset>
+<p class="mt-3 text-xs text-slate-400 dark:text-slate-500">Please enter numbers only</p>
+</div>
+<!-- Single Button: Verify -->
+<button class="w-full h-12 bg-primary hover:bg-[#1162d4] active:bg-[#0e56bb] text-white font-bold rounded-lg transition-all duration-200 shadow-lg shadow-primary/25 flex items-center justify-center gap-2 mb-8 group">
+<span>Verify Email</span>
+<span class="material-symbols-outlined text-sm transition-transform duration-300 group-hover:translate-x-1">arrow_forward</span>
+</button>
+<!-- Footer Actions & Timer -->
+<div class="flex flex-col gap-4 w-full border-t border-slate-100 dark:border-slate-800 pt-6">
+<!-- Resend Row -->
+<div class="flex flex-wrap items-center justify-center sm:justify-between text-sm gap-2">
+<span class="text-slate-500 dark:text-slate-400">Didn't receive the code?</span>
+<button class="font-bold text-primary hover:text-primary/80 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+<span>Resend Code</span>
+<!-- Integrated Timer -->
+<span class="inline-flex items-center justify-center rounded-md px-2 py-1 text-xs font-mono font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 ring-1 ring-slate-200 dark:ring-slate-700">
+                            00:30
+                        </span>
+</button>
+</div>
+<!-- Change Email Link -->
+<div class="flex items-center justify-center pt-2">
+<a class="group flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-lg text-slate-400 group-hover:text-primary transition-colors">edit</span>
+                        Entered wrong email? Change address
+                    </a>
+</div>
+</div>
+</div>
+<!-- Safe Footnote -->
+<div class="mt-8 flex items-center justify-center gap-6 text-sm text-slate-400 dark:text-slate-500">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">lock</span>
+<span>Secure SSL Connection</span>
+</div>
+</div>
+</main>
+</body></html>

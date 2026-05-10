@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Agency Team Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#136dec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101822",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-white h-screen flex overflow-hidden">
+<!-- Sidebar -->
+<aside class="w-64 bg-white dark:bg-[#151f2b] border-r border-slate-200 dark:border-slate-800 flex-shrink-0 flex flex-col justify-between hidden md:flex">
+<div class="flex flex-col gap-6 p-4">
+<!-- Brand -->
+<div class="flex gap-3 items-center px-2">
+<div class="bg-center bg-no-repeat bg-cover rounded-xl size-10 shadow-sm" data-alt="Abstract blue logo for immigration agency" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDvkexbNlj86JAyx5xTZ9dg8JcPsEUDqzm22J8H7hU9OF4HXQAYD50OFlhSY3aJEu_ICuj62XfuIjRMROIBmHRox7YwgzRzuBHFvWyTgrh_BUQzasPpHgUT7vfr9QeCms6MfRcnfpw5l52EJweXHIlvnvD-ug1ckWDoyrAkMavp0T8KTt8PGV1Qh7CdZK4LTdb-Td6DnpdTrZ_RdN2LM6tVA6XAsBQOlR6FBP3hVx_ufcyuYdXCFB0YHqSpaLCMdj1nLpufToaGXHo");'></div>
+<div class="flex flex-col">
+<h1 class="text-slate-900 dark:text-white text-base font-bold leading-tight">Immigration Agcy</h1>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium">Admin Console</p>
+</div>
+</div>
+<!-- Navigation -->
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">dashboard</span>
+<p class="text-sm font-medium">Dashboard</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary" href="#">
+<span class="material-symbols-outlined text-primary fill-1">group</span>
+<p class="text-sm font-bold">Team</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">work</span>
+<p class="text-sm font-medium">Cases</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">calendar_today</span>
+<p class="text-sm font-medium">Schedule</p>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">settings</span>
+<p class="text-sm font-medium">Settings</p>
+</a>
+</nav>
+</div>
+<!-- User Profile -->
+<div class="p-4 border-t border-slate-200 dark:border-slate-800">
+<div class="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer">
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-8" data-alt="Portrait of the current user admin" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDe2vigBFTUA3fD5sFIaDd9VaeChFvN3CbsCET6Lms5B4g0gbrKoKmfz_k9OB_zAlttXVm98TXYH5k_g_5x44aNhXJkAPROpFcvENIYOtLdtdcjmYtyyGG-s5aqNNO4s5YFXebcFI5yy9yGjr2iay9jHPPrqdG5SD15jKqWTvKd_qdy6ixZEqnN9K8HNVHuRpJ1YCAsQ4-tPzcC9xK8kq1YD4w0DzUjihr_muyYoe9LnQf10-whhOhMapXzXyIhxjZ9Ggg17udeuGc");'></div>
+<div class="flex flex-col flex-1 min-w-0">
+<p class="text-slate-900 dark:text-white text-sm font-bold truncate">Alex Morgan</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs truncate">admin@agency.com</p>
+</div>
+<span class="material-symbols-outlined text-slate-400 text-[20px]">expand_more</span>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col h-full overflow-hidden relative">
+<!-- Top Header Area -->
+<header class="bg-white dark:bg-[#151f2b] border-b border-slate-200 dark:border-slate-800 flex-shrink-0 z-10">
+<div class="max-w-7xl mx-auto px-6 py-6 flex flex-wrap justify-between items-center gap-4">
+<div class="flex flex-col gap-1">
+<h2 class="text-slate-900 dark:text-white text-2xl font-black tracking-tight">Team Management</h2>
+<p class="text-slate-500 dark:text-slate-400 text-sm">Manage your agency roster, schedules, and permissions.</p>
+</div>
+<button class="flex items-center gap-2 bg-primary hover:bg-blue-600 text-white text-sm font-bold px-5 py-2.5 rounded-lg transition-colors shadow-sm shadow-blue-200 dark:shadow-none">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span>Invite New Member</span>
+</button>
+</div>
+<!-- Tabs -->
+<div class="max-w-7xl mx-auto px-6">
+<div class="flex gap-8">
+<a class="flex items-center gap-2 border-b-[3px] border-primary text-primary pb-3 pt-2" href="#">
+<span class="material-symbols-outlined text-[20px]">list_alt</span>
+<p class="text-sm font-bold">Team Roster</p>
+</a>
+<a class="flex items-center gap-2 border-b-[3px] border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 pb-3 pt-2 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">calendar_month</span>
+<p class="text-sm font-bold">Schedule View</p>
+</a>
+<a class="flex items-center gap-2 border-b-[3px] border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 pb-3 pt-2 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">forum</span>
+<p class="text-sm font-bold">Internal Messages</p>
+</a>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- Central Scrollable Area -->
+<div class="flex-1 overflow-y-auto p-6 md:p-8">
+<div class="max-w-5xl mx-auto flex flex-col gap-8">
+<!-- Stats Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="flex flex-col p-5 bg-white dark:bg-[#1e2936] rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Total Members</p>
+<div class="bg-blue-50 dark:bg-blue-900/20 p-1.5 rounded-lg">
+<span class="material-symbols-outlined text-primary text-[20px]">groups</span>
+</div>
+</div>
+<p class="text-slate-900 dark:text-white text-3xl font-bold">12</p>
+<p class="text-emerald-600 text-xs font-bold mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+                                +1 this week
+                            </p>
+</div>
+<div class="flex flex-col p-5 bg-white dark:bg-[#1e2936] rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Active Cases</p>
+<div class="bg-purple-50 dark:bg-purple-900/20 p-1.5 rounded-lg">
+<span class="material-symbols-outlined text-purple-600 text-[20px]">folder_shared</span>
+</div>
+</div>
+<p class="text-slate-900 dark:text-white text-3xl font-bold">45</p>
+<p class="text-emerald-600 text-xs font-bold mt-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+                                +5 this week
+                            </p>
+</div>
+<div class="flex flex-col p-5 bg-white dark:bg-[#1e2936] rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Pending Invites</p>
+<div class="bg-orange-50 dark:bg-orange-900/20 p-1.5 rounded-lg">
+<span class="material-symbols-outlined text-orange-500 text-[20px]">mail</span>
+</div>
+</div>
+<p class="text-slate-900 dark:text-white text-3xl font-bold">2</p>
+<p class="text-slate-400 text-xs font-medium mt-1">Waiting for acceptance</p>
+</div>
+</div>
+<!-- Filter & Actions -->
+<div class="flex flex-col sm:flex-row gap-4 justify-between items-center">
+<div class="relative w-full sm:max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+<input class="w-full bg-white dark:bg-[#1e2936] border border-slate-200 dark:border-slate-700 rounded-lg pl-10 pr-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-2 focus:ring-primary focus:border-transparent outline-none shadow-sm" placeholder="Search members by name, email or role..." type="text"/>
+</div>
+<div class="flex gap-2 w-full sm:w-auto">
+<button class="flex items-center gap-2 px-3 py-2.5 bg-white dark:bg-[#1e2936] border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex-1 justify-center sm:flex-none">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+                                Filter
+                            </button>
+<button class="flex items-center gap-2 px-3 py-2.5 bg-white dark:bg-[#1e2936] border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex-1 justify-center sm:flex-none">
+<span class="material-symbols-outlined text-[20px]">download</span>
+                                Export
+                            </button>
+</div>
+</div>
+<!-- Team Roster Table -->
+<div class="bg-white dark:bg-[#1e2936] rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50 dark:bg-[#151f2b] border-b border-slate-200 dark:border-slate-700">
+<th class="py-4 px-6 text-xs font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider">Member</th>
+<th class="py-4 px-6 text-xs font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider">Role</th>
+<th class="py-4 px-6 text-xs font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider">Status</th>
+<th class="py-4 px-6 text-xs font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider">Availability</th>
+<th class="py-4 px-6 text-xs font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+<!-- Row 1 -->
+<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-10 ring-2 ring-white dark:ring-slate-700" data-alt="Photo of Sarah Jenkins" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCzflGvDX8UjjvIaUg2ieWAgrhMeXmgQGHMSHA-HX9WWfEs6RQay_xLw73vNyl4soKwuYNIwYlX_HUeK3viC58rbmHxMIuNOuTsttvd_j7vCIY8TY7r7E00dZQdSRgW9SMpX6y5qsSj8UlSOyJL4s6VsXvLJYvGa5Wz7naHLC7dVx0KlqKP2IvYfRHPgRFL27sPz0LAH1V5zNUILgr6uHWzx05RyjHgZ54KrRNx7NsBFC-XVe3WUd9-AvK5uz42EH9-gRBrJHdj148");'></div>
+<div class="flex flex-col">
+<p class="text-sm font-bold text-slate-900 dark:text-white">Sarah Jenkins</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">sarah.j@agency.com</p>
+</div>
+</div>
+</td>
+<td class="py-4 px-6">
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-700 dark:text-slate-200">Senior Consultant</span>
+<span class="text-xs text-slate-400">Immigration Law</span>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+<span class="size-1.5 rounded-full bg-emerald-500"></span>
+                                                Active
+                                            </span>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center gap-2 text-slate-600 dark:text-slate-400 text-sm">
+<span class="material-symbols-outlined text-[18px] text-emerald-500">check_circle</span>
+                                                Available Today
+                                            </div>
+</td>
+<td class="py-4 px-6 text-right">
+<button class="text-slate-400 hover:text-primary transition-colors p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-10 ring-2 ring-white dark:ring-slate-700" data-alt="Photo of Michael Chen" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCvynNWB7WI6w_7_8Qg_RUwa7ovfhsg42wx4Mh5m5ejPjolE3XsHDZtzx6FznYUj0eF6bvKdswyVU0e30LbrixCt2uGQeT-y3FqSykuDEGEQImf956AQ7kXPtqc5jy-rYLNGQF1jpoZVdjDGD84SEHRi15rSpRtiVicZ498Wr0F6-s_rZvqiEWb0obKd1RluSuovkt7Jgos7R7RBnLaB94V6GZ77UBfBss9hVJzV2HKZLdgk-o37yO_hz21hy0YIl9L_UKkdTyIkAw");'></div>
+<div class="flex flex-col">
+<p class="text-sm font-bold text-slate-900 dark:text-white">Michael Chen</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">m.chen@agency.com</p>
+</div>
+</div>
+</td>
+<td class="py-4 px-6">
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-700 dark:text-slate-200">Case Manager</span>
+<span class="text-xs text-slate-400">Visa Processing</span>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+<span class="size-1.5 rounded-full bg-emerald-500"></span>
+                                                Active
+                                            </span>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center gap-2 text-slate-600 dark:text-slate-400 text-sm">
+<span class="material-symbols-outlined text-[18px] text-amber-500">schedule</span>
+                                                In Meeting (until 2pm)
+                                            </div>
+</td>
+<td class="py-4 px-6 text-right">
+<button class="text-slate-400 hover:text-primary transition-colors p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full size-10 ring-2 ring-white dark:ring-slate-700 text-sm font-bold">
+                                                    RF
+                                                </div>
+<div class="flex flex-col">
+<p class="text-sm font-bold text-slate-900 dark:text-white">Robert Fox</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">robert.fox@gmail.com</p>
+</div>
+</div>
+</td>
+<td class="py-4 px-6">
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-700 dark:text-slate-200">Junior Consultant</span>
+<span class="text-xs text-slate-400">General Inquiry</span>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+<span class="size-1.5 rounded-full bg-slate-400"></span>
+                                                Pending Invite
+                                            </span>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center gap-2 text-slate-400 text-sm italic">
+                                                --
+                                            </div>
+</td>
+<td class="py-4 px-6 text-right">
+<div class="flex justify-end gap-2">
+<button class="text-primary text-xs font-bold hover:underline px-2 py-1">Resend</button>
+<button class="text-slate-400 hover:text-primary transition-colors p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-10 ring-2 ring-white dark:ring-slate-700" data-alt="Photo of Emily Davis" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuC8LuJUxyr8qo2r9ZiBROILrAwBZ14k9Qz5bOS96mI9OkKYbU0w2lawt4M4II5imCzjQSZvB07X270_uA-tvXom5WIN_xXbp1OYJBVNoU5U0PWs4ezP7kQKE8ykuWwIkhx7fkSZIAVQcLQmCF_ukwp35VJVEQGMTvFhgZR6kaXRsmoJlMglGkvv0ePaan4JnDRJjdrueBy8thBsJenhxa06cHya2ADLwwyLCHuqVbntfeEjmL1fYk4LdC_lLwU39UQa4wnJCMWZD5Q");'></div>
+<div class="flex flex-col">
+<p class="text-sm font-bold text-slate-900 dark:text-white">Emily Davis</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">emily.d@agency.com</p>
+</div>
+</div>
+</td>
+<td class="py-4 px-6">
+<div class="flex flex-col">
+<span class="text-sm font-medium text-slate-700 dark:text-slate-200">Paralegal</span>
+<span class="text-xs text-slate-400">Documentation</span>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+<span class="size-1.5 rounded-full bg-amber-500"></span>
+                                                Away
+                                            </span>
+</td>
+<td class="py-4 px-6">
+<div class="flex items-center gap-2 text-slate-600 dark:text-slate-400 text-sm">
+<span class="material-symbols-outlined text-[18px] text-slate-400">event_busy</span>
+                                                On Leave
+                                            </div>
+</td>
+<td class="py-4 px-6 text-right">
+<button class="text-slate-400 hover:text-primary transition-colors p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="bg-slate-50 dark:bg-[#151f2b] px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center">
+<p class="text-xs text-slate-500 dark:text-slate-400">Showing 1-4 of 12 members</p>
+<div class="flex gap-2">
+<button class="px-3 py-1 text-xs font-medium bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 disabled:opacity-50" disabled="">Previous</button>
+<button class="px-3 py-1 text-xs font-medium bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300">Next</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Sidebar (Contextual Panel) -->
+<aside class="w-80 border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-[#151f2b] hidden xl:flex flex-col overflow-y-auto">
+<div class="p-6 flex flex-col gap-8">
+<!-- Today's Schedule Widget -->
+<div class="flex flex-col gap-4">
+<div class="flex justify-between items-center">
+<h3 class="text-slate-900 dark:text-white font-bold text-base">Team Schedule</h3>
+<a class="text-primary text-xs font-bold hover:underline" href="#">View All</a>
+</div>
+<div class="flex flex-col gap-3">
+<div class="p-3 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-[#1e2936] flex gap-3 items-start">
+<div class="flex flex-col items-center min-w-[3rem]">
+<span class="text-xs font-bold text-slate-500">09:00</span>
+<span class="text-[10px] text-slate-400">AM</span>
+</div>
+<div class="flex flex-col">
+<p class="text-sm font-bold text-slate-800 dark:text-slate-200">Daily Standup</p>
+<p class="text-xs text-slate-500">All Members • Zoom</p>
+<div class="flex -space-x-2 mt-2">
+<div class="size-6 rounded-full bg-slate-300 border border-white dark:border-slate-800 bg-cover" data-alt="Avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuATbvv-IWmq0WjsxmKZ9m7vIgpSWh9Ff1asy89Z0Nd4OYnAa35ktDGKUa4lyPHTtoJbm0m7mAfYIykg8EIcNvukHHrZ3xggJfzAbX32VmMa0yWGkxwv6FFD0nI5S9RruQBSBSD4DSU62pc9LIKQuaQ6i6DPFscg_0y115jZpegMjlzoA6yZecvOHno7hsns8yuVdajKBUwQqpsuURC9LBZH4yzZzUEyCsK8CjnBsOAssdVE8FDwknFP_uEGIA34fLwAL3uQdRD9kus");'></div>
+<div class="size-6 rounded-full bg-slate-300 border border-white dark:border-slate-800 bg-cover" data-alt="Avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAwdKfy_OXX6iCMCjssBaL0IBNw0x2RpCPUP2Lb-y7RLh2n-Y85paLy44k2OrW49S1BXrf_fUu4IWkaJmxNTezzpC5iterjwQzA_n4DWloIlmoFRjlO3b3M5APjS0B2z0ZCUwijOpvfk2qKSvQ_JPYfrrwujo9oR-4zgP5-DjVd4Sbh7W9c1JKMD1xKZ453J5Nl4Nnvb5h4mRH0fF9b7u6Yyokc6EKtLcHddmigNzZ2IWeJcAhTE9zItwCt1q5gtIAKYho0-g-dEXg");'></div>
+<div class="size-6 rounded-full bg-slate-100 border border-white dark:border-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-500">+8</div>
+</div>
+</div>
+</div>
+<div class="p-3 rounded-lg border-l-4 border-l-purple-500 bg-purple-50 dark:bg-purple-900/10 flex gap-3 items-start">
+<div class="flex flex-col items-center min-w-[3rem]">
+<span class="text-xs font-bold text-purple-700 dark:text-purple-400">11:30</span>
+<span class="text-[10px] text-purple-600/70 dark:text-purple-400/70">AM</span>
+</div>
+<div class="flex flex-col">
+<p class="text-sm font-bold text-slate-800 dark:text-slate-200">Client Onboarding</p>
+<p class="text-xs text-slate-500">Michael Chen • Room A</p>
+</div>
+</div>
+<div class="p-3 rounded-lg border-l-4 border-l-emerald-500 bg-emerald-50 dark:bg-emerald-900/10 flex gap-3 items-start">
+<div class="flex flex-col items-center min-w-[3rem]">
+<span class="text-xs font-bold text-emerald-700 dark:text-emerald-400">02:00</span>
+<span class="text-[10px] text-emerald-600/70 dark:text-emerald-400/70">PM</span>
+</div>
+<div class="flex flex-col">
+<p class="text-sm font-bold text-slate-800 dark:text-slate-200">Case Review: H-1B</p>
+<p class="text-xs text-slate-500">Sarah Jenkins • Room B</p>
+</div>
+</div>
+</div>
+</div>
+<div class="h-px bg-slate-200 dark:bg-slate-800 w-full"></div>
+<!-- Quick Message Widget -->
+<div class="flex flex-col gap-4 flex-1">
+<div class="flex justify-between items-center">
+<h3 class="text-slate-900 dark:text-white font-bold text-base">Quick Message</h3>
+</div>
+<div class="bg-slate-50 dark:bg-[#1e2936] rounded-xl border border-slate-200 dark:border-slate-700 p-4 flex flex-col gap-3">
+<div>
+<label class="text-xs font-bold text-slate-500 mb-1 block">To:</label>
+<select class="w-full bg-white dark:bg-[#151f2b] border border-slate-200 dark:border-slate-700 rounded-lg py-1.5 px-3 text-sm text-slate-700 dark:text-slate-200 focus:ring-primary focus:border-primary">
+<option>All Team Members</option>
+<option>Sarah Jenkins</option>
+<option>Michael Chen</option>
+</select>
+</div>
+<div>
+<textarea class="w-full bg-white dark:bg-[#151f2b] border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm text-slate-700 dark:text-slate-200 focus:ring-primary focus:border-primary h-24 resize-none" placeholder="Type your message here..."></textarea>
+</div>
+<div class="flex justify-between items-center mt-1">
+<button class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-full">
+<span class="material-symbols-outlined text-[20px]">attach_file</span>
+</button>
+<button class="bg-primary hover:bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-lg flex items-center gap-1 transition-colors">
+                                    Send
+                                    <span class="material-symbols-outlined text-[16px]">send</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</aside>
+</div>
+</main>
+</body></html>

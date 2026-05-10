@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Admin Analytics &amp; Reporting</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+            extend: {
+                colors: {
+                "primary": "#136dec",
+                "primary-light": "#e0edff",
+                "background-light": "#f6f7f8",
+                "background-dark": "#101822",
+                "surface-light": "#ffffff",
+                "surface-dark": "#1a2432",
+                "text-primary-light": "#0d131b",
+                "text-secondary-light": "#4c6c9a",
+                },
+                fontFamily: {
+                "display": ["Manrope", "sans-serif"]
+                },
+                borderRadius: {"DEFAULT": "0.5rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+            },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Manrope', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        /* Custom scrollbar for data tables */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-text-primary-light min-h-screen flex flex-col font-display antialiased">
+<!-- Top Navigation -->
+<header class="sticky top-0 z-50 bg-surface-light border-b border-[#e7ecf3] dark:bg-surface-dark dark:border-gray-800">
+<div class="px-6 py-3 flex items-center justify-between">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3">
+<div class="size-8 text-primary">
+<svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M42.4379 44C42.4379 44 36.0744 33.9038 41.1692 24C46.8624 12.9336 42.2078 4 42.2078 4L7.01134 4C7.01134 4 11.6577 12.932 5.96912 23.9969C0.876273 33.9029 7.27094 44 7.27094 44L42.4379 44Z" fill="currentColor"></path>
+</svg>
+</div>
+<h1 class="text-xl font-bold tracking-tight text-gray-900 dark:text-white">ImmiAdmin</h1>
+</div>
+<div class="hidden md:flex relative group">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-gray-400">search</span>
+</div>
+<input class="block w-64 pl-10 pr-3 py-2 border-none rounded-lg bg-background-light text-sm focus:ring-2 focus:ring-primary dark:bg-gray-800 dark:text-white" placeholder="Search reports, users..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="bg-primary hover:bg-blue-600 text-white text-sm font-semibold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span>Create Custom Report</span>
+</button>
+<div class="flex gap-2 border-l border-gray-200 pl-4 dark:border-gray-700">
+<button class="p-2 text-gray-500 hover:text-gray-900 hover:bg-background-light rounded-lg transition-colors dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-gray-500 hover:text-gray-900 hover:bg-background-light rounded-lg transition-colors dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-800">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+<div class="h-9 w-9 rounded-full bg-cover bg-center border border-gray-200" data-alt="Admin user profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAwX793_qZf8LDj2rX9eSmkwf9GsnQkLyX-L5zpBu9AFPJ3Bhq3Dhhv9XamAoumFABM1j6Pc5_L8rqUHOsApqj3MWqXdj6fr-DKGXBOHJx6s_GPV0BWYlUnQCbdw8-B1maMF2OSwbTfrl4S-oHK9DscUdLhH0_xE_xz1QJzlZFqELzOaWpnfrfnCP1PcEn9Xprw44Z3T7tt8VN5doeSZBseGGmqhv4KfvQHt5B6nXTXYBnzpxV3WkE_2T5jxmMU45AEdzhEUwJlA8U");'></div>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark p-6">
+<div class="max-w-[1440px] mx-auto space-y-6">
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<h2 class="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Analytics &amp; Reporting</h2>
+<p class="text-text-secondary-light mt-1 text-sm dark:text-gray-400">Detailed insights into platform performance, bookings, and revenue.</p>
+</div>
+<div class="flex flex-wrap items-center gap-3">
+<div class="flex items-center bg-white dark:bg-surface-dark rounded-lg p-1 border border-gray-200 dark:border-gray-700">
+<button class="px-3 py-1.5 text-xs font-semibold rounded bg-primary text-white shadow-sm">Real-time</button>
+<button class="px-3 py-1.5 text-xs font-semibold rounded text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors">Historical</button>
+</div>
+<div class="h-8 w-[1px] bg-gray-300 dark:bg-gray-700 mx-1"></div>
+<button class="flex items-center gap-2 bg-white dark:bg-surface-dark border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm font-medium py-2 px-4 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-[18px]">download</span>
+                        Export PDF
+                    </button>
+<button class="flex items-center gap-2 bg-white dark:bg-surface-dark border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm font-medium py-2 px-4 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-[18px]">table_view</span>
+                        Export CSV
+                    </button>
+</div>
+</div>
+<!-- Filters / Chips -->
+<div class="flex flex-wrap gap-3 items-center">
+<div class="relative group">
+<button class="flex items-center gap-2 bg-white dark:bg-surface-dark border border-gray-200 dark:border-gray-700 text-sm font-medium py-1.5 px-3 rounded-lg hover:border-primary transition-colors text-gray-700 dark:text-gray-300">
+<span class="material-symbols-outlined text-[18px] text-gray-400">calendar_today</span>
+                        Last 30 Days
+                        <span class="material-symbols-outlined text-[18px] text-gray-400">expand_more</span>
+</button>
+</div>
+<button class="flex items-center gap-2 bg-white dark:bg-surface-dark border border-gray-200 dark:border-gray-700 text-sm font-medium py-1.5 px-3 rounded-lg hover:border-primary transition-colors text-gray-700 dark:text-gray-300">
+                    User Type: All
+                    <span class="material-symbols-outlined text-[18px] text-gray-400">expand_more</span>
+</button>
+<button class="flex items-center gap-2 bg-white dark:bg-surface-dark border border-gray-200 dark:border-gray-700 text-sm font-medium py-1.5 px-3 rounded-lg hover:border-primary transition-colors text-gray-700 dark:text-gray-300">
+                    Service: Visa Application
+                    <span class="material-symbols-outlined text-[18px] text-gray-400">expand_more</span>
+</button>
+<button class="flex items-center gap-2 bg-white dark:bg-surface-dark border border-gray-200 dark:border-gray-700 text-sm font-medium py-1.5 px-3 rounded-lg hover:border-primary transition-colors text-gray-700 dark:text-gray-300">
+                    Region: Global
+                    <span class="material-symbols-outlined text-[18px] text-gray-400">expand_more</span>
+</button>
+<button class="ml-auto text-sm text-primary font-semibold hover:text-blue-700 flex items-center gap-1">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+                    Advanced Filters
+                </button>
+</div>
+<!-- KPI Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Total MRR -->
+<div class="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
+<span class="material-symbols-outlined text-green-600 dark:text-green-400">payments</span>
+</div>
+<span class="inline-flex items-center gap-1 text-xs font-semibold text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+                            12%
+                        </span>
+</div>
+<p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total MRR</p>
+<h3 class="text-2xl font-bold text-gray-900 dark:text-white mt-1">$124,500</h3>
+</div>
+<!-- New Signups -->
+<div class="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+<span class="material-symbols-outlined text-primary dark:text-blue-400">group_add</span>
+</div>
+<span class="inline-flex items-center gap-1 text-xs font-semibold text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+                            5%
+                        </span>
+</div>
+<p class="text-sm font-medium text-gray-500 dark:text-gray-400">New Client Signups</p>
+<h3 class="text-2xl font-bold text-gray-900 dark:text-white mt-1">840</h3>
+</div>
+<!-- Consultation Bookings -->
+<div class="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+<span class="material-symbols-outlined text-purple-600 dark:text-purple-400">event_available</span>
+</div>
+<span class="inline-flex items-center gap-1 text-xs font-semibold text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[14px]">trending_down</span>
+                            2%
+                        </span>
+</div>
+<p class="text-sm font-medium text-gray-500 dark:text-gray-400">Consultation Bookings</p>
+<h3 class="text-2xl font-bold text-gray-900 dark:text-white mt-1">320</h3>
+</div>
+<!-- Case Success Rate -->
+<div class="bg-surface-light dark:bg-surface-dark p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+<span class="material-symbols-outlined text-orange-600 dark:text-orange-400">check_circle</span>
+</div>
+<span class="inline-flex items-center gap-1 text-xs font-semibold text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+                            1.5%
+                        </span>
+</div>
+<p class="text-sm font-medium text-gray-500 dark:text-gray-400">Case Success Rate</p>
+<h3 class="text-2xl font-bold text-gray-900 dark:text-white mt-1">92%</h3>
+</div>
+</div>
+<!-- Charts Section -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Main Chart (Revenue & Bookings) -->
+<div class="lg:col-span-2 bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+<div class="flex items-center justify-between mb-6">
+<div>
+<h3 class="text-lg font-bold text-gray-900 dark:text-white">Revenue &amp; Booking Trends</h3>
+<p class="text-sm text-gray-500 dark:text-gray-400">Comparative analysis over the last 6 months</p>
+</div>
+<button class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
+<span class="material-symbols-outlined text-gray-400">more_horiz</span>
+</button>
+</div>
+<!-- Faux Chart Representation using CSS Gradients/bars -->
+<div class="h-64 flex items-end justify-between gap-4 px-2 relative">
+<!-- Grid lines -->
+<div class="absolute inset-0 flex flex-col justify-between pointer-events-none pb-8 opacity-20">
+<div class="w-full border-b border-gray-300 border-dashed"></div>
+<div class="w-full border-b border-gray-300 border-dashed"></div>
+<div class="w-full border-b border-gray-300 border-dashed"></div>
+<div class="w-full border-b border-gray-300 border-dashed"></div>
+<div class="w-full border-b border-gray-300 border-dashed"></div>
+</div>
+<!-- Bars -->
+<div class="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-full max-w-[40px] bg-primary/20 h-[40%] rounded-t-sm group-hover:bg-primary/30 transition-all relative">
+<div class="absolute bottom-0 w-full bg-primary h-[60%] rounded-t-sm"></div>
+</div>
+<span class="text-xs text-gray-500 font-medium">Jan</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-full max-w-[40px] bg-primary/20 h-[55%] rounded-t-sm group-hover:bg-primary/30 transition-all relative">
+<div class="absolute bottom-0 w-full bg-primary h-[50%] rounded-t-sm"></div>
+</div>
+<span class="text-xs text-gray-500 font-medium">Feb</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-full max-w-[40px] bg-primary/20 h-[45%] rounded-t-sm group-hover:bg-primary/30 transition-all relative">
+<div class="absolute bottom-0 w-full bg-primary h-[70%] rounded-t-sm"></div>
+</div>
+<span class="text-xs text-gray-500 font-medium">Mar</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-full max-w-[40px] bg-primary/20 h-[70%] rounded-t-sm group-hover:bg-primary/30 transition-all relative">
+<div class="absolute bottom-0 w-full bg-primary h-[80%] rounded-t-sm"></div>
+</div>
+<span class="text-xs text-gray-500 font-medium">Apr</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-full max-w-[40px] bg-primary/20 h-[85%] rounded-t-sm group-hover:bg-primary/30 transition-all relative">
+<div class="absolute bottom-0 w-full bg-primary h-[65%] rounded-t-sm"></div>
+</div>
+<span class="text-xs text-gray-500 font-medium">May</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-full max-w-[40px] bg-primary/20 h-[65%] rounded-t-sm group-hover:bg-primary/30 transition-all relative">
+<div class="absolute bottom-0 w-full bg-primary h-[90%] rounded-t-sm"></div>
+</div>
+<span class="text-xs text-gray-500 font-medium">Jun</span>
+</div>
+</div>
+<div class="flex justify-center mt-4 gap-6">
+<div class="flex items-center gap-2">
+<div class="size-3 rounded-full bg-primary"></div>
+<span class="text-sm text-gray-600 dark:text-gray-400">Revenue</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="size-3 rounded-full bg-primary/30"></div>
+<span class="text-sm text-gray-600 dark:text-gray-400">Bookings</span>
+</div>
+</div>
+</div>
+<!-- Geographic/Segment Chart -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm flex flex-col">
+<h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">User Demographics</h3>
+<div class="flex-1 flex flex-col justify-center">
+<div class="relative w-48 h-48 mx-auto mb-6">
+<!-- Simple CSS Donut Chart -->
+<div class="w-full h-full rounded-full border-[16px] border-primary border-r-transparent border-b-transparent transform rotate-45"></div>
+<div class="absolute inset-0 w-full h-full rounded-full border-[16px] border-purple-500 border-l-transparent border-t-transparent transform rotate-12 opacity-80"></div>
+<div class="absolute inset-0 flex items-center justify-center flex-col">
+<span class="text-2xl font-bold text-gray-900 dark:text-white">12.5k</span>
+<span class="text-xs text-gray-500">Total Users</span>
+</div>
+</div>
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="size-3 rounded-full bg-primary"></div>
+<span class="text-sm text-gray-600 dark:text-gray-300">Clients</span>
+</div>
+<span class="text-sm font-semibold text-gray-900 dark:text-white">65%</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="size-3 rounded-full bg-purple-500"></div>
+<span class="text-sm text-gray-600 dark:text-gray-300">Consultants</span>
+</div>
+<span class="text-sm font-semibold text-gray-900 dark:text-white">25%</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="size-3 rounded-full bg-gray-300 dark:bg-gray-600"></div>
+<span class="text-sm text-gray-600 dark:text-gray-300">Agencies</span>
+</div>
+<span class="text-sm font-semibold text-gray-900 dark:text-white">10%</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Detailed Performance Tables -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<!-- Consultant Performance -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col">
+<div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+<h3 class="text-lg font-bold text-gray-900 dark:text-white">Top Performing Consultants</h3>
+<a class="text-sm text-primary font-semibold hover:underline" href="#">View All</a>
+</div>
+<div class="overflow-x-auto flex-1">
+<table class="w-full text-left text-sm">
+<thead class="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-medium">
+<tr>
+<th class="px-6 py-3">Consultant</th>
+<th class="px-6 py-3">Success Rate</th>
+<th class="px-6 py-3">Rating</th>
+<th class="px-6 py-3 text-right">Revenue</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+<tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+<td class="px-6 py-4 flex items-center gap-3">
+<div class="h-8 w-8 rounded-full bg-gray-200 bg-cover bg-center" data-alt="Portrait of Sarah Jenkins" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDkJx9uucTqHlxBGgeqxpD3SxO7ocPG47LD5jdPJ29BPJjO7aEBm5VX5W3soji5MfozXfbYlS4jvQO-Vz3HEfhhBduXIdENBhaAnrFwVr1bHY0Z-c4C_eXeixYoNajugOZceUxLTGm1z2MNfQQrfWolYJ6rhX97mJTbeD-n8rF-vFJR5oTjOoloZ4EUQAsb-fnthKMMsy6ZAtlWPqKUXhoL6HfY-CfY1PemWRIPIknFfrAhsMMugqvdpCTb2zU-SWl6k1xUaFlJwOM");'></div>
+<div>
+<p class="font-medium text-gray-900 dark:text-white">Sarah Jenkins</p>
+<p class="text-xs text-gray-500">Legal Specialist</p>
+</div>
+</td>
+<td class="px-6 py-4 text-green-600 dark:text-green-400 font-medium">98%</td>
+<td class="px-6 py-4 flex items-center gap-1">
+<span class="material-symbols-outlined text-yellow-400 text-sm">star</span>
+<span class="text-gray-900 dark:text-white">4.9</span>
+</td>
+<td class="px-6 py-4 text-right font-medium text-gray-900 dark:text-white">$12,450</td>
+</tr>
+<tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+<td class="px-6 py-4 flex items-center gap-3">
+<div class="h-8 w-8 rounded-full bg-gray-200 bg-cover bg-center" data-alt="Portrait of Michael Chen" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDFKCPvwwSuFGiTSaenjcw4mCYvhIXp8ON32GdYw5KRyDfqWLufLYFkr2tGgU826efdDGRgUXUrlGSD5o8p5-OReerUi3VCDeO7B-lKPzYfBlyS5COnOI2BSgwHQizE9QaHnovyo3OaZjZGSYaePb0TgTxJMpDgLvKRHg6zfPo5SbQBqj1S0N8A6UAZzsN_kSDgEvkkyOroQAHYKewCRzln6eYwfWNvQfZECFnxWZ37Q5dLoiifMYjabCjkLxws_rd-5Kg4SSzsFwI");'></div>
+<div>
+<p class="font-medium text-gray-900 dark:text-white">Michael Chen</p>
+<p class="text-xs text-gray-500">Visa Consultant</p>
+</div>
+</td>
+<td class="px-6 py-4 text-green-600 dark:text-green-400 font-medium">94%</td>
+<td class="px-6 py-4 flex items-center gap-1">
+<span class="material-symbols-outlined text-yellow-400 text-sm">star</span>
+<span class="text-gray-900 dark:text-white">4.7</span>
+</td>
+<td class="px-6 py-4 text-right font-medium text-gray-900 dark:text-white">$10,200</td>
+</tr>
+<tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+<td class="px-6 py-4 flex items-center gap-3">
+<div class="h-8 w-8 rounded-full bg-gray-200 bg-cover bg-center" data-alt="Portrait of Elena Rodriguez" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDKVDymiL5fpdvJaX0I0Iqlgg0GSuZs19f7Lyxt7KgeutLAq3h16UqqUTF2qlOSFz7mRSLZlggyqERPvc0rYpnHM4LQMM3oKcbby8zZZA2c2HgC-WLYAItbN9KljWLKUH84511BXVkHxPBzFU8n3XI0Rd9aBAiD_0jvRbPrJNYcb1AoRKs8ikIgtX61bORgZL2HRc8O-3vgCYLm1C-_7Jeqpq4F6GTJqtEhZ-TblXuCRgpbD_p21jFsN_G7zycudh_pp8nCjv-YdAc");'></div>
+<div>
+<p class="font-medium text-gray-900 dark:text-white">Elena Rodriguez</p>
+<p class="text-xs text-gray-500">Immigration Lawyer</p>
+</div>
+</td>
+<td class="px-6 py-4 text-green-600 dark:text-green-400 font-medium">96%</td>
+<td class="px-6 py-4 flex items-center gap-1">
+<span class="material-symbols-outlined text-yellow-400 text-sm">star</span>
+<span class="text-gray-900 dark:text-white">4.8</span>
+</td>
+<td class="px-6 py-4 text-right font-medium text-gray-900 dark:text-white">$9,850</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Recent Activities / Logs -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col">
+<div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+<h3 class="text-lg font-bold text-gray-900 dark:text-white">Recent Activities</h3>
+<div class="flex gap-2">
+<button class="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
+<span class="material-symbols-outlined text-gray-400 text-sm">refresh</span>
+</button>
+</div>
+</div>
+<div class="p-6 space-y-6 overflow-y-auto max-h-[400px]">
+<!-- Item 1 -->
+<div class="flex gap-4">
+<div class="relative flex flex-col items-center">
+<div class="size-2 rounded-full bg-gray-300 dark:bg-gray-600 mt-2"></div>
+<div class="w-[1px] bg-gray-200 dark:bg-gray-700 h-full absolute top-4"></div>
+</div>
+<div class="pb-2">
+<p class="text-sm text-gray-900 dark:text-white font-medium">New Agency Registration</p>
+<p class="text-xs text-gray-500 mt-0.5">"Global Move Partners" submitted verification docs.</p>
+<p class="text-[10px] text-gray-400 mt-1">2 mins ago</p>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="flex gap-4">
+<div class="relative flex flex-col items-center">
+<div class="size-2 rounded-full bg-primary mt-2"></div>
+<div class="w-[1px] bg-gray-200 dark:bg-gray-700 h-full absolute top-4"></div>
+</div>
+<div class="pb-2">
+<p class="text-sm text-gray-900 dark:text-white font-medium">Large Transaction Detected</p>
+<p class="text-xs text-gray-500 mt-0.5">Booking #49201 exceeds $5,000 threshold.</p>
+<p class="text-[10px] text-gray-400 mt-1">15 mins ago</p>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="flex gap-4">
+<div class="relative flex flex-col items-center">
+<div class="size-2 rounded-full bg-gray-300 dark:bg-gray-600 mt-2"></div>
+<div class="w-[1px] bg-gray-200 dark:bg-gray-700 h-full absolute top-4"></div>
+</div>
+<div class="pb-2">
+<p class="text-sm text-gray-900 dark:text-white font-medium">Report Generated</p>
+<p class="text-xs text-gray-500 mt-0.5">Monthly Financial Summary for October created by Admin.</p>
+<p class="text-[10px] text-gray-400 mt-1">1 hour ago</p>
+</div>
+</div>
+<!-- Item 4 -->
+<div class="flex gap-4">
+<div class="relative flex flex-col items-center">
+<div class="size-2 rounded-full bg-gray-300 dark:bg-gray-600 mt-2"></div>
+</div>
+<div class="pb-2">
+<p class="text-sm text-gray-900 dark:text-white font-medium">System Alert</p>
+<p class="text-xs text-gray-500 mt-0.5">Data sync completed successfully.</p>
+<p class="text-[10px] text-gray-400 mt-1">3 hours ago</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer for additional space/scrolling -->
+<div class="h-8"></div>
+</div>
+</main>
+</body></html>

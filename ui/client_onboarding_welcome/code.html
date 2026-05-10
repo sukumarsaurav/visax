@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Client Onboarding Welcome - ImmiMarket</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;family=Noto+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#136dec",
+              "background-light": "#f6f7f8",
+              "background-dark": "#101822",
+              "text-main": "#0d131b",
+              "text-muted": "#4c6c9a",
+            },
+            fontFamily: {
+              "display": ["Manrope", "sans-serif"],
+              "body": ["Noto Sans", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display antialiased overflow-x-hidden">
+<div class="relative flex min-h-screen w-full flex-col">
+<!-- Header -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#e7ecf3] dark:border-slate-800 bg-white dark:bg-background-dark px-6 py-4 lg:px-10">
+<div class="flex items-center gap-3 text-text-main dark:text-white">
+<div class="flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-3xl">flight_takeoff</span>
+</div>
+<h2 class="text-lg font-bold leading-tight tracking-tight">ImmiMarket</h2>
+</div>
+<button class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-9 px-4 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 text-text-main dark:text-white text-sm font-bold leading-normal transition-colors">
+<span class="truncate">Log In</span>
+</button>
+</header>
+<!-- Main Content Area -->
+<main class="flex flex-1 flex-col items-center justify-center px-4 py-8 lg:px-20 lg:py-12">
+<div class="layout-content-container flex flex-col max-w-[1200px] w-full flex-1">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center h-full">
+<!-- Left Column: Content -->
+<div class="flex flex-col gap-8 lg:pr-8 order-2 lg:order-1">
+<div class="flex flex-col gap-4">
+<span class="text-primary font-bold tracking-wide uppercase text-sm">Welcome to ImmiMarket</span>
+<h1 class="text-text-main dark:text-white text-4xl lg:text-5xl font-black leading-tight tracking-[-0.033em]">
+                                Your Journey <br/> Starts Here
+                            </h1>
+<h2 class="text-text-muted dark:text-slate-400 text-lg font-normal leading-relaxed max-w-[500px]">
+                                Connect with trusted immigration lawyers and consultants who understand your story and can guide you every step of the way.
+                            </h2>
+</div>
+<!-- Value Props List (Modified from FeatureSection) -->
+<div class="flex flex-col gap-5">
+<div class="flex items-start gap-4">
+<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+<span class="material-symbols-outlined text-[20px]">verified</span>
+</div>
+<div class="flex flex-col">
+<h3 class="text-text-main dark:text-white text-base font-bold leading-tight">Verified Professionals</h3>
+<p class="text-text-muted dark:text-slate-400 text-sm font-normal leading-normal">Every expert is vetted for credentials and experience.</p>
+</div>
+</div>
+<div class="flex items-start gap-4">
+<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+<span class="material-symbols-outlined text-[20px]">lock</span>
+</div>
+<div class="flex flex-col">
+<h3 class="text-text-main dark:text-white text-base font-bold leading-tight">Secure Document Handling</h3>
+<p class="text-text-muted dark:text-slate-400 text-sm font-normal leading-normal">Your sensitive data is protected with bank-level encryption.</p>
+</div>
+</div>
+<div class="flex items-start gap-4">
+<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+<span class="material-symbols-outlined text-[20px]">translate</span>
+</div>
+<div class="flex flex-col">
+<h3 class="text-text-main dark:text-white text-base font-bold leading-tight">Multilingual Support</h3>
+<p class="text-text-muted dark:text-slate-400 text-sm font-normal leading-normal">Get help in the language you are most comfortable with.</p>
+</div>
+</div>
+</div>
+<!-- CTA Area -->
+<div class="flex flex-col gap-4 mt-4 sm:flex-row sm:items-center">
+<button class="flex min-w-[160px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-12 px-6 bg-primary hover:bg-blue-600 text-white text-base font-bold leading-normal tracking-[0.015em] transition-colors shadow-lg shadow-blue-500/20">
+<span class="truncate">Get Started</span>
+</button>
+<a class="text-text-muted hover:text-primary text-sm font-semibold leading-normal underline px-4 transition-colors text-center sm:text-left" href="#">
+                                Already have an account? Log in
+                            </a>
+</div>
+</div>
+<!-- Right Column: Hero Visual -->
+<div class="relative order-1 lg:order-2 w-full h-full min-h-[300px] lg:min-h-[600px] flex flex-col justify-center">
+<div class="absolute -right-10 -top-10 w-64 h-64 bg-primary/5 rounded-full blur-3xl -z-10"></div>
+<div class="absolute -left-10 bottom-10 w-64 h-64 bg-blue-400/10 rounded-full blur-3xl -z-10"></div>
+<div class="w-full h-full bg-center bg-no-repeat bg-cover rounded-2xl shadow-2xl shadow-slate-200 dark:shadow-slate-900 overflow-hidden relative aspect-[4/3] lg:aspect-auto lg:h-[600px]" data-alt="A friendly immigration consultant smiling while shaking hands with a diverse couple in a modern office" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAhImg5T4bArFTgPqNxM1VBkivd5eUP0rSkmxo1IMO-li8PaDvWu-kxz6aIjGepKHvsAy5qTEvTC2zB5-kPBUUaEZ3Ct-i-D1ax_993XIiCJlBjg0aD_8ytmG39dJvOPRTTzTcn9N5MNRoUeQg68ij99K8U9zB2KSERAXMxzUlCqR9lFzBUnl6s0TtVCN1XEWKgVf6XQOONu1cdDtPiaHYIqj2LYnLFZ6o0V9EACNKiYm1Qa3vCpzsIQWfJX4a-GDYCJByAvdp-BhQ");'>
+<!-- Optional Overlay Badge -->
+<div class="absolute bottom-6 left-6 right-6 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm p-4 rounded-xl shadow-lg border border-white/20">
+<div class="flex items-center gap-3">
+<div class="flex -space-x-2">
+<div class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800 bg-gray-200 bg-cover" data-alt="Portrait of a user" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBD8LLCWVOfou_-GsBHQPOWq1gMgDQjOn2TV47sep2fdK0gl716le4t8iR3EE3ZD3CRCJ1VwUM1nhO6ac_w4rE_-KGTc5hvGvFUzNsYo5dD_fk2lYqYlF3cNy-GNQShJ65vKEJRahOJH4fBkItSxYISwuRy5aJF1tUhuZSGJ5JLfDqdliezWxwonXfHTrXaDqgfLZO5JU1MjvWIfg9nhXaHz-KAtvgfzyt_rcYHHF5aNUjelDYwyBwzWKP4KagNFqbzU7W3YK0SLwI");'></div>
+<div class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800 bg-gray-200 bg-cover" data-alt="Portrait of a user" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAMhdjVlA8mGID9GEdYtp0_bckCY1Dh5ovIjNCKdDE8lqg_mMpPAOcSR-pa7Zq1QChofz8RXaDAYXTXyF-oTw_coHl0YSs-zCf5KH8IfEEwspivwuSLIgQGaX_cJqTIefRshBKWRkkEM-F3SfrfPpRR_ICdpEfXyHGuGkxjSeOPW3QnhVn7r_Ujj_FwzOtbKOHnvj3XX9J5ZJ2mICS1cw-JRZP9kl8aveeDfkKZeXSR83v02Qxj5LOVGCb9_yl3Il3p-tYLnNQwUUQ");'></div>
+<div class="w-8 h-8 rounded-full border-2 border-white dark:border-slate-800 bg-gray-200 bg-cover" data-alt="Portrait of a user" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDn5H8ke3qRvcxarkM4FN2bt3PkqBENBxXBqSayXxMMwBc7IXwz7guIaw84dcIFoLdoMQ_mlDBcnkrPqRZbLPvvYnww1ujFj0LAXlVEOC3t90JGDxb80JHak9Ygcwy1EtbrBfYjxgn_TAhe00NRC04eNaD45b5XPWDeY-N4Ub9r-NY5CUwSW_IDsDCyiFmb77fU8SZ5eXLeGKKkHvElBWGATUVTFuQQpzzaBSZH9QfmOnD7PGdbbPbybg1jxMOOW2KV0BZ7iEps__4");'></div>
+</div>
+<div class="flex flex-col">
+<span class="text-xs font-bold text-text-main dark:text-white">Trusted by 10,000+ families</span>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-yellow-400 text-[14px]">star</span>
+<span class="material-symbols-outlined text-yellow-400 text-[14px]">star</span>
+<span class="material-symbols-outlined text-yellow-400 text-[14px]">star</span>
+<span class="material-symbols-outlined text-yellow-400 text-[14px]">star</span>
+<span class="material-symbols-outlined text-yellow-400 text-[14px]">star</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Password Reset Confirmation</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#136dec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101822",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-200">
+<!-- TopNavBar -->
+<header class="w-full border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+<div class="max-w-[1280px] mx-auto px-4 sm:px-10 h-16 flex items-center justify-between">
+<div class="flex items-center gap-4 text-slate-900 dark:text-white">
+<div class="size-8 text-primary">
+<svg class="w-full h-full" fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M24 4H6V17.3333V30.6667H24V44H42V30.6667V17.3333H24V4Z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+<h2 class="text-lg font-bold leading-tight tracking-[-0.015em] hidden sm:block">Immigrant Marketplace</h2>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center justify-center overflow-hidden rounded-lg h-9 px-4 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-bold leading-normal transition-colors">
+<span class="truncate">Log In</span>
+</button>
+<button class="flex items-center justify-center overflow-hidden rounded-lg h-9 px-4 bg-primary hover:bg-blue-600 text-white text-sm font-bold leading-normal transition-colors">
+<span class="truncate">Sign Up</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 flex items-center justify-center p-4 sm:p-6">
+<div class="w-full max-w-[480px] flex flex-col gap-6">
+<!-- Success Card -->
+<div class="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 p-8 sm:p-10 flex flex-col items-center text-center">
+<!-- Icon -->
+<div class="mb-6 rounded-full bg-green-50 dark:bg-green-900/20 p-4 inline-flex items-center justify-center">
+<span class="material-symbols-outlined text-green-600 dark:text-green-400 text-[48px] filled">check_circle</span>
+</div>
+<!-- Text Content -->
+<h1 class="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-3">Password Reset Successful!</h1>
+<p class="text-slate-500 dark:text-slate-400 text-base leading-relaxed mb-8 max-w-[360px]">
+                    Your password has been updated. You can now access your account using your new credentials.
+                </p>
+<!-- Primary Action -->
+<button class="w-full h-12 flex items-center justify-center rounded-lg bg-primary hover:bg-blue-600 text-white text-base font-bold transition-colors mb-6 shadow-sm hover:shadow-md">
+                    Log In Now
+                </button>
+<!-- Security Tip (MetaText Adaptation) -->
+<div class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-lg p-4 flex gap-3 text-left">
+<span class="material-symbols-outlined text-slate-400 dark:text-slate-500 text-xl shrink-0">lock</span>
+<p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-snug">
+<span class="font-bold text-slate-800 dark:text-slate-200 block mb-1">Security Tip</span>
+                        Never share your password with anyone. Our support team will never ask for it.
+                    </p>
+</div>
+</div>
+<!-- Support Link (MetaText Adaptation) -->
+<div class="text-center">
+<a class="inline-flex items-center gap-2 text-slate-500 hover:text-primary dark:text-slate-400 dark:hover:text-primary text-sm font-medium transition-colors" href="#">
+                    Still having trouble? <span class="underline decoration-slate-300 dark:decoration-slate-600 underline-offset-4">Contact Support</span>
+</a>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-10 px-6">
+<div class="max-w-[960px] mx-auto flex flex-col items-center gap-6">
+<div class="flex flex-wrap items-center justify-center gap-x-8 gap-y-4">
+<a class="text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm transition-colors" href="#">Privacy Policy</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm transition-colors" href="#">Terms of Service</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary text-sm transition-colors" href="#">Help Center</a>
+</div>
+<p class="text-slate-400 dark:text-slate-600 text-xs sm:text-sm">
+                © 2023 Immigrant Marketplace. All rights reserved.
+            </p>
+</div>
+</footer>
+</body></html>

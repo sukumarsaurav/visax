@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Consultant Add New Client Form</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#136dec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101822",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-50 font-display transition-colors duration-200">
+<div class="relative flex min-h-screen flex-col overflow-x-hidden">
+<!-- Main Layout Container -->
+<div class="layout-container flex h-full grow flex-col">
+<!-- Centered Content Area -->
+<div class="px-4 sm:px-6 lg:px-40 flex flex-1 justify-center py-5">
+<div class="layout-content-container flex flex-col max-w-[960px] flex-1 w-full">
+<!-- Breadcrumbs -->
+<div class="flex flex-wrap gap-2 px-4 py-2 mb-4">
+<a class="text-slate-500 dark:text-slate-400 text-sm font-medium hover:text-primary transition-colors" href="#">Dashboard</a>
+<span class="text-slate-500 dark:text-slate-400 text-sm font-medium">/</span>
+<a class="text-slate-500 dark:text-slate-400 text-sm font-medium hover:text-primary transition-colors" href="#">Clients</a>
+<span class="text-slate-500 dark:text-slate-400 text-sm font-medium">/</span>
+<span class="text-slate-900 dark:text-slate-100 text-sm font-medium">Add New Client</span>
+</div>
+<!-- Page Header -->
+<div class="flex flex-wrap justify-between gap-3 px-4 pb-6">
+<div class="flex min-w-72 flex-col gap-2">
+<h1 class="text-slate-900 dark:text-white text-3xl md:text-4xl font-black leading-tight tracking-[-0.033em]">Add New Client</h1>
+<p class="text-slate-500 dark:text-slate-400 text-base font-normal leading-normal">Enter the client's details to create a new record in the immigration system.</p>
+</div>
+</div>
+<!-- Form Card -->
+<form class="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+<!-- Section: Personal Information -->
+<div class="p-6 border-b border-slate-100 dark:border-slate-800">
+<h2 class="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-[-0.015em] mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">person</span>
+                                Personal Information
+                            </h2>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<label class="flex flex-col flex-1">
+<p class="text-slate-900 dark:text-slate-200 text-sm font-medium leading-normal pb-2">First Name</p>
+<input class="form-input flex w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 focus:border-primary h-12 px-4 text-base placeholder:text-slate-400" placeholder="e.g. Jane" required="" value=""/>
+</label>
+<label class="flex flex-col flex-1">
+<p class="text-slate-900 dark:text-slate-200 text-sm font-medium leading-normal pb-2">Last Name</p>
+<input class="form-input flex w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 focus:border-primary h-12 px-4 text-base placeholder:text-slate-400" placeholder="e.g. Doe" required="" value=""/>
+</label>
+<label class="flex flex-col flex-1">
+<p class="text-slate-900 dark:text-slate-200 text-sm font-medium leading-normal pb-2">Date of Birth</p>
+<div class="relative">
+<input class="form-input flex w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 focus:border-primary h-12 px-4 text-base placeholder:text-slate-400" placeholder="MM/DD/YYYY" type="date" value=""/>
+</div>
+</label>
+<label class="flex flex-col flex-1">
+<p class="text-slate-900 dark:text-slate-200 text-sm font-medium leading-normal pb-2">Gender</p>
+<select class="form-select flex w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 focus:border-primary h-12 px-4 text-base">
+<option disabled="" selected="" value="">Select gender</option>
+<option value="male">Male</option>
+<option value="female">Female</option>
+<option value="non-binary">Non-binary</option>
+<option value="prefer-not-to-say">Prefer not to say</option>
+</select>
+</label>
+<label class="flex flex-col flex-1">
+<p class="text-slate-900 dark:text-slate-200 text-sm font-medium leading-normal pb-2">Email Address</p>
+<input class="form-input flex w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 focus:border-primary h-12 px-4 text-base placeholder:text-slate-400" placeholder="jane.doe@example.com" type="email" value=""/>
+</label>
+<label class="flex flex-col flex-1">
+<p class="text-slate-900 dark:text-slate-200 text-sm font-medium leading-normal pb-2">Phone Number</p>
+<input class="form-input flex w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 focus:border-primary h-12 px-4 text-base placeholder:text-slate-400" placeholder="+1 (555) 000-0000" type="tel" value=""/>
+</label>
+<label class="flex flex-col flex-1 md:col-span-2">
+<p class="text-slate-900 dark:text-slate-200 text-sm font-medium leading-normal pb-2">Current Address</p>
+<input class="form-input flex w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 focus:border-primary h-12 px-4 text-base placeholder:text-slate-400" placeholder="Street address, City, State, Zip Code" value=""/>
+</label>
+</div>
+</div>
+<!-- Section: Immigration Background -->
+<div class="p-6 border-b border-slate-100 dark:border-slate-800">
+<h2 class="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-[-0.015em] mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">public</span>
+                                Immigration Background
+                            </h2>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<label class="flex flex-col flex-1">
+<p class="text-slate-900 dark:text-slate-200 text-sm font-medium leading-normal pb-2">Country of Origin</p>
+<select class="form-select flex w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 focus:border-primary h-12 px-4 text-base">
+<option disabled="" selected="" value="">Select country</option>
+<option value="india">India</option>
+<option value="china">China</option>
+<option value="philippines">Philippines</option>
+<option value="mexico">Mexico</option>
+<option value="nigeria">Nigeria</option>
+<!-- Add more countries as needed -->
+</select>
+</label>
+<label class="flex flex-col flex-1">
+<p class="text-slate-900 dark:text-slate-200 text-sm font-medium leading-normal pb-2">Current Visa Status</p>
+<select class="form-select flex w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 focus:border-primary h-12 px-4 text-base">
+<option disabled="" selected="" value="">Select status</option>
+<option value="none">None / Outside Country</option>
+<option value="tourist">Tourist (B1/B2)</option>
+<option value="student">Student (F1)</option>
+<option value="work">Work (H1B)</option>
+<option value="other">Other</option>
+</select>
+</label>
+<label class="flex flex-col flex-1">
+<p class="text-slate-900 dark:text-slate-200 text-sm font-medium leading-normal pb-2">Target Destination</p>
+<input class="form-input flex w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 focus:border-primary h-12 px-4 text-base placeholder:text-slate-400" placeholder="e.g. Canada, United States" value=""/>
+</label>
+<label class="flex flex-col flex-1">
+<p class="text-slate-900 dark:text-slate-200 text-sm font-medium leading-normal pb-2">Preferred Language</p>
+<input class="form-input flex w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 focus:border-primary h-12 px-4 text-base placeholder:text-slate-400" placeholder="e.g. English, French, Spanish" value=""/>
+</label>
+</div>
+</div>
+<!-- Section: Service Interest & Notes -->
+<div class="p-6 border-b border-slate-100 dark:border-slate-800">
+<h2 class="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-[-0.015em] mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">assignment</span>
+                                Service Details
+                            </h2>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+<label class="flex flex-col flex-1">
+<p class="text-slate-900 dark:text-slate-200 text-sm font-medium leading-normal pb-2">Service Interest</p>
+<select class="form-select flex w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 focus:border-primary h-12 px-4 text-base">
+<option disabled="" selected="" value="">Select service</option>
+<option value="visa-application">Visa Application</option>
+<option value="citizenship">Citizenship / Naturalization</option>
+<option value="asylum">Asylum / Refugee Status</option>
+<option value="green-card">Permanent Residency (Green Card)</option>
+<option value="consultation">General Consultation</option>
+<option value="unsure">Unsure</option>
+</select>
+</label>
+<label class="flex flex-col flex-1">
+<p class="text-slate-900 dark:text-slate-200 text-sm font-medium leading-normal pb-2">Referral Source <span class="text-slate-400 font-normal">(Optional)</span></p>
+<select class="form-select flex w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 focus:border-primary h-12 px-4 text-base">
+<option disabled="" selected="" value="">How did they hear about us?</option>
+<option value="search">Search Engine (Google/Bing)</option>
+<option value="social">Social Media</option>
+<option value="referral">Client Referral</option>
+<option value="advertisement">Advertisement</option>
+<option value="other">Other</option>
+</select>
+</label>
+</div>
+<label class="flex flex-col w-full">
+<p class="text-slate-900 dark:text-slate-200 text-sm font-medium leading-normal pb-2">Initial Notes</p>
+<textarea class="form-textarea flex w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 focus:border-primary min-h-[120px] p-4 text-base placeholder:text-slate-400 resize-y" placeholder="Enter any initial observations, specific client needs, or context..."></textarea>
+</label>
+</div>
+<!-- Section: Documents -->
+<div class="p-6 border-b border-slate-100 dark:border-slate-800">
+<h2 class="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-[-0.015em] mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">attach_file</span>
+                                Documents <span class="text-slate-400 font-normal text-base ml-2">(Optional)</span>
+</h2>
+<div class="flex flex-col items-center justify-center w-full">
+<label class="flex flex-col items-center justify-center w-full h-40 border-2 border-primary/30 border-dashed rounded-xl cursor-pointer bg-slate-50 dark:bg-slate-800/50 hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors" for="dropzone-file">
+<div class="flex flex-col items-center justify-center pt-5 pb-6">
+<span class="material-symbols-outlined text-primary text-4xl mb-2">cloud_upload</span>
+<p class="mb-2 text-sm text-slate-600 dark:text-slate-300"><span class="font-semibold text-primary">Click to upload</span> or drag and drop</p>
+<p class="text-xs text-slate-500 dark:text-slate-400">PDF, PNG, JPG (MAX. 10MB)</p>
+</div>
+<input class="hidden" id="dropzone-file" type="file"/>
+</label>
+</div>
+</div>
+<!-- Footer Actions -->
+<div class="p-6 bg-slate-50 dark:bg-slate-900/50 flex flex-col gap-6">
+<label class="inline-flex items-start cursor-pointer group">
+<div class="relative flex items-center mt-1">
+<input class="peer h-5 w-5 cursor-pointer appearance-none rounded border border-slate-300 dark:border-slate-600 shadow transition-all checked:border-primary checked:bg-primary hover:shadow-md focus:ring-0" type="checkbox"/>
+<span class="absolute text-white opacity-0 peer-checked:opacity-100 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+<svg class="h-3.5 w-3.5" fill="currentColor" stroke="currentColor" stroke-width="1" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" fill-rule="evenodd"></path>
+</svg>
+</span>
+</div>
+<div class="ml-3 text-sm leading-6">
+<span class="font-medium text-slate-900 dark:text-white">I confirm client consent</span>
+<p class="text-slate-500 dark:text-slate-400">The client has given permission to process their personal data for immigration services.</p>
+</div>
+</label>
+<div class="flex flex-col sm:flex-row items-center justify-end gap-3 pt-2 border-t border-slate-200 dark:border-slate-700/50">
+<button class="w-full sm:w-auto h-12 px-6 rounded-lg bg-white dark:bg-transparent border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors focus:ring-2 focus:ring-slate-200" type="button">
+                                    Cancel
+                                </button>
+<button class="w-full sm:w-auto h-12 px-8 rounded-lg bg-primary text-white font-medium hover:bg-primary/90 shadow-md shadow-primary/20 transition-all focus:ring-2 focus:ring-primary/50 flex items-center justify-center gap-2" type="submit">
+<span class="material-symbols-outlined text-[20px]">person_add</span>
+                                    Create Client Record
+                                </button>
+</div>
+</div>
+</form>
+<div class="h-20"></div> <!-- Bottom spacer -->
+</div>
+</div>
+</div>
+</div>
+</body></html>

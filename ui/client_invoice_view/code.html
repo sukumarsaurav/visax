@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Client Invoice View - ImmiPortal</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#136dec",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101822",
+                        "slate-dark": "#0d131b",
+                        "slate-med": "#4c6c9a",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display antialiased min-h-screen flex flex-col transition-colors duration-200">
+<!-- Top Navigation -->
+<header class="sticky top-0 z-50 w-full border-b border-[#e7ecf3] dark:border-gray-800 bg-white dark:bg-[#151f2b] px-6 py-3">
+<div class="mx-auto flex max-w-7xl items-center justify-between">
+<div class="flex items-center gap-4 text-slate-dark dark:text-white">
+<a class="flex items-center gap-2 group" href="#">
+<div class="size-8 text-primary">
+<svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M36.7273 44C33.9891 44 31.6043 39.8386 30.3636 33.69C29.123 39.8386 26.7382 44 24 44C21.2618 44 18.877 39.8386 17.6364 33.69C16.3957 39.8386 14.0109 44 11.2727 44C7.25611 44 4 35.0457 4 24C4 12.9543 7.25611 4 11.2727 4C14.0109 4 16.3957 8.16144 17.6364 14.31C18.877 8.16144 21.2618 4 24 4C26.7382 4 29.123 8.16144 30.3636 14.31C31.6043 8.16144 33.9891 4 36.7273 4C40.7439 4 44 12.9543 44 24C44 35.0457 40.7439 44 36.7273 44Z" fill="currentColor"></path>
+</svg>
+</div>
+<h2 class="text-lg font-bold leading-tight tracking-[-0.015em] group-hover:text-primary transition-colors">ImmiPortal</h2>
+</a>
+</div>
+<div class="flex items-center gap-6">
+<a class="hidden md:flex items-center gap-2 text-sm font-medium text-slate-med dark:text-gray-400 hover:text-slate-dark dark:hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">arrow_back</span>
+                    Back to Dashboard
+                </a>
+<div class="h-8 w-[1px] bg-gray-200 dark:bg-gray-700 hidden md:block"></div>
+<div class="flex items-center gap-3">
+<div class="text-right hidden sm:block">
+<p class="text-sm font-bold text-slate-dark dark:text-white leading-none">Sarah Chen</p>
+<p class="text-xs text-slate-med dark:text-gray-400 mt-1">Client Account</p>
+</div>
+<div class="bg-center bg-no-repeat bg-cover rounded-full size-10 ring-2 ring-white dark:ring-gray-800 shadow-sm" data-alt="Portrait of a smiling asian woman, client avatar" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBqQA_ZmddFq7VffHwd1axLI7-JWcOn2GqNs1uMS0wE-BaGbmEOfGhrhlK_jlE9PX3Cn8nNXe-J1rYv2kaa0n3ksEifV8iaxf-BO0gM7MfpDxFps1jfTquHqwx-JGFwIQWG2kVcRGzCAohBTeHg0pE9Z6GDhNYJ6tUyNWQNQhzHsrph-MiHljqMY41_F4cIiyDjCE0FaHeQVzgPyZs_lusZ7_I-6Z0Mcof4vUX7K18FDUofKk3Z1z8bJOWGljyHP4kBIKR7uyEOGwU");'></div>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 px-4 py-8 md:px-8">
+<div class="mx-auto max-w-5xl">
+<!-- Breadcrumbs -->
+<div class="mb-6 flex flex-wrap items-center gap-2 text-sm">
+<a class="text-slate-med dark:text-gray-400 hover:text-primary transition-colors" href="#">Dashboard</a>
+<span class="text-slate-med dark:text-gray-600">/</span>
+<a class="text-slate-med dark:text-gray-400 hover:text-primary transition-colors" href="#">Invoices</a>
+<span class="text-slate-med dark:text-gray-600">/</span>
+<span class="font-medium text-slate-dark dark:text-white">INV-2024-001</span>
+</div>
+<!-- Invoice Container -->
+<div class="relative overflow-hidden rounded-xl bg-white dark:bg-[#151f2b] shadow-sm border border-gray-100 dark:border-gray-800">
+<!-- Invoice Header Bar -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#e7ecf3] dark:border-gray-800 p-6 md:p-8 bg-gray-50/50 dark:bg-gray-900/30">
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center gap-2 rounded-full bg-orange-50 px-3 py-1.5 ring-1 ring-orange-200 dark:bg-orange-900/20 dark:ring-orange-800">
+<span class="material-symbols-outlined text-[18px] text-orange-600 dark:text-orange-400">pending</span>
+<span class="text-xs font-bold text-orange-700 dark:text-orange-300 uppercase tracking-wide">Payment Pending</span>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex h-10 items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 text-sm font-bold text-slate-dark transition-colors hover:bg-gray-50 hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700">
+<span class="material-symbols-outlined text-[20px]">download</span>
+<span class="hidden sm:inline">Download PDF</span>
+</button>
+<button class="flex h-10 items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 text-sm font-bold text-slate-dark transition-colors hover:bg-gray-50 hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 sm:hidden">
+<span class="material-symbols-outlined text-[20px]">share</span>
+</button>
+</div>
+</div>
+<!-- Invoice Content -->
+<div class="p-6 md:p-10">
+<!-- Title & Dates -->
+<div class="flex flex-col md:flex-row justify-between gap-8 mb-12">
+<div>
+<h1 class="text-3xl md:text-4xl font-black text-slate-dark dark:text-white tracking-tight mb-2">Invoice #INV-2024-001</h1>
+<p class="text-slate-med dark:text-gray-400">Legal Services for H-1B Application</p>
+</div>
+<div class="flex flex-col gap-2 text-right md:text-right text-left">
+<div class="flex flex-col md:items-end">
+<span class="text-xs font-semibold uppercase tracking-wider text-slate-med dark:text-gray-500">Issued Date</span>
+<span class="text-slate-dark dark:text-white font-medium">Oct 24, 2024</span>
+</div>
+<div class="flex flex-col md:items-end mt-2">
+<span class="text-xs font-semibold uppercase tracking-wider text-slate-med dark:text-gray-500">Due Date</span>
+<span class="text-slate-dark dark:text-white font-medium">Nov 24, 2024</span>
+</div>
+</div>
+</div>
+<!-- Addresses -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-12 mb-12">
+<div class="flex flex-col gap-4">
+<p class="text-xs font-bold uppercase tracking-wider text-slate-med dark:text-gray-500 border-b border-gray-100 dark:border-gray-800 pb-2">From</p>
+<div class="flex items-start gap-4">
+<div class="size-12 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[28px]">gavel</span>
+</div>
+<div>
+<p class="font-bold text-lg text-slate-dark dark:text-white">Global Citizens Legal Group</p>
+<address class="not-italic text-slate-med dark:text-gray-400 text-sm leading-relaxed mt-1">
+                                        1200 Legal Ave, Suite 400<br/>
+                                        San Francisco, CA 94103<br/>
+                                        United States<br/>
+<a class="text-primary hover:underline" href="mailto:billing@globalcitizens.com">billing@globalcitizens.com</a>
+</address>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-4">
+<p class="text-xs font-bold uppercase tracking-wider text-slate-med dark:text-gray-500 border-b border-gray-100 dark:border-gray-800 pb-2">Bill To</p>
+<div>
+<p class="font-bold text-lg text-slate-dark dark:text-white">Sarah Chen</p>
+<address class="not-italic text-slate-med dark:text-gray-400 text-sm leading-relaxed mt-1">
+                                    452 Innovation Drive, Apt 3B<br/>
+                                    Mountain View, CA 94043<br/>
+                                    United States
+                                </address>
+</div>
+</div>
+</div>
+<!-- Line Items Table -->
+<div class="overflow-x-auto rounded-lg border border-gray-100 dark:border-gray-800 mb-8">
+<table class="w-full text-left text-sm">
+<thead class="bg-gray-50 dark:bg-gray-800/50 text-slate-med dark:text-gray-400">
+<tr>
+<th class="px-6 py-4 font-semibold w-[50%]">Service Description</th>
+<th class="px-6 py-4 font-semibold text-center">Qty</th>
+<th class="px-6 py-4 font-semibold text-right">Rate</th>
+<th class="px-6 py-4 font-semibold text-right">Amount</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-gray-100 dark:divide-gray-800 text-slate-dark dark:text-gray-200">
+<tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+<td class="px-6 py-4">
+<p class="font-medium text-slate-dark dark:text-white">H-1B Petition Filing</p>
+<p class="text-xs text-slate-med dark:text-gray-500 mt-1">Preparation and filing of Form I-129</p>
+</td>
+<td class="px-6 py-4 text-center">1</td>
+<td class="px-6 py-4 text-right">$2,500.00</td>
+<td class="px-6 py-4 text-right font-medium">$2,500.00</td>
+</tr>
+<tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+<td class="px-6 py-4">
+<p class="font-medium text-slate-dark dark:text-white">Premium Processing Fee (USCIS)</p>
+<p class="text-xs text-slate-med dark:text-gray-500 mt-1">Expedited government processing fee</p>
+</td>
+<td class="px-6 py-4 text-center">1</td>
+<td class="px-6 py-4 text-right">$2,805.00</td>
+<td class="px-6 py-4 text-right font-medium">$2,805.00</td>
+</tr>
+<tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/30 transition-colors">
+<td class="px-6 py-4">
+<p class="font-medium text-slate-dark dark:text-white">Legal Consultation Hours</p>
+<p class="text-xs text-slate-med dark:text-gray-500 mt-1">Additional strategy session regarding RFE</p>
+</td>
+<td class="px-6 py-4 text-center">2</td>
+<td class="px-6 py-4 text-right">$350.00</td>
+<td class="px-6 py-4 text-right font-medium">$700.00</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Summary & Totals -->
+<div class="flex flex-col md:flex-row justify-end border-b border-gray-100 dark:border-gray-800 pb-10">
+<div class="w-full md:w-1/2 lg:w-1/3 flex flex-col gap-3">
+<div class="flex justify-between text-slate-med dark:text-gray-400 text-sm">
+<span>Subtotal</span>
+<span class="font-medium text-slate-dark dark:text-white">$6,005.00</span>
+</div>
+<div class="flex justify-between text-slate-med dark:text-gray-400 text-sm">
+<span>Discount (New Client)</span>
+<span class="font-medium text-green-600 dark:text-green-400">-$250.00</span>
+</div>
+<div class="flex justify-between text-slate-med dark:text-gray-400 text-sm">
+<span>Tax (0%)</span>
+<span class="font-medium text-slate-dark dark:text-white">$0.00</span>
+</div>
+<div class="my-2 h-px bg-gray-100 dark:bg-gray-700"></div>
+<div class="flex justify-between items-end">
+<span class="text-sm font-bold text-slate-dark dark:text-white">Grand Total</span>
+<span class="text-3xl font-black text-slate-dark dark:text-white tracking-tight">$5,755.00</span>
+</div>
+<div class="text-right text-xs text-slate-med dark:text-gray-500 mt-1">
+                                Amount in USD
+                            </div>
+</div>
+</div>
+<!-- Payment Section -->
+<div class="pt-10">
+<div class="flex flex-col md:flex-row gap-8 items-start justify-between">
+<div class="w-full md:w-1/2">
+<h3 class="text-lg font-bold text-slate-dark dark:text-white mb-3">Offline Payment Instructions</h3>
+<div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4 text-sm text-slate-med dark:text-gray-400 border border-gray-100 dark:border-gray-700">
+<p class="mb-2"><strong class="text-slate-dark dark:text-gray-200">Bank Transfer (Wire)</strong></p>
+<p class="mb-1">Bank Name: Chase Bank</p>
+<p class="mb-1">Account Name: Global Citizens Legal Group</p>
+<p class="mb-1">Account Number: *****6789</p>
+<p>Routing Number: *****1234</p>
+<p class="mt-3 text-xs italic">Please include Invoice #INV-2024-001 in the transfer description.</p>
+</div>
+</div>
+<div class="w-full md:w-auto flex flex-col gap-4 items-stretch md:items-end">
+<button class="flex items-center justify-center gap-3 rounded-xl bg-primary px-8 py-4 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-600 hover:shadow-blue-500/30 transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined">credit_card</span>
+<span class="font-bold text-lg">Pay $5,755.00 Now</span>
+</button>
+<div class="flex items-center justify-center md:justify-end gap-2 text-xs text-slate-med dark:text-gray-500">
+<span class="material-symbols-outlined text-[16px] text-green-500">lock</span>
+                                    Secured by 256-bit SSL encryption
+                                </div>
+<div class="flex justify-center md:justify-end gap-3 opacity-60 grayscale hover:grayscale-0 transition-all duration-300">
+<!-- Simple representation of card logos -->
+<div class="h-6 w-10 bg-gray-200 rounded dark:bg-gray-700" data-alt="Visa logo placeholder"></div>
+<div class="h-6 w-10 bg-gray-200 rounded dark:bg-gray-700" data-alt="Mastercard logo placeholder"></div>
+<div class="h-6 w-10 bg-gray-200 rounded dark:bg-gray-700" data-alt="Amex logo placeholder"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-8 text-center text-sm text-slate-med dark:text-gray-500">
+<p>© 2024 Global Citizens Legal Group. All rights reserved.</p>
+<div class="mt-2 flex justify-center gap-4">
+<a class="hover:text-primary transition-colors" href="#">Terms of Service</a>
+<a class="hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="hover:text-primary transition-colors" href="#">Contact Support</a>
+</div>
+</div>
+</div>
+</main>
+<!-- Simple Notification Toast (Simulated) -->
+<div class="fixed bottom-6 right-6 z-50 animate-bounce hidden">
+<div class="flex items-center gap-3 rounded-lg bg-slate-900 p-4 text-white shadow-xl dark:bg-white dark:text-slate-900">
+<span class="material-symbols-outlined text-green-400 dark:text-green-600">check_circle</span>
+<p class="font-medium">Invoice Loaded Successfully</p>
+</div>
+</div>
+</body></html>
