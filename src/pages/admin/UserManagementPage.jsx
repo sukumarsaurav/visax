@@ -4,6 +4,7 @@ import Button from '../../components/ui/Button'
 import Avatar from '../../components/ui/Avatar'
 import { supabase } from '../../lib/supabase'
 import { slackNotify, mailchimpSync, trackEvent } from '../../lib/integrations'
+import { friendlyError } from '../../lib/errors'
 
 const ROLE_LABELS = { client: 'Client', individual: 'Consultant', agency_admin: 'Agency', agency_member: 'Team Member', admin: 'Admin' }
 const ROLE_COLORS = { client: 'blue', individual: 'purple', agency_admin: 'emerald', agency_member: 'indigo', admin: 'red' }
@@ -72,7 +73,7 @@ export default function UserManagementPage() {
         }).eq('id', selectedUser.id)
 
         if (error) {
-            showToast('Failed to save changes: ' + error.message, 'error')
+            showToast(friendlyError(error, 'Failed to save changes'), 'error')
         } else {
             showToast('User updated successfully')
             // Sync role change to Mailchimp
@@ -92,7 +93,7 @@ export default function UserManagementPage() {
         const newStatus = selectedUser.application_status === 'suspended' ? 'active' : 'suspended'
         const { error } = await supabase.from('profiles').update({ application_status: newStatus }).eq('id', selectedUser.id)
         if (error) {
-            showToast('Action failed: ' + error.message, 'error')
+            showToast(friendlyError(error, 'Action failed'), 'error')
         } else {
             showToast(`User ${newStatus === 'suspended' ? 'suspended' : 'reactivated'}`)
             if (newStatus === 'suspended') {
@@ -107,19 +108,30 @@ export default function UserManagementPage() {
 
     const handleResetPassword = async () => {
         if (!selectedUser) return
-        const { error } = await supabase.auth.admin.generateLink({ type: 'recovery', email: selectedUser.email })
-        if (error) {
-            // Fallback to resetPasswordForEmail
-            await supabase.auth.resetPasswordForEmail(selectedUser.email)
-        }
-        showToast('Password reset email sent')
+        const { error } = await supabase.auth.resetPasswordForEmail(selectedUser.email, {
+            redirectTo: `${window.location.origin}/reset-password`,
+        })
+        showToast(error ? friendlyError(error, 'Failed to send reset email') : 'Password reset email sent', error ? 'error' : 'success')
     }
 
     const exportCSV = () => {
+        // Neutralise CSV/formula injection: values starting with =+-@ are prefixed
+        // with a single quote so Excel/Sheets won't evaluate them as formulas.
+        const escField = (val) => {
+            const s = String(val ?? '')
+            const safe = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s
+            return /[",\n\r]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe
+        }
         const headers = ['Name', 'Email', 'Role', 'Status', 'Joined']
-        const rows = users.map(u => [u.full_name || '', u.email, u.role, u.application_status || '', new Date(u.created_at).toLocaleDateString()])
-        const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
-        const blob = new Blob([csv], { type: 'text/csv' })
+        const rows = users.map(u => [
+            u.full_name || '',
+            u.email,
+            ROLE_LABELS[u.role] || u.role,
+            STATUS_LABELS[u.application_status] || u.application_status || '',
+            new Date(u.created_at).toLocaleDateString(),
+        ])
+        const csv = [headers, ...rows].map(r => r.map(escField).join(',')).join('\n')
+        const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url; a.download = 'users.csv'; a.click()

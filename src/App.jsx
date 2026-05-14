@@ -4,6 +4,7 @@ import { useEffect, lazy, Suspense } from 'react'
 import { supabase } from './lib/supabase'
 import { trackEvent } from './lib/integrations'
 import { CLIENT, AGENCY_ADMIN, ADMIN } from './constants/roles'
+import { useDocumentLang } from './hooks/useDocumentLang'
 
 // Layouts — kept eager since they're needed immediately
 import DashboardLayout from './components/layout/DashboardLayout'
@@ -115,6 +116,8 @@ function useGoogleAnalytics() {
                 const ga = data?.value?.analytics
                 if (!ga?.enabled || !ga?.measurement_id) return
                 const id = ga.measurement_id
+                // Validate GA4 ID format before any DOM injection to prevent script injection
+                if (!/^G-[A-Z0-9]{4,}$/.test(id)) return
                 if (document.getElementById('gtag-script')) return // already loaded
                 const script = document.createElement('script')
                 script.id = 'gtag-script'
@@ -152,6 +155,7 @@ function RootRedirect() {
 
 export default function App() {
     useGoogleAnalytics()
+    useDocumentLang()
     return (
         <Router>
             <PageViewTracker />
@@ -183,9 +187,17 @@ export default function App() {
                     <Route path="/professional-register" element={<ProfessionalWelcomePage />} />
                     <Route path="/professional-register/form" element={<ProfessionalRegisterPage />} />
 
-                    {/* Professional post-registration pages */}
-                    <Route path="/professional-submitted" element={<ProfessionalSubmittedPage />} />
-                    <Route path="/professional-approved" element={<ProfessionalApprovedPage />} />
+                    {/* Professional post-registration pages — require auth */}
+                    <Route path="/professional-submitted" element={
+                        <ProtectedRoute allowedRoles={['individual', 'agency_admin']}>
+                            <ProfessionalSubmittedPage />
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/professional-approved" element={
+                        <ProtectedRoute allowedRoles={['individual', 'agency_admin']}>
+                            <ProfessionalApprovedPage />
+                        </ProtectedRoute>
+                    } />
 
                     {/* Client Onboarding (protected, no sidebar) */}
                     <Route path="/client/onboarding" element={

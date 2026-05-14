@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import toast from 'react-hot-toast'
+import { friendlyError } from '../../lib/errors'
 
 export default function RegisterPage() {
     const navigate = useNavigate()
@@ -32,7 +33,7 @@ export default function RegisterPage() {
         setLoading(false)
 
         if (error) {
-            toast.error(error.message)
+            toast.error(friendlyError(error))
         } else {
             toast.success('Account created! Please check your email to verify.')
             navigate('/client/onboarding')

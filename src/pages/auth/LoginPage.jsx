@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import toast from 'react-hot-toast'
+import { friendlyError } from '../../lib/errors'
 
 export default function LoginPage() {
     const navigate = useNavigate()
@@ -31,7 +32,7 @@ export default function LoginPage() {
         setLoading(false)
 
         if (error) {
-            toast.error(error.message || 'Invalid email or password')
+            toast.error(friendlyError(error, 'Invalid email or password'))
             setErrors({ password: 'Invalid credentials' })
         } else {
             toast.success('Welcome back!')

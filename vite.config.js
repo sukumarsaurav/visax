@@ -1,26 +1,34 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import compression from 'vite-plugin-compression'
 
-// https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    // Brotli — modern browsers, ~70% smaller than raw JS
+    compression({ algorithm: 'brotliCompress', ext: '.br', threshold: 1024 }),
+    // Gzip — fallback for older hosts/CDNs
+    compression({ algorithm: 'gzip', ext: '.gz', threshold: 1024 }),
+  ],
   build: {
-    // Drop console.* in production builds
     minify: 'esbuild',
     target: 'es2020',
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
+          // Separate vendor chunks so the browser can cache them independently
+          'react-core': ['react', 'react-dom'],
+          'react-router': ['react-router-dom'],
           supabase: ['@supabase/supabase-js'],
           toast: ['react-hot-toast'],
         },
       },
     },
-    chunkSizeWarningLimit: 500,
+    chunkSizeWarningLimit: 400,
   },
   esbuild: {
-    // Remove all console.* calls in production
+    // Strip all console.* and debugger statements from production bundles
     drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
   },
 })

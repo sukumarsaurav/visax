@@ -3,7 +3,8 @@
 @tailwind utilities;
 
 body {
-  font-family: 'Manrope', sans-serif;
+  /* Noto Sans Devanagari provides Hindi glyph coverage; Manrope handles Latin */
+  font-family: 'Manrope', 'Noto Sans Devanagari', system-ui, sans-serif;
 }
 
 /* Material Symbols base */
