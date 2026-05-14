@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom'
+import PublicHeader from '../../components/layout/PublicHeader'
+import Footer from '../../components/layout/Footer'
 
 const benefits = [
     {
@@ -33,33 +35,15 @@ const stats = [
 
 export default function ProfessionalWelcomePage() {
     return (
-        <div className="relative flex min-h-screen w-full flex-col bg-slate-50 dark:bg-slate-900">
-            {/* Header */}
-            <header className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 py-4 lg:px-10">
-                <Link to="/" className="flex items-center gap-2.5 text-slate-900 dark:text-white">
-                    <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-white">
-                        <span className="material-symbols-outlined material-filled text-lg">flight_takeoff</span>
-                    </div>
-                    <h2 className="text-lg font-black tracking-tight">VisaX</h2>
-                </Link>
-                <div className="flex items-center gap-4">
-                    <span className="hidden sm:block text-sm text-slate-500 dark:text-slate-400">Already registered?</span>
-                    <Link
-                        to="/login"
-                        className="flex items-center justify-center rounded-lg h-9 px-4 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-900 dark:text-white text-sm font-bold transition-colors"
-                    >
-                        Log In
-                    </Link>
-                </div>
-            </header>
+        <div className="flex min-h-screen flex-col bg-white dark:bg-[#101822] overflow-x-hidden">
+            <PublicHeader />
 
-            {/* Main Content */}
-            <main className="flex flex-1 flex-col items-center justify-center px-4 py-10 lg:px-20 lg:py-12">
-                <div className="max-w-[1200px] w-full">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <main id="main-content" className="flex flex-1 flex-col items-center justify-center px-4 py-14 lg:px-10 lg:py-20">
+                <div className="w-full max-w-6xl">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
 
                         {/* Left: Hero image */}
-                        <div className="relative order-1 w-full min-h-[300px] lg:min-h-[580px] flex flex-col justify-center">
+                        <div className="relative order-2 lg:order-1 w-full min-h-[300px] lg:min-h-[580px] flex flex-col justify-center">
                             <div className="absolute -left-10 -top-10 w-64 h-64 bg-primary/5 rounded-full blur-3xl -z-10" />
                             <div className="absolute -right-10 bottom-10 w-64 h-64 bg-blue-400/10 rounded-full blur-3xl -z-10" />
 
@@ -69,10 +53,9 @@ export default function ProfessionalWelcomePage() {
                                     backgroundImage: `url('https://images.unsplash.com/photo-1600880292203-757bb62b4baf?q=80&w=1470&auto=format&fit=crop')`
                                 }}
                             >
-                                {/* Dark gradient overlay for readability */}
                                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent" />
 
-                                {/* Stats bar at top */}
+                                {/* Stats bar */}
                                 <div className="absolute top-5 left-5 right-5 flex gap-3">
                                     {stats.map((s) => (
                                         <div key={s.value} className="flex-1 bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-xl p-3 text-center shadow-sm">
@@ -82,7 +65,7 @@ export default function ProfessionalWelcomePage() {
                                     ))}
                                 </div>
 
-                                {/* Trust badge at bottom */}
+                                {/* Trust badge */}
                                 <div className="absolute bottom-5 left-5 right-5 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm p-4 rounded-xl shadow-lg border border-white/20">
                                     <div className="flex items-center gap-3">
                                         <div className="flex -space-x-2 shrink-0">
@@ -109,7 +92,7 @@ export default function ProfessionalWelcomePage() {
                         </div>
 
                         {/* Right: Content */}
-                        <div className="flex flex-col gap-8 order-2">
+                        <div className="flex flex-col gap-8 order-1 lg:order-2">
                             <div className="flex flex-col gap-3">
                                 <span className="inline-flex items-center gap-1.5 text-primary font-bold tracking-wide uppercase text-xs">
                                     <span className="material-symbols-outlined text-[14px]">workspace_premium</span>
@@ -142,7 +125,7 @@ export default function ProfessionalWelcomePage() {
                             <div className="flex flex-col gap-3 mt-2">
                                 <Link
                                     to="/professional-register/form"
-                                    className="flex items-center justify-center gap-2 rounded-xl h-13 py-3.5 px-8 bg-primary hover:bg-blue-600 text-white text-base font-bold transition-all shadow-lg shadow-primary/25 hover:shadow-primary/40"
+                                    className="flex items-center justify-center gap-2 rounded-xl py-3.5 px-8 bg-primary hover:bg-blue-600 text-white text-base font-bold transition-all shadow-lg shadow-primary/25 hover:shadow-primary/40"
                                 >
                                     <span>Start Registration</span>
                                     <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
@@ -164,6 +147,8 @@ export default function ProfessionalWelcomePage() {
                     </div>
                 </div>
             </main>
+
+            <Footer />
         </div>
     )
 }

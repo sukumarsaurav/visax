@@ -240,7 +240,7 @@ export default function ProfessionalRegisterPage() {
         }`
 
     return (
-        <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900">
+        <div className="flex min-h-screen bg-background-light dark:bg-background-dark">
             {/* ── LEFT PANEL ── */}
             <div className="w-[400px] shrink-0 sticky top-0 h-screen overflow-hidden">
                 <LeftPanel step={step} totalSteps={totalSteps} accountType={accountType} />
@@ -248,15 +248,20 @@ export default function ProfessionalRegisterPage() {
 
             {/* ── RIGHT PANEL (scrollable form) ── */}
             <div className="flex-1 flex flex-col min-h-screen overflow-y-auto">
-                {/* Mobile header */}
-                <div className="lg:hidden flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-10">
-                    <Link to="/" className="flex items-center gap-2 text-slate-900 dark:text-white">
-                        <div className="flex size-7 items-center justify-center rounded-md bg-primary text-white">
-                            <span className="material-symbols-outlined material-filled text-base">flight_takeoff</span>
+                {/* Top bar — matches AuthLayout: logo hidden on desktop (left panel handles it), back link always visible */}
+                <div className="flex items-center justify-between px-6 py-5 border-b border-slate-200 dark:border-slate-800">
+                    <div className="flex items-center gap-2 lg:invisible">
+                        <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-white">
+                            <span className="material-symbols-outlined material-filled text-lg">flight_takeoff</span>
                         </div>
-                        <span className="font-black">VisaX</span>
+                        <span className="font-black text-slate-900 dark:text-white">VisaX</span>
+                    </div>
+                    <Link
+                        to="/professional-register"
+                        className="text-sm font-semibold text-slate-500 hover:text-primary dark:text-slate-400 dark:hover:text-primary transition-colors"
+                    >
+                        ← Back
                     </Link>
-                    <span className="text-xs font-semibold text-slate-500">Step {step} of {totalSteps}</span>
                 </div>
 
                 <div className="flex-1 flex flex-col justify-center px-6 py-10 lg:px-12 max-w-[640px] mx-auto w-full">
