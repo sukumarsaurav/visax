@@ -56,17 +56,25 @@ export const navItems = {
 
     admin: [
         { label: 'Dashboard',    icon: 'dashboard',        path: '/admin' },
-        { label: 'Users',        icon: 'manage_accounts',  path: '/admin/user-management' },
-        { label: 'Applications', icon: 'description',      path: '/admin/applications', badgeCount: 0 },
-        { label: 'Analytics',    icon: 'analytics',        path: '/admin/analytics' },
-        { label: 'Sales & Subs', icon: 'payments',         path: '/admin/sales-subscriptions' },
-        { label: 'Marketing',    icon: 'campaign',         path: '/admin/marketing' },
-        { label: 'Resources',    icon: 'library_books',    path: '/admin/resources' },
-        { label: 'Integrations', icon: 'extension',        path: '/admin/integrations' },
-        { label: 'Audit Log',    icon: 'verified_user',    path: '/admin/audit-log' },
-        { label: 'Content',      icon: 'article',          path: '/admin/content-management' },
-        { label: 'Announcements',icon: 'campaign',         path: '/admin/announcements' },
-        { label: 'Payments',     icon: 'credit_card',      path: '/admin/payment-settings' },
-        { label: 'Settings',     icon: 'settings',         path: '/admin/platform-settings' },
+        { group: 'Users & Access', items: [
+            { label: 'Users',        icon: 'manage_accounts',  path: '/admin/user-management' },
+            { label: 'Applications', icon: 'description',      path: '/admin/applications', badgeCount: 0 },
+            { label: 'Audit Log',    icon: 'verified_user',    path: '/admin/audit-log' },
+        ]},
+        { group: 'Content & Comms', items: [
+            { label: 'Content',      icon: 'article',          path: '/admin/content-management' },
+            { label: 'Announcements',icon: 'campaign',         path: '/admin/announcements' },
+            { label: 'Resources',    icon: 'library_books',    path: '/admin/resources' },
+        ]},
+        { group: 'Revenue', items: [
+            { label: 'Analytics',    icon: 'analytics',        path: '/admin/analytics' },
+            { label: 'Sales & Subs', icon: 'payments',         path: '/admin/sales-subscriptions' },
+            { label: 'Marketing',    icon: 'campaign',         path: '/admin/marketing' },
+            { label: 'Payments',     icon: 'credit_card',      path: '/admin/payment-settings' },
+        ]},
+        { group: 'System', items: [
+            { label: 'Integrations', icon: 'extension',        path: '/admin/integrations' },
+            { label: 'Settings',     icon: 'settings',         path: '/admin/platform-settings' },
+        ]},
     ],
 }

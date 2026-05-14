@@ -1,332 +1,237 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Button from '../../components/ui/Button'
+import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../contexts/AuthContext'
 
-const services = [
-    {
-        id: 1,
-        name: 'Visa Applications',
-        category: 'Core Service',
-        icon: 'badge',
-        iconColor: 'blue',
-        visible: true,
-        expertiseAreas: ['Study Permit', 'Work Visa', 'Visitor Visa'],
-        countries: [
-            { code: 'CA', name: 'Canada', flag: '🇨🇦' },
-            { code: 'UK', name: 'UK', flag: '🇬🇧' }
-        ],
-        pricingModel: 'Starts at $500',
-        pricingType: 'per application'
-    },
-    {
-        id: 2,
-        name: 'Citizenship',
-        category: 'Specialized',
-        icon: 'public',
-        iconColor: 'indigo',
-        visible: true,
-        expertiseAreas: ['Naturalization', 'Descent'],
-        countries: [
-            { code: 'AU', name: 'Australia', flag: '🇦🇺' },
-            { code: 'UK', name: 'UK', flag: '🇬🇧' }
-        ],
-        pricingModel: 'Fixed $2,000',
-        pricingType: 'Package'
-    },
-    {
-        id: 3,
-        name: 'Document Review',
-        category: 'Hourly Service',
-        icon: 'history_edu',
-        iconColor: 'orange',
-        visible: false,
-        expertiseAreas: ['Legal Check', 'Translation'],
-        countries: [],
-        isGlobal: true,
-        pricingModel: '$150.00',
-        pricingType: 'per hour'
-    },
-    {
-        id: 4,
-        name: 'Family Sponsorship',
-        category: 'High Priority',
-        icon: 'family_restroom',
-        iconColor: 'pink',
-        visible: true,
-        expertiseAreas: ['Spousal', 'Parent/Grandparent'],
-        countries: [
-            { code: 'CA', name: 'Canada', flag: '🇨🇦' }
-        ],
-        pricingModel: 'Custom Quote',
-        pricingType: 'Varies'
-    },
-    {
-        id: 5,
-        name: 'Video Consultation',
-        category: 'Introductory',
-        icon: 'video_chat',
-        iconColor: 'teal',
-        visible: true,
-        expertiseAreas: ['General Inquiry', 'Strategy'],
-        countries: [],
-        isGlobal: true,
-        pricingModel: '$100.00',
-        pricingType: 'per 30 mins'
-    }
-]
+const CATEGORIES = ['Visa Application', 'Consultation', 'Document Review', 'Appeal', 'Settlement', 'Citizenship', 'Other']
+const ICON_MAP = { 'Visa Application': 'badge', 'Consultation': 'forum', 'Document Review': 'history_edu', 'Appeal': 'gavel', 'Settlement': 'home_work', 'Citizenship': 'public', 'Other': 'handyman' }
+const COLOR_MAP = { 'Visa Application': 'blue', 'Consultation': 'purple', 'Document Review': 'orange', 'Appeal': 'red', 'Settlement': 'emerald', 'Citizenship': 'indigo', 'Other': 'slate' }
+const BG_MAP = { blue: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400', purple: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400', orange: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400', red: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400', emerald: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400', indigo: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400', slate: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' }
+
+const EMPTY_FORM = { title: '', description: '', category: 'Visa Application', price: '', duration_minutes: 60, is_active: true, expertise_areas: '', target_countries: '' }
+
+function Toast({ msg, onClose }) {
+    useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t) }, [])
+    return (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-xl bg-slate-900 dark:bg-white px-5 py-3 text-white dark:text-slate-900 shadow-xl text-sm font-medium">
+            <span className="material-symbols-outlined text-emerald-400 dark:text-emerald-600">check_circle</span>
+            {msg}
+        </div>
+    )
+}
 
 export default function ServicesPage() {
-    const [activeTab, setActiveTab] = useState('all')
-    const [searchQuery, setSearchQuery] = useState('')
-    const [serviceList, setServiceList] = useState(services)
+    const { user } = useAuth()
+    const [services, setServices] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [showForm, setShowForm] = useState(false)
+    const [editService, setEditService] = useState(null)
+    const [form, setForm] = useState(EMPTY_FORM)
+    const [saving, setSaving] = useState(false)
+    const [toast, setToast] = useState('')
+    const [deleting, setDeleting] = useState(null)
 
-    const getIconColorClasses = (color) => {
-        const colors = {
-            blue: 'bg-blue-50 dark:bg-blue-900/20 text-primary border-blue-100 dark:border-blue-800',
-            indigo: 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-800',
-            orange: 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-800',
-            pink: 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 border-pink-100 dark:border-pink-800',
-            teal: 'bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 border-teal-100 dark:border-teal-800'
+    useEffect(() => {
+        if (!user) return
+        fetchServices()
+    }, [user])
+
+    async function fetchServices() {
+        setLoading(true)
+        const { data } = await supabase
+            .from('services')
+            .select('*')
+            .eq('provider_id', user.id)
+            .order('created_at', { ascending: false })
+        setServices(data || [])
+        setLoading(false)
+    }
+
+    const openNew = () => { setForm(EMPTY_FORM); setEditService(null); setShowForm(true) }
+    const openEdit = (svc) => { setForm({ ...svc, expertise_areas: (svc.expertise_areas || []).join(', '), target_countries: (svc.target_countries || []).join(', ') }); setEditService(svc); setShowForm(true) }
+
+    const handleSave = async (e) => {
+        e.preventDefault()
+        setSaving(true)
+        const payload = {
+            ...form,
+            price: parseFloat(form.price) || 0,
+            duration_minutes: parseInt(form.duration_minutes) || 60,
+            expertise_areas: form.expertise_areas.split(',').map(s => s.trim()).filter(Boolean),
+            target_countries: form.target_countries.split(',').map(s => s.trim()).filter(Boolean),
+            provider_id: user.id,
         }
-        return colors[color] || colors.blue
+        let error
+        if (editService) {
+            const res = await supabase.from('services').update(payload).eq('id', editService.id)
+            error = res.error
+        } else {
+            const res = await supabase.from('services').insert(payload)
+            error = res.error
+        }
+        if (!error) {
+            setToast(editService ? 'Service updated!' : 'Service created!')
+            setShowForm(false)
+            fetchServices()
+        }
+        setSaving(false)
     }
 
-    const toggleVisibility = (serviceId) => {
-        setServiceList(prev => prev.map(s =>
-            s.id === serviceId ? { ...s, visible: !s.visible } : s
-        ))
+    const handleToggle = async (svc) => {
+        await supabase.from('services').update({ is_active: !svc.is_active }).eq('id', svc.id)
+        setServices(prev => prev.map(s => s.id === svc.id ? { ...s, is_active: !s.is_active } : s))
     }
 
-    const filteredServices = serviceList.filter(s => {
-        const matchesSearch = s.name.toLowerCase().includes(searchQuery.toLowerCase())
-        if (activeTab === 'all') return matchesSearch
-        if (activeTab === 'active') return s.visible && matchesSearch
-        if (activeTab === 'drafts') return !s.visible && matchesSearch
-        return matchesSearch
-    })
-
-    const tabCounts = {
-        all: serviceList.length,
-        active: serviceList.filter(s => s.visible).length,
-        drafts: serviceList.filter(s => !s.visible).length
+    const handleDelete = async (id) => {
+        setDeleting(id)
+        await supabase.from('services').delete().eq('id', id)
+        setServices(prev => prev.filter(s => s.id !== id))
+        setDeleting(null)
     }
+
+    const color = (cat) => COLOR_MAP[cat] || 'slate'
 
     return (
-        <div className="flex flex-col gap-8">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                <div className="flex flex-col gap-1">
-                    <h1 className="text-slate-900 dark:text-white text-3xl font-extrabold tracking-tight">
-                        Services Management
-                    </h1>
-                    <p className="text-slate-500 dark:text-slate-400 text-base font-normal">
-                        Manage your service offerings, define expertise areas, and set pricing packages.
-                    </p>
+        <div className="flex flex-col gap-6">
+            {toast && <Toast msg={toast} onClose={() => setToast('')} />}
+
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-black text-slate-900 dark:text-white">Services & Pricing</h1>
+                    <p className="text-slate-500 mt-1">Manage the services you offer to clients.</p>
                 </div>
-                <div className="flex gap-3">
-                    <Button variant="secondary" icon="tune">
-                        Global Settings
-                    </Button>
-                    <Button icon="add_circle">
-                        Add New Service
-                    </Button>
-                </div>
+                <Button icon="add" onClick={openNew}>Add Service</Button>
             </div>
 
-            {/* Tabs & Search */}
-            <div className="flex flex-col md:flex-row gap-4 justify-between items-center bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                <div className="flex gap-2 p-1 w-full md:w-auto overflow-x-auto">
-                    <button
-                        onClick={() => setActiveTab('all')}
-                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${activeTab === 'all'
-                                ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white'
-                                : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400'
-                            }`}
-                    >
-                        All Services
-                        <span className="ml-1 text-xs text-slate-500 bg-slate-200 dark:bg-slate-700 px-1.5 rounded-full">
-                            {tabCounts.all}
-                        </span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('active')}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'active'
-                                ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-bold'
-                                : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400'
-                            }`}
-                    >
-                        Active
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('drafts')}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'drafts'
-                                ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-bold'
-                                : 'hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400'
-                            }`}
-                    >
-                        Drafts
-                    </button>
-                    <button className="px-4 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 text-sm font-medium transition-colors">
-                        Packages
-                    </button>
-                </div>
-                <div className="relative w-full md:w-64 px-2 mb-2 md:mb-0">
-                    <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">
-                        search
-                    </span>
-                    <input
-                        type="text"
-                        placeholder="Search services..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 rounded-lg bg-slate-50 dark:bg-slate-800 border-none text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-primary/50"
-                    />
-                </div>
-            </div>
-
-            {/* Services Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredServices.map((service) => (
-                    <div
-                        key={service.id}
-                        className="flex flex-col bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow group relative"
-                    >
-                        {/* Header */}
-                        <div className="p-6 pb-4 flex justify-between items-start">
-                            <div className="flex items-center gap-4">
-                                <div className={`size-12 rounded-xl flex items-center justify-center border ${getIconColorClasses(service.iconColor)}`}>
-                                    <span className="material-symbols-outlined text-[26px]">{service.icon}</span>
+            {/* Form Modal */}
+            {showForm && (
+                <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-lg shadow-xl max-h-[90vh] overflow-y-auto">
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">{editService ? 'Edit Service' : 'New Service'}</h3>
+                        <form onSubmit={handleSave} className="space-y-4">
+                            <div>
+                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-1">Service Title</label>
+                                <input required value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-primary" />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-1">Description</label>
+                                <textarea rows={3} value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-primary resize-none" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-1">Category</label>
+                                    <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-primary">
+                                        {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">
-                                        {service.name}
-                                    </h3>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                        {service.category}
-                                    </p>
+                                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-1">Price (USD)</label>
+                                    <input type="number" min="0" step="0.01" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-primary" />
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                                    {service.visible ? 'Visible' : 'Hidden'}
-                                </span>
-                                <label className="relative inline-flex items-center cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={service.visible}
-                                        onChange={() => toggleVisibility(service.id)}
-                                        className="sr-only peer"
-                                    />
-                                    <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-emerald-500"></div>
-                                </label>
+                            <div>
+                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-1">Duration (minutes)</label>
+                                <select value={form.duration_minutes} onChange={e => setForm(p => ({ ...p, duration_minutes: Number(e.target.value) }))} className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-primary">
+                                    {[30, 45, 60, 90, 120, 180].map(d => <option key={d} value={d}>{d} min</option>)}
+                                </select>
                             </div>
-                        </div>
+                            <div>
+                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-1">Expertise Areas (comma-separated)</label>
+                                <input value={form.expertise_areas} onChange={e => setForm(p => ({ ...p, expertise_areas: e.target.value }))} placeholder="e.g. Study Permit, Work Visa, PR" className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-primary" />
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-1">Target Countries (comma-separated)</label>
+                                <input value={form.target_countries} onChange={e => setForm(p => ({ ...p, target_countries: e.target.value }))} placeholder="e.g. Canada, UK, Australia" className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-primary" />
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setForm(p => ({ ...p, is_active: !p.is_active }))}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${form.is_active ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'}`}
+                                >
+                                    <span className={`inline-block size-4 transform rounded-full bg-white transition-transform ${form.is_active ? 'translate-x-6' : 'translate-x-1'}`} />
+                                </button>
+                                <span className="text-sm text-slate-600 dark:text-slate-400">Active (visible to clients)</span>
+                            </div>
+                            <div className="flex justify-end gap-3 pt-2">
+                                <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg">Cancel</button>
+                                <button type="submit" disabled={saving} className="px-4 py-2 text-sm bg-primary text-white font-bold rounded-lg hover:bg-blue-600 disabled:opacity-50">
+                                    {saving ? 'Saving...' : editService ? 'Update Service' : 'Create Service'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
-                        {/* Content */}
-                        <div className="px-6 flex flex-col gap-4 flex-1">
-                            {/* Expertise Areas */}
-                            <div className="flex flex-col gap-2">
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                    Expertise Areas
-                                </p>
-                                <div className="flex flex-wrap gap-2">
-                                    {service.expertiseAreas.map((area) => (
-                                        <span
-                                            key={area}
-                                            className="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300"
-                                        >
-                                            {area}
-                                        </span>
+            {/* Services Grid */}
+            {loading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                        <div key={i} className="h-48 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800" />
+                    ))}
+                </div>
+            ) : services.length === 0 ? (
+                <div className="flex flex-col items-center gap-4 py-20 text-slate-400 bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                    <span className="material-symbols-outlined text-[64px]">design_services</span>
+                    <div className="text-center">
+                        <p className="text-base font-medium">No services yet</p>
+                        <p className="text-sm mt-1">Add services to make them bookable by clients</p>
+                    </div>
+                    <Button icon="add" onClick={openNew}>Add First Service</Button>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {services.map(svc => {
+                        const cat = svc.category || 'Other'
+                        const col = color(cat)
+                        return (
+                            <div key={svc.id} className={`bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 flex flex-col gap-4 ${!svc.is_active ? 'opacity-60' : ''}`}>
+                                <div className="flex items-start justify-between">
+                                    <div className={`size-10 rounded-lg flex items-center justify-center ${BG_MAP[col]}`}>
+                                        <span className="material-symbols-outlined text-[22px]">{ICON_MAP[cat] || 'handyman'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <button onClick={() => handleToggle(svc)} className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${svc.is_active ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'}`}>
+                                            <span className={`inline-block size-3.5 transform rounded-full bg-white transition-transform ${svc.is_active ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">{svc.title}</h3>
+                                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">{svc.description}</p>
+                                </div>
+
+                                <div className="flex flex-wrap gap-1">
+                                    {(svc.expertise_areas || []).slice(0, 3).map(area => (
+                                        <span key={area} className="text-[11px] font-medium px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">{area}</span>
                                     ))}
                                 </div>
-                            </div>
 
-                            {/* Geographical Scope */}
-                            <div className="flex flex-col gap-2">
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                    Geographical Scope
-                                </p>
-                                <div className="flex gap-2 flex-wrap">
-                                    {service.isGlobal ? (
-                                        <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
-                                            <span className="material-symbols-outlined text-[16px] text-slate-400">globe</span>
-                                            <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                                                Global / All Regions
-                                            </span>
-                                        </div>
-                                    ) : (
-                                        service.countries.map((country) => (
-                                            <div
-                                                key={country.code}
-                                                className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700"
-                                                title={country.name}
-                                            >
-                                                <span className="text-sm">{country.flag}</span>
-                                                <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                                                    {country.name}
-                                                </span>
-                                            </div>
-                                        ))
-                                    )}
+                                <div className="flex items-center justify-between mt-auto pt-3 border-t border-slate-100 dark:border-slate-800">
+                                    <div>
+                                        <p className="text-base font-black text-slate-900 dark:text-white">${svc.price}</p>
+                                        <p className="text-xs text-slate-400">{svc.duration_minutes} min · {cat}</p>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <button onClick={() => openEdit(svc)} className="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-colors">
+                                            <span className="material-symbols-outlined text-[18px]">edit</span>
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(svc.id)}
+                                            disabled={deleting === svc.id}
+                                            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                        >
+                                            <span className="material-symbols-outlined text-[18px]">{deleting === svc.id ? 'hourglass_empty' : 'delete'}</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-
-                            {/* Pricing */}
-                            <div className="flex flex-col gap-1 mt-1">
-                                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                                    Pricing Model
-                                </p>
-                                <div className="flex items-baseline gap-2">
-                                    <span className="text-base font-bold text-slate-900 dark:text-white">
-                                        {service.pricingModel}
-                                    </span>
-                                    <span className="text-xs text-slate-500">{service.pricingType}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Footer Actions */}
-                        <div className="mt-6 p-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/20 rounded-b-xl">
-                            {service.visible ? (
-                                <button className="text-xs font-bold text-primary hover:text-blue-700 flex items-center gap-1">
-                                    <span className="material-symbols-outlined text-[16px]">visibility</span>
-                                    Preview
-                                </button>
-                            ) : (
-                                <span className="text-xs font-bold text-slate-400 italic">Currently Offline</span>
-                            )}
-                            <div className="flex gap-1">
-                                <button
-                                    className="p-2 hover:bg-white dark:hover:bg-slate-700 rounded-lg text-slate-500 dark:text-slate-400 shadow-sm border border-transparent hover:border-slate-200 dark:hover:border-slate-600 transition-all"
-                                    title="Edit Service"
-                                >
-                                    <span className="material-symbols-outlined text-[18px]">edit</span>
-                                </button>
-                                <button
-                                    className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg text-slate-400 hover:text-red-600 transition-colors"
-                                    title="Delete Service"
-                                >
-                                    <span className="material-symbols-outlined text-[18px]">delete</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-
-                {/* Add New Service Card */}
-                <button className="flex flex-col items-center justify-center gap-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-primary/50 dark:hover:border-primary/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all group min-h-[300px]">
-                    <div className="size-16 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center text-slate-400 group-hover:text-primary transition-colors shadow-sm">
-                        <span className="material-symbols-outlined text-[32px]">add</span>
-                    </div>
-                    <div className="flex flex-col items-center gap-1">
-                        <span className="text-base font-bold text-slate-900 dark:text-white group-hover:text-primary transition-colors">
-                            Create New Service
-                        </span>
-                        <span className="text-xs text-slate-500 text-center px-8">
-                            Define a new service package, set pricing, and publish.
-                        </span>
-                    </div>
-                </button>
-            </div>
+                        )
+                    })}
+                </div>
+            )}
         </div>
     )
 }

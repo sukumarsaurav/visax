@@ -70,7 +70,7 @@ function LeftPanel({ step, totalSteps, accountType }) {
             <div>
                 <Link to="/" className="flex items-center gap-2.5 mb-12">
                     <div className="flex size-9 items-center justify-center rounded-lg bg-white/20 backdrop-blur-sm">
-                        <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>flight_takeoff</span>
+                        <span className="material-symbols-outlined material-filled text-xl">flight_takeoff</span>
                     </div>
                     <span className="text-xl font-black tracking-tight">VisaX</span>
                 </Link>
@@ -251,7 +251,7 @@ export default function ProfessionalRegisterPage() {
                 <div className="lg:hidden flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 sticky top-0 z-10">
                     <Link to="/" className="flex items-center gap-2 text-slate-900 dark:text-white">
                         <div className="flex size-7 items-center justify-center rounded-md bg-primary text-white">
-                            <span className="material-symbols-outlined text-base" style={{ fontVariationSettings: "'FILL' 1" }}>flight_takeoff</span>
+                            <span className="material-symbols-outlined material-filled text-base">flight_takeoff</span>
                         </div>
                         <span className="font-black">VisaX</span>
                     </Link>

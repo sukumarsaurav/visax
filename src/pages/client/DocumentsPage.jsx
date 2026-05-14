@@ -4,16 +4,13 @@ import { supabase } from '../../lib/supabase'
 import Card from '../../components/ui/Card'
 import Badge from '../../components/ui/Badge'
 import toast from 'react-hot-toast'
+import { formatDate } from '../../utils/date'
 
 function formatSize(bytes) {
     if (!bytes) return '—'
     if (bytes < 1024) return `${bytes} B`
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
-
-function formatDate(dateStr) {
-    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 const fileIcon = (mime) => {
@@ -67,15 +64,20 @@ export default function DocumentsPage() {
             client_id: user.id,
         })
 
-        if (dbErr) toast.error('Failed to save document record')
-        else { toast.success('Document uploaded!'); fetchDocs() }
+        if (dbErr) {
+            // Roll back the storage upload to avoid orphaned files
+            await supabase.storage.from('documents').remove([path])
+            toast.error('Failed to save document record')
+        } else { toast.success('Document uploaded!'); fetchDocs() }
         setUploading(false)
         fileRef.current.value = ''
     }
 
     async function handleDelete(doc) {
-        await supabase.storage.from('documents').remove([doc.file_path])
-        await supabase.from('documents').delete().eq('id', doc.id)
+        const { error: storageErr } = await supabase.storage.from('documents').remove([doc.file_path])
+        if (storageErr) { toast.error('Failed to delete file'); return }
+        const { error: dbErr } = await supabase.from('documents').delete().eq('id', doc.id)
+        if (dbErr) { toast.error('Failed to remove document record'); return }
         setDocs(prev => prev.filter(d => d.id !== doc.id))
         toast.success('Document deleted')
     }

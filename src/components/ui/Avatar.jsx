@@ -11,16 +11,23 @@ export default function Avatar({ src, alt, size = 'md', className = '' }) {
     return (
         <div
             className={clsx(
-                'rounded-full bg-cover bg-center bg-slate-200 dark:bg-slate-700',
+                'relative rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden flex-shrink-0',
                 sizes[size],
                 className
             )}
-            style={{ backgroundImage: src ? `url(${src})` : undefined }}
-            title={alt}
+            role="img"
+            aria-label={alt || 'User avatar'}
         >
-            {!src && (
+            {src ? (
+                <img
+                    src={src}
+                    alt={alt || ''}
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                />
+            ) : (
                 <div className="flex h-full w-full items-center justify-center text-slate-500 dark:text-slate-400">
-                    <span className="material-symbols-outlined">person</span>
+                    <span className="material-symbols-outlined" aria-hidden="true">person</span>
                 </div>
             )}
         </div>

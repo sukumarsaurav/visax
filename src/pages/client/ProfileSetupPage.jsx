@@ -71,7 +71,7 @@ export default function ProfileSetupPage() {
             <header className="flex items-center justify-between whitespace-nowrap border-b border-slate-200 dark:border-slate-800 px-10 py-3 bg-white dark:bg-slate-900">
                 <div className="flex items-center gap-4">
                     <div className="size-8 text-primary">
-                        <span className="material-symbols-outlined text-3xl">flight_takeoff</span>
+                        <span className="material-symbols-outlined material-filled text-3xl">flight_takeoff</span>
                     </div>
                     <h2 className="text-lg font-black leading-tight tracking-tight">VisaX</h2>
                 </div>

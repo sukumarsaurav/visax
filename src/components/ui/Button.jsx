@@ -20,25 +20,34 @@ export default function Button({
     size = 'md',
     icon,
     iconPosition = 'left',
+    loading = false,
     className = '',
+    disabled,
     ...props
 }) {
+    const isDisabled = disabled || loading
+
     return (
         <button
             className={clsx(
-                'inline-flex items-center justify-center gap-2 rounded-lg font-bold transition-all active:scale-[0.98]',
+                'inline-flex items-center justify-center gap-2 rounded-lg font-bold transition-all active:scale-[0.98] focus-ring',
+                'disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100',
                 variants[variant],
                 sizes[size],
                 className
             )}
+            disabled={isDisabled}
             {...props}
         >
-            {icon && iconPosition === 'left' && (
-                <span className="material-symbols-outlined text-[18px]">{icon}</span>
+            {loading && (
+                <span className="material-symbols-outlined text-[18px] animate-spin" aria-hidden="true">progress_activity</span>
+            )}
+            {!loading && icon && iconPosition === 'left' && (
+                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">{icon}</span>
             )}
             {children}
-            {icon && iconPosition === 'right' && (
-                <span className="material-symbols-outlined text-[18px]">{icon}</span>
+            {!loading && icon && iconPosition === 'right' && (
+                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">{icon}</span>
             )}
         </button>
     )

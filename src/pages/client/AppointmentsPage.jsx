@@ -2,14 +2,7 @@ import Card from '../../components/ui/Card'
 import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
 import { useAppointments } from '../../hooks/useAppointments'
-
-function formatDate(d) {
-    return new Date(d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
-}
-function formatTime(d) {
-    return new Date(d).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-}
-
+import { formatDate, formatTime } from '../../utils/date'
 const typeIcon = { video: 'videocam', phone: 'call', in_person: 'place' }
 const statusColor = { upcoming: 'blue', completed: 'green', cancelled: 'slate', no_show: 'red' }
 

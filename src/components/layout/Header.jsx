@@ -3,6 +3,10 @@ import { Link } from 'react-router-dom'
 import { clsx } from '../../utils/clsx'
 import { useAuth } from '../../contexts/AuthContext'
 import { useNotifications } from '../../hooks/useNotifications'
+import { getNotificationsPath } from '../../constants/roles'
+import { timeAgo } from '../../utils/date'
+import ThemeToggle from '../ui/ThemeToggle'
+import CommandPalette from '../ui/CommandPalette'
 
 const typeConfig = {
     case_update:  { icon: 'folder_open',    bg: 'bg-primary/10',                              text: 'text-primary' },
@@ -13,30 +17,15 @@ const typeConfig = {
     system:       { icon: 'info',           bg: 'bg-slate-100 dark:bg-slate-800',              text: 'text-slate-500' },
 }
 
-function timeAgo(dateStr) {
-    const diff = Date.now() - new Date(dateStr).getTime()
-    const mins = Math.floor(diff / 60000)
-    if (mins < 1) return 'just now'
-    if (mins < 60) return `${mins}m ago`
-    const hrs = Math.floor(mins / 60)
-    if (hrs < 24) return `${hrs}h ago`
-    return `${Math.floor(hrs / 24)}d ago`
-}
-
-export default function Header({ title, children, className = '' }) {
+export default function Header({ title, children, className = '', userType, consultantType, onDrawerOpen }) {
     const [open, setOpen] = useState(false)
     const ref = useRef(null)
     const { profile } = useAuth()
     const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications()
 
-    const notifPath = profile?.role === 'client'
-        ? '/client/notifications'
-        : profile?.role === 'agency_admin'
-            ? '/agency/notifications'
-            : profile?.role === 'agency_member'
-                ? '/team-member/notifications'
-                : '/consultant/notifications'
+    const notifPath = getNotificationsPath(profile?.role)
 
+    // Close notification dropdown on outside click
     useEffect(() => {
         function handleClickOutside(e) {
             if (ref.current && !ref.current.contains(e.target)) setOpen(false)
@@ -45,22 +34,48 @@ export default function Header({ title, children, className = '' }) {
         return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [])
 
+    // Close notification dropdown on Escape
+    useEffect(() => {
+        if (!open) return
+        function handleKeyDown(e) {
+            if (e.key === 'Escape') setOpen(false)
+        }
+        document.addEventListener('keydown', handleKeyDown)
+        return () => document.removeEventListener('keydown', handleKeyDown)
+    }, [open])
+
     return (
         <header className={clsx(
             'sticky top-0 z-20 flex h-16 w-full items-center justify-between border-b border-slate-200 bg-white/80 px-4 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/80 sm:px-6',
             className
         )}>
             <div className="flex items-center gap-3">
+                {/* Mobile hamburger */}
+                <button
+                    className="md:hidden flex items-center justify-center size-9 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    onClick={onDrawerOpen}
+                    aria-label="Open navigation menu"
+                >
+                    <span className="material-symbols-outlined text-[22px]" aria-hidden="true">menu</span>
+                </button>
                 {title && <h1 className="text-lg font-bold text-slate-900 dark:text-white">{title}</h1>}
             </div>
 
             <div className="flex items-center gap-2">
                 {children}
 
+                {/* Command Palette Search */}
+                <CommandPalette />
+
+                {/* Theme Toggle */}
+                <ThemeToggle />
+
                 {/* Notifications bell */}
                 <div className="relative" ref={ref}>
                     <button
                         onClick={() => setOpen(v => !v)}
+                        aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
+                        aria-expanded={open}
                         className={clsx(
                             'relative flex size-10 items-center justify-center rounded-full border transition-colors',
                             open
@@ -68,14 +83,18 @@ export default function Header({ title, children, className = '' }) {
                                 : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-primary dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
                         )}
                     >
-                        <span className="material-symbols-outlined text-[20px]">notifications</span>
+                        <span className="material-symbols-outlined text-[20px]" aria-hidden="true">notifications</span>
                         {unreadCount > 0 && (
                             <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900" />
                         )}
                     </button>
 
                     {open && (
-                        <div className="absolute right-0 top-12 w-[360px] max-h-[520px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                        <div
+                            className="absolute right-0 top-12 w-[min(360px,calc(100vw-2rem))] max-h-[520px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900"
+                            role="region"
+                            aria-label="Notifications"
+                        >
                             <div className="flex items-center justify-between border-b border-slate-100 p-4 dark:border-slate-800">
                                 <div className="flex items-center gap-2">
                                     <h3 className="font-bold text-slate-900 dark:text-white">Notifications</h3>
@@ -96,7 +115,7 @@ export default function Header({ title, children, className = '' }) {
                             <div className="max-h-[380px] overflow-y-auto">
                                 {notifications.length === 0 ? (
                                     <div className="flex flex-col items-center gap-2 py-10 text-slate-400">
-                                        <span className="material-symbols-outlined text-[40px]">notifications_none</span>
+                                        <span className="material-symbols-outlined text-[40px]" aria-hidden="true">notifications_none</span>
                                         <p className="text-sm">No notifications yet</p>
                                     </div>
                                 ) : notifications.map(n => {
@@ -111,7 +130,7 @@ export default function Header({ title, children, className = '' }) {
                                             )}
                                         >
                                             <div className={clsx('flex size-10 flex-shrink-0 items-center justify-center rounded-full', cfg.bg, cfg.text)}>
-                                                <span className="material-symbols-outlined text-[18px]">{cfg.icon}</span>
+                                                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">{cfg.icon}</span>
                                             </div>
                                             <div className="min-w-0 flex-1">
                                                 <p className={clsx('line-clamp-1 text-sm font-semibold', n.is_read ? 'text-slate-600 dark:text-slate-400' : 'text-slate-900 dark:text-white')}>
@@ -139,7 +158,7 @@ export default function Header({ title, children, className = '' }) {
                                     className="flex w-full items-center justify-center gap-2 py-1.5 text-sm font-bold text-primary hover:underline"
                                 >
                                     View All
-                                    <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                                    <span className="material-symbols-outlined text-[16px]" aria-hidden="true">arrow_forward</span>
                                 </Link>
                             </div>
                         </div>

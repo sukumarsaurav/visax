@@ -1,11 +1,7 @@
 import Card, { CardHeader, CardTitle } from '../../components/ui/Card'
 import Badge from '../../components/ui/Badge'
 import { useInvoices } from '../../hooks/useInvoices'
-
-function formatDate(d) {
-    if (!d) return '—'
-    return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-}
+import { formatDate } from '../../utils/date'
 
 const statusColor = { draft: 'slate', pending: 'amber', paid: 'green', overdue: 'red', cancelled: 'slate' }
 

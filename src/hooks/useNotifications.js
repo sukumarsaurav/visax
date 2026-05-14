@@ -11,15 +11,22 @@ export function useNotifications() {
         if (!user) return
         fetchNotifications()
 
+        // Single wildcard subscription — halves the number of Supabase channel listeners
         const channel = supabase
-            .channel('notifications')
+            .channel(`notifications-${user.id}`)
             .on('postgres_changes', {
-                event: 'INSERT',
+                event: '*',
                 schema: 'public',
                 table: 'notifications',
                 filter: `user_id=eq.${user.id}`,
             }, (payload) => {
-                setNotifications(prev => [payload.new, ...prev])
+                if (payload.eventType === 'INSERT') {
+                    setNotifications(prev => [payload.new, ...prev])
+                } else if (payload.eventType === 'UPDATE') {
+                    setNotifications(prev =>
+                        prev.map(n => n.id === payload.new.id ? { ...n, ...payload.new } : n)
+                    )
+                }
             })
             .subscribe()
 
@@ -30,7 +37,7 @@ export function useNotifications() {
         setLoading(true)
         const { data, error } = await supabase
             .from('notifications')
-            .select('*')
+            .select('id, type, title, body, is_read, link, created_at')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false })
             .limit(50)
@@ -40,13 +47,24 @@ export function useNotifications() {
     }
 
     async function markAsRead(id) {
-        await supabase.from('notifications').update({ is_read: true }).eq('id', id)
-        setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n))
+        const { error } = await supabase
+            .from('notifications')
+            .update({ is_read: true })
+            .eq('id', id)
+        if (!error) {
+            setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n))
+        }
     }
 
     async function markAllAsRead() {
-        await supabase.from('notifications').update({ is_read: true }).eq('user_id', user.id)
-        setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
+        const { error } = await supabase
+            .from('notifications')
+            .update({ is_read: true })
+            .eq('user_id', user.id)
+            .eq('is_read', false)
+        if (!error) {
+            setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
+        }
     }
 
     const unreadCount = notifications.filter(n => !n.is_read).length

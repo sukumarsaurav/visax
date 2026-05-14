@@ -9,6 +9,7 @@ export default function RegisterPage() {
     const [form, setForm] = useState({ fullName: '', email: '', password: '', confirm: '' })
     const [errors, setErrors] = useState({})
     const [loading, setLoading] = useState(false)
+    const [showPasswords, setShowPasswords] = useState({ password: false, confirm: false })
 
     function validate() {
         const errs = {}
@@ -62,7 +63,27 @@ export default function RegisterPage() {
                 ].map(({ field, label, type, placeholder }) => (
                     <div key={field} className="flex flex-col gap-1.5">
                         <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">{label}</label>
-                        <input type={type} value={form[field]} onChange={set(field)} placeholder={placeholder} className={inputClass(field)} />
+                        {type === 'password' ? (
+                            <div className="relative">
+                                <input
+                                    type={showPasswords[field] ? 'text' : 'password'}
+                                    value={form[field]}
+                                    onChange={set(field)}
+                                    placeholder={placeholder}
+                                    className={`${inputClass(field)} pr-10`}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPasswords(p => ({ ...p, [field]: !p[field] }))}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                                    aria-label={showPasswords[field] ? 'Hide password' : 'Show password'}
+                                >
+                                    <span className="material-symbols-outlined text-[20px]">{showPasswords[field] ? 'visibility_off' : 'visibility'}</span>
+                                </button>
+                            </div>
+                        ) : (
+                            <input type={type} value={form[field]} onChange={set(field)} placeholder={placeholder} className={inputClass(field)} />
+                        )}
                         {errors[field] && <p className="text-xs text-red-500">{errors[field]}</p>}
                     </div>
                 ))}

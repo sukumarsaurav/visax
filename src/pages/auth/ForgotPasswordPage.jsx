@@ -27,7 +27,7 @@ export default function ForgotPasswordPage() {
         return (
             <div className="flex w-full max-w-sm flex-col items-center gap-6 text-center">
                 <div className="flex size-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-                    <span className="material-symbols-outlined text-[32px] text-green-600" style={{ fontVariationSettings: "'FILL' 1" }}>mark_email_read</span>
+                    <span className="material-symbols-outlined material-filled text-[32px] text-green-600">mark_email_read</span>
                 </div>
                 <div>
                     <h1 className="text-xl font-black text-slate-900 dark:text-white">Check your email</h1>

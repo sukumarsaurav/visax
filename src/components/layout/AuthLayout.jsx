@@ -17,7 +17,7 @@ export default function AuthLayout() {
                 <div className="relative z-10 p-12 max-w-lg text-white">
                     <div className="mb-8 flex items-center gap-3">
                         <div className="flex size-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-md border border-white/30">
-                            <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>flight_takeoff</span>
+                            <span className="material-symbols-outlined material-filled text-2xl">flight_takeoff</span>
                         </div>
                         <span className="text-2xl font-black tracking-tight">VisaX</span>
                     </div>
@@ -57,7 +57,7 @@ export default function AuthLayout() {
                 <div className="flex items-center justify-between p-6">
                     <div className="flex items-center gap-2 lg:invisible">
                         <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-white">
-                            <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>flight_takeoff</span>
+                            <span className="material-symbols-outlined text-lg">flight_takeoff</span>
                         </div>
                         <span className="font-black text-slate-900 dark:text-white">VisaX</span>
                     </div>

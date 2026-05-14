@@ -20,7 +20,7 @@ export default class ErrorBoundary extends Component {
                 <div className="flex min-h-screen items-center justify-center bg-background-light p-6 dark:bg-background-dark">
                     <div className="flex flex-col items-center gap-6 text-center max-w-md">
                         <div className="flex size-20 items-center justify-center rounded-3xl bg-red-100 dark:bg-red-900/30">
-                            <span className="material-symbols-outlined text-[48px] text-red-500" style={{ fontVariationSettings: "'FILL' 1" }}>
+                            <span className="material-symbols-outlined material-filled text-[48px] text-red-500">
                                 error
                             </span>
                         </div>

@@ -2,7 +2,10 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 
-export function useMessages(recipientId = null) {
+// Cap history loaded per fetch — enough for conversation list without full table scan
+const CONVERSATION_LIMIT = 200
+
+export function useMessages() {
     const { user } = useAuth()
     const [messages, setMessages] = useState([])
     const [conversations, setConversations] = useState([])
@@ -12,16 +15,38 @@ export function useMessages(recipientId = null) {
         if (!user) return
         fetchConversations()
 
-        // Real-time subscription
+        // Single wildcard subscription — one channel, one server connection for both INSERT and UPDATE
         const channel = supabase
-            .channel('messages')
+            .channel(`messages-${user.id}`)
             .on('postgres_changes', {
-                event: 'INSERT',
+                event: '*',
                 schema: 'public',
                 table: 'messages',
                 filter: `recipient_id=eq.${user.id}`,
             }, (payload) => {
-                setMessages(prev => [...prev, payload.new])
+                if (payload.eventType === 'INSERT') {
+                    setMessages(prev => [...prev, payload.new])
+                    setConversations(prev => {
+                        const otherId = payload.new.sender_id
+                        const existing = prev.find(c => c.otherId === otherId)
+                        if (existing) {
+                            return prev.map(c => c.otherId === otherId
+                                ? { ...c, lastMessage: payload.new, unreadCount: c.unreadCount + 1 }
+                                : c
+                            )
+                        }
+                        return [{ otherId, other: null, lastMessage: payload.new, unreadCount: 1 }, ...prev]
+                    })
+                } else if (payload.eventType === 'UPDATE') {
+                    setMessages(prev => prev.map(m => m.id === payload.new.id ? { ...m, ...payload.new } : m))
+                    if (payload.new.is_read && !payload.old?.is_read) {
+                        setConversations(prev => prev.map(c =>
+                            c.otherId === payload.new.sender_id
+                                ? { ...c, unreadCount: Math.max(0, c.unreadCount - 1) }
+                                : c
+                        ))
+                    }
+                }
             })
             .subscribe()
 
@@ -33,16 +58,16 @@ export function useMessages(recipientId = null) {
         const { data, error } = await supabase
             .from('messages')
             .select(`
-                *,
+                id, sender_id, recipient_id, content, is_read, created_at, case_id,
                 sender:profiles!messages_sender_id_fkey(id, full_name, avatar_url),
                 recipient:profiles!messages_recipient_id_fkey(id, full_name, avatar_url)
             `)
             .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
             .order('created_at', { ascending: false })
+            .limit(CONVERSATION_LIMIT)
 
         if (!error) {
             setMessages(data || [])
-            // Group into conversations by the other party
             const convMap = {}
             for (const msg of data || []) {
                 const otherId = msg.sender_id === user.id ? msg.recipient_id : msg.sender_id

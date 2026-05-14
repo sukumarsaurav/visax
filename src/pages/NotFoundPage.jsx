@@ -9,7 +9,7 @@ export default function NotFoundPage() {
         <div className="flex min-h-screen items-center justify-center bg-background-light p-6 dark:bg-background-dark">
             <div className="flex flex-col items-center gap-6 text-center max-w-md">
                 <div className="flex size-24 items-center justify-center rounded-3xl bg-primary/10">
-                    <span className="material-symbols-outlined text-[56px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>
+                    <span className="material-symbols-outlined material-filled text-[56px] text-primary">
                         flight_land
                     </span>
                 </div>

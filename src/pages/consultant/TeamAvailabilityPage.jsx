@@ -1,102 +1,153 @@
-import { useState } from 'react'
-import Button from '../../components/ui/Button'
+import { useState, useEffect } from 'react'
+import { useAuth } from '../../contexts/AuthContext'
+import { supabase } from '../../lib/supabase'
+import Avatar from '../../components/ui/Avatar'
 
-const teamMembers = [
-    {
-        id: 1,
-        name: 'David Miller',
-        role: 'Senior Consultant',
-        avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDCy6KIAWrUMsjxtxFNjX_jCB5132_aib-hteTRpm6fY2g677c8ZxsLTLSsx6_Nb0FVnyBz7b7ukge6LYGuL9H2YF-CXF0T8FhzoZvfZf22vlhj1l-JN9FVkRGKPzoJI-6wJJw0dYpd8DnQbJuLxjL_2Fczsx0vpcLdzD1IQ5pcTWY1f5Ab0JuOSW_QyDDFLPn2tR3PElBf5jOabBBTj743vPDjS1pA-hUwUIX-8zfMqdR-iseBX85v4oDLiVXnToDOZNh1qxoF6WA',
-        weeklyHours: 32,
-        modes: ['Video', 'In-Person'],
-        status: 'active',
-        availability: [
-            { dayIndex: 0, startSlot: 0, duration: 2 },
-            { dayIndex: 0, startSlot: 4, duration: 3 },
-            { dayIndex: 2, startSlot: 0, duration: 6 },
-            { dayIndex: 4, startSlot: 0, duration: 3 }
-        ]
-    },
-    {
-        id: 2,
-        name: 'Sarah Chen',
-        role: 'Immigration Specialist',
-        avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDNEDi66eGzRJ4XdbSb5a3HA2J9t6UGn-vEqcA1wLAsBPoRYooBwozyCyiA-eHrygeQMRcf0akhdQmiiyjCYntidLRrfW3qI4P75FvDHXL2N7TsU4cPJrG9TWVhpkZh0FDiip7I4DkVXSa1acRdy2zIl1FA0CBuIjbw7Vgx0SE7TdMdE7L078lBkqEWrfV1i6v0jXleRSbF5YdXpO18UGg63kVHR5RsMOg9EIrOmiXYCran8jld4ZIDwmeJywWTLfQDhp15p4v5QVo',
-        weeklyHours: 40,
-        modes: ['Video'],
-        status: 'active',
-        availability: [
-            { dayIndex: 0, startSlot: 0, duration: 4 },
-            { dayIndex: 1, startSlot: 0, duration: 4 },
-            { dayIndex: 2, startSlot: 0, duration: 4 },
-            { dayIndex: 3, startSlot: 0, duration: 4 },
-            { dayIndex: 4, startSlot: 0, duration: 4 }
-        ]
-    },
-    {
-        id: 3,
-        name: 'Michael Rodriguez',
-        role: 'Visa Consultant',
-        avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDlAnchK3o6PZQArYdvZx9g4f21B3-qKwWvx99pxzfCYv196c50YJ1oCNLxIegLuMX-9WZF2LEjG-A0YGkajn5BhRPLjAYlD0N_O_volsg87sNjEdfcIjD8PqkpGks4fDHHR6Rfxl5ttopxAcbCZ6rmnyoaXcfnQ-msnGoyE70AetScJYNiLJ2eunPjy_CsG510CJvS6orNSA0BpKC2_T0lsRqc4HaT_qY_Gpc5b5VIikDfqW5FOzmrBUTH9oiKfqtrF2L5ckMG8u4',
-        weeklyHours: 24,
-        modes: ['In-Person'],
-        status: 'away',
-        availability: [
-            { dayIndex: 1, startSlot: 2, duration: 3 },
-            { dayIndex: 3, startSlot: 2, duration: 3 },
-            { dayIndex: 4, startSlot: 2, duration: 3 }
-        ]
-    },
-    {
-        id: 4,
-        name: 'Emily Thompson',
-        role: 'Document Specialist',
-        avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD_QqhFD3qjUqZnVWfDZl5aq4DMMtmKK5sxBuGt4WcdeVfMxLHo3IrkZVEw5Uq6otKxGI5QQPXOg1cY3wSjIKWuWF1Xav-4RK7dwwJ5xTjTZmUsfku0gpBRO_z9VWzZStQQohIYfvpfwCVmSu-rGCK7YiFStrLS-NU8bIXqxBLf5MfoKBeIjkBMLdKcq2Q8_SecxViBKZba77p3eVd4Vp8_G-nq9krPfJvM5Z9GwGcWARQ0zIUwtW3Pi0TVqvYA9Mjl78glXOol-Fs',
-        weeklyHours: 20,
-        modes: ['Video', 'In-Person'],
-        status: 'active',
-        availability: [
-            { dayIndex: 0, startSlot: 4, duration: 2 },
-            { dayIndex: 2, startSlot: 4, duration: 2 },
-            { dayIndex: 4, startSlot: 4, duration: 2 }
-        ]
-    }
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const TIME_SLOTS = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00']
+const TIME_LABELS = ['9 AM', '10 AM', '11 AM', '12 PM', '1 PM', '2 PM', '3 PM', '4 PM', '5 PM']
+
+const MEMBER_COLORS = [
+    { bg: 'bg-blue-100 dark:bg-blue-900/30', border: 'border-blue-500', text: 'text-blue-700 dark:text-blue-300', dot: 'bg-blue-500' },
+    { bg: 'bg-emerald-100 dark:bg-emerald-900/30', border: 'border-emerald-500', text: 'text-emerald-700 dark:text-emerald-300', dot: 'bg-emerald-500' },
+    { bg: 'bg-purple-100 dark:bg-purple-900/30', border: 'border-purple-500', text: 'text-purple-700 dark:text-purple-300', dot: 'bg-purple-500' },
+    { bg: 'bg-orange-100 dark:bg-orange-900/30', border: 'border-orange-500', text: 'text-orange-700 dark:text-orange-300', dot: 'bg-orange-500' },
+    { bg: 'bg-pink-100 dark:bg-pink-900/30', border: 'border-pink-500', text: 'text-pink-700 dark:text-pink-300', dot: 'bg-pink-500' },
+    { bg: 'bg-cyan-100 dark:bg-cyan-900/30', border: 'border-cyan-500', text: 'text-cyan-700 dark:text-cyan-300', dot: 'bg-cyan-500' },
 ]
 
-const weekDays = [
-    { day: 'Mon', date: 12 },
-    { day: 'Tue', date: 13, isToday: true },
-    { day: 'Wed', date: 14 },
-    { day: 'Thu', date: 15 },
-    { day: 'Fri', date: 16 },
-    { day: 'Sat', date: 17, isWeekend: true },
-    { day: 'Sun', date: 18, isWeekend: true }
-]
+// Convert HH:MM time to slot index (relative to 09:00)
+function timeToSlot(time) {
+    if (!time) return null
+    const [h, m] = time.split(':').map(Number)
+    return (h - 9) + (m / 60)
+}
 
-const timeSlots = ['09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM']
+// Calculate slot height % within the 8-hour grid (9AM-5PM)
+function slotToPercent(slot) {
+    return (slot / 8) * 100
+}
 
-const memberColors = [
-    { bg: 'bg-blue-100 dark:bg-blue-900/30', border: 'border-blue-500', text: 'text-blue-700 dark:text-blue-300' },
-    { bg: 'bg-emerald-100 dark:bg-emerald-900/30', border: 'border-emerald-500', text: 'text-emerald-700 dark:text-emerald-300' },
-    { bg: 'bg-purple-100 dark:bg-purple-900/30', border: 'border-purple-500', text: 'text-purple-700 dark:text-purple-300' },
-    { bg: 'bg-orange-100 dark:bg-orange-900/30', border: 'border-orange-500', text: 'text-orange-700 dark:text-orange-300' },
-    { bg: 'bg-pink-100 dark:bg-pink-900/30', border: 'border-pink-500', text: 'text-pink-700 dark:text-pink-300' }
-]
+function getWeekDates() {
+    const today = new Date()
+    const dayOfWeek = today.getDay() // 0=Sun
+    // Start from Monday
+    const monday = new Date(today)
+    monday.setDate(today.getDate() - ((dayOfWeek + 6) % 7))
+    return WEEKDAYS.map((day, i) => {
+        const d = new Date(monday)
+        d.setDate(monday.getDate() + i)
+        return {
+            day,
+            date: d.getDate(),
+            isToday: d.toDateString() === today.toDateString(),
+            isWeekend: i >= 5,
+        }
+    })
+}
 
 export default function TeamAvailabilityPage() {
+    const { user } = useAuth()
+    const [members, setMembers] = useState([])
+    const [availability, setAvailability] = useState({}) // consultant_id -> availability rows
+    const [loading, setLoading] = useState(true)
     const [selectedMember, setSelectedMember] = useState(null)
-    const [viewMode, setViewMode] = useState('combined') // 'combined' or 'individual'
-    const [calendarView, setCalendarView] = useState('week')
 
-    const totalWeeklyHours = teamMembers.reduce((sum, m) => sum + m.weeklyHours, 0)
-    const activeMembers = teamMembers.filter(m => m.status === 'active').length
+    const weekDates = getWeekDates()
 
-    const getStatusColor = (status) => {
-        switch (status) {
-            case 'active': return 'bg-green-500'
-            case 'away': return 'bg-amber-500'
-            default: return 'bg-slate-400'
+    useEffect(() => {
+        if (!user) return
+        fetchTeamAvailability()
+    }, [user])
+
+    async function fetchTeamAvailability() {
+        setLoading(true)
+        // 1. Find the agency owned by this user
+        const { data: agency } = await supabase
+            .from('agencies')
+            .select('id')
+            .eq('owner_id', user.id)
+            .maybeSingle()
+
+        if (!agency) {
+            setLoading(false)
+            return
         }
+
+        // 2. Fetch agency members with profiles
+        const { data: agencyMembers } = await supabase
+            .from('agency_members')
+            .select(`
+                id,
+                profile_id,
+                role,
+                status,
+                profile:profiles!agency_members_profile_id_fkey(
+                    id, full_name, avatar_url, email
+                )
+            `)
+            .eq('agency_id', agency.id)
+            .eq('status', 'active')
+
+        if (!agencyMembers?.length) {
+            setMembers([])
+            setLoading(false)
+            return
+        }
+
+        setMembers(agencyMembers)
+
+        // 3. Fetch availability for all members
+        const consultantIds = agencyMembers.map(m => m.profile_id)
+        const { data: avail } = await supabase
+            .from('consultant_availability')
+            .select('*')
+            .in('consultant_id', consultantIds)
+            .eq('is_active', true)
+
+        // Group by consultant_id
+        const grouped = {}
+        for (const row of (avail || [])) {
+            if (!grouped[row.consultant_id]) grouped[row.consultant_id] = []
+            grouped[row.consultant_id].push(row)
+        }
+        setAvailability(grouped)
+        setLoading(false)
+    }
+
+    const displayMembers = selectedMember
+        ? members.filter(m => m.profile_id === selectedMember)
+        : members
+
+    // Compute stats
+    const totalWeeklySlots = members.reduce((sum, m) => {
+        const slots = availability[m.profile_id] || []
+        return sum + slots.reduce((s, row) => {
+            const start = timeToSlot(row.start_time)
+            const end = timeToSlot(row.end_time)
+            if (start !== null && end !== null) return s + (end - start)
+            return s
+        }, 0)
+    }, 0)
+    const avgHours = members.length > 0 ? Math.round(totalWeeklySlots / members.length) : 0
+
+    const getBlocksForMemberAndDay = (consultantId, weekdayIndex) => {
+        // weekdayIndex: 0=Mon...6=Sun  matches our weekday column
+        // consultant_availability weekday: we assume 0=Mon based on AvailabilityPage
+        const rows = availability[consultantId] || []
+        return rows.filter(row => row.weekday === weekdayIndex)
+    }
+
+    if (loading) {
+        return (
+            <div className="flex flex-col gap-6">
+                <div className="h-10 w-64 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-700" />
+                <div className="grid grid-cols-4 gap-4">
+                    {[1, 2, 3, 4].map(i => <div key={i} className="h-24 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800" />)}
+                </div>
+                <div className="h-[600px] animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800" />
+            </div>
+        )
     }
 
     return (
@@ -104,301 +155,278 @@ export default function TeamAvailabilityPage() {
             {/* Header */}
             <div className="flex flex-wrap justify-between items-end gap-4">
                 <div className="flex flex-col gap-1">
-                    <h1 className="text-slate-900 dark:text-white text-3xl font-black tracking-tight">
-                        Team Availability
-                    </h1>
-                    <p className="text-slate-500 dark:text-slate-400 text-base font-normal">
-                        View and manage availability schedules for all team members.
-                    </p>
-                </div>
-                <div className="flex gap-3">
-                    <Button variant="secondary" icon="download">Export Schedule</Button>
-                    <Button icon="settings">Manage Defaults</Button>
+                    <h1 className="text-slate-900 dark:text-white text-3xl font-black tracking-tight">Team Availability</h1>
+                    <p className="text-slate-500 dark:text-slate-400 text-base">View availability schedules for all team members.</p>
                 </div>
             </div>
 
-            {/* Stats Row */}
+            {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
-                    <div className="size-12 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-primary">
-                        <span className="material-symbols-outlined">groups</span>
-                    </div>
-                    <div>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Team Members</p>
-                        <p className="text-slate-900 dark:text-white text-2xl font-bold">
-                            {teamMembers.length} <span className="text-sm text-slate-400 font-normal">total</span>
-                        </p>
-                    </div>
-                </div>
-                <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
-                    <div className="size-12 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600">
-                        <span className="material-symbols-outlined">check_circle</span>
-                    </div>
-                    <div>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Currently Active</p>
-                        <p className="text-slate-900 dark:text-white text-2xl font-bold">
-                            {activeMembers} <span className="text-sm text-slate-400 font-normal">available</span>
-                        </p>
-                    </div>
-                </div>
-                <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
-                    <div className="size-12 rounded-full bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600">
-                        <span className="material-symbols-outlined">schedule</span>
-                    </div>
-                    <div>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Total Weekly Hours</p>
-                        <p className="text-slate-900 dark:text-white text-2xl font-bold">
-                            {totalWeeklyHours} <span className="text-sm text-slate-400 font-normal">hrs</span>
-                        </p>
-                    </div>
-                </div>
-                <div className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
-                    <div className="size-12 rounded-full bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center text-orange-600">
-                        <span className="material-symbols-outlined">event_available</span>
-                    </div>
-                    <div>
-                        <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Avg. Hours/Member</p>
-                        <p className="text-slate-900 dark:text-white text-2xl font-bold">
-                            {Math.round(totalWeeklyHours / teamMembers.length)} <span className="text-sm text-slate-400 font-normal">hrs</span>
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Main Content */}
-            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-                {/* Team Members Sidebar */}
-                <div className="xl:col-span-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                    <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                        <h3 className="text-base font-bold text-slate-900 dark:text-white">Team Members</h3>
-                        <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
-                            <button
-                                onClick={() => setViewMode('combined')}
-                                className={`px-2 py-1 text-xs font-medium rounded transition ${viewMode === 'combined'
-                                        ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
-                                        : 'text-slate-500'
-                                    }`}
-                            >
-                                All
-                            </button>
-                            <button
-                                onClick={() => setViewMode('individual')}
-                                className={`px-2 py-1 text-xs font-medium rounded transition ${viewMode === 'individual'
-                                        ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
-                                        : 'text-slate-500'
-                                    }`}
-                            >
-                                Filter
-                            </button>
+                {[
+                    { icon: 'groups', color: 'blue', label: 'Team Members', value: members.length, unit: 'total' },
+                    { icon: 'check_circle', color: 'emerald', label: 'With Availability', value: members.filter(m => (availability[m.profile_id] || []).length > 0).length, unit: 'set' },
+                    { icon: 'schedule', color: 'purple', label: 'Total Weekly Hours', value: Math.round(totalWeeklySlots), unit: 'hrs' },
+                    { icon: 'event_available', color: 'orange', label: 'Avg Hours/Member', value: avgHours, unit: 'hrs' },
+                ].map(stat => (
+                    <div key={stat.label} className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
+                        <div className={`size-12 rounded-full bg-${stat.color}-50 dark:bg-${stat.color}-900/20 flex items-center justify-center text-${stat.color}-600`}>
+                            <span className="material-symbols-outlined">{stat.icon}</span>
                         </div>
-                    </div>
-                    <div className="p-3 space-y-2 max-h-[500px] overflow-y-auto">
-                        {teamMembers.map((member, idx) => (
-                            <div
-                                key={member.id}
-                                onClick={() => setSelectedMember(selectedMember === member.id ? null : member.id)}
-                                className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${selectedMember === member.id
-                                        ? 'bg-primary/10 border border-primary/20'
-                                        : 'hover:bg-slate-50 dark:hover:bg-slate-800 border border-transparent'
-                                    }`}
-                            >
-                                <div className="relative">
-                                    <div
-                                        className="bg-center bg-no-repeat bg-cover rounded-full size-10"
-                                        style={{ backgroundImage: `url("${member.avatar}")` }}
-                                    ></div>
-                                    <span className={`absolute bottom-0 right-0 size-3 ${getStatusColor(member.status)} border-2 border-white dark:border-slate-900 rounded-full`}></span>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                        <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{member.name}</p>
-                                        <div className={`size-3 rounded-full ${memberColors[idx % memberColors.length].bg} ${memberColors[idx % memberColors.length].border} border-2`}></div>
-                                    </div>
-                                    <p className="text-xs text-slate-500 truncate">{member.role}</p>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-sm font-bold text-slate-900 dark:text-white">{member.weeklyHours}h</p>
-                                    <p className="text-xs text-slate-400">/week</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Legend */}
-                    <div className="px-5 py-4 border-t border-slate-200 dark:border-slate-800">
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Legend</p>
-                        <div className="space-y-2">
-                            {teamMembers.map((member, idx) => (
-                                <div key={member.id} className="flex items-center gap-2">
-                                    <div className={`size-3 rounded ${memberColors[idx % memberColors.length].bg} ${memberColors[idx % memberColors.length].border} border-l-4`}></div>
-                                    <span className="text-xs text-slate-600 dark:text-slate-400">{member.name}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Calendar Grid */}
-                <div className="xl:col-span-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col h-[600px] overflow-hidden">
-                    {/* Calendar Toolbar */}
-                    <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4">
                         <div>
-                            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                                {selectedMember
-                                    ? `${teamMembers.find(m => m.id === selectedMember)?.name}'s Schedule`
-                                    : 'Combined Team Schedule'
-                                }
-                            </h2>
-                            <p className="text-sm text-slate-500">
-                                {selectedMember
-                                    ? 'Viewing individual availability'
-                                    : 'Showing all team members overlapped'
-                                }
+                            <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">{stat.label}</p>
+                            <p className="text-slate-900 dark:text-white text-2xl font-bold">
+                                {stat.value} <span className="text-sm text-slate-400 font-normal">{stat.unit}</span>
                             </p>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+                    </div>
+                ))}
+            </div>
+
+            {members.length === 0 ? (
+                <div className="flex flex-col items-center gap-3 py-20 text-slate-400 bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                    <span className="material-symbols-outlined text-[56px]">group_off</span>
+                    <p className="text-base font-medium">No active team members found</p>
+                    <p className="text-sm">Add team members to see their availability here.</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+                    {/* Sidebar */}
+                    <div className="xl:col-span-1 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
+                        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                            <h3 className="text-base font-bold text-slate-900 dark:text-white">Team Members</h3>
+                            {selectedMember && (
                                 <button
-                                    onClick={() => setCalendarView('week')}
-                                    className={`px-3 py-1 text-xs font-bold rounded-md transition ${calendarView === 'week'
-                                            ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
-                                            : 'text-slate-500 dark:text-slate-400'
-                                        }`}
+                                    onClick={() => setSelectedMember(null)}
+                                    className="text-xs text-primary font-medium hover:underline"
                                 >
-                                    Week
+                                    Show All
                                 </button>
-                                <button
-                                    onClick={() => setCalendarView('month')}
-                                    className={`px-3 py-1 text-xs font-medium rounded-md transition ${calendarView === 'month'
-                                            ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
-                                            : 'text-slate-500 dark:text-slate-400'
+                            )}
+                        </div>
+                        <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                            {members.map((m, idx) => {
+                                const avail = availability[m.profile_id] || []
+                                const weeklyHours = Math.round(avail.reduce((s, row) => {
+                                    const start = timeToSlot(row.start_time)
+                                    const end = timeToSlot(row.end_time)
+                                    return (start !== null && end !== null) ? s + (end - start) : s
+                                }, 0))
+                                const color = MEMBER_COLORS[idx % MEMBER_COLORS.length]
+                                const isSelected = selectedMember === m.profile_id
+
+                                return (
+                                    <button
+                                        key={m.id}
+                                        onClick={() => setSelectedMember(isSelected ? null : m.profile_id)}
+                                        className={`w-full flex items-center gap-3 p-3 transition-colors ${isSelected
+                                            ? 'bg-primary/5 border-l-2 border-primary'
+                                            : 'hover:bg-slate-50 dark:hover:bg-slate-800 border-l-2 border-transparent'
                                         }`}
-                                >
-                                    Month
-                                </button>
+                                    >
+                                        <div className="relative flex-shrink-0">
+                                            <Avatar src={m.profile?.avatar_url} alt={m.profile?.full_name} size="sm" />
+                                            <span className={`absolute bottom-0 right-0 size-2.5 ${avail.length > 0 ? 'bg-green-500' : 'bg-slate-300'} border-2 border-white dark:border-slate-900 rounded-full`} />
+                                        </div>
+                                        <div className="flex-1 min-w-0 text-left">
+                                            <div className="flex items-center gap-1.5">
+                                                <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{m.profile?.full_name || '—'}</p>
+                                                <span className={`size-2.5 rounded-full flex-shrink-0 ${color.dot}`} />
+                                            </div>
+                                            <p className="text-xs text-slate-500 capitalize">{m.role || 'Member'}</p>
+                                        </div>
+                                        <div className="text-right flex-shrink-0">
+                                            <p className="text-sm font-bold text-slate-900 dark:text-white">{weeklyHours}h</p>
+                                            <p className="text-[10px] text-slate-400">/week</p>
+                                        </div>
+                                    </button>
+                                )
+                            })}
+                        </div>
+
+                        {/* Legend */}
+                        <div className="px-5 py-4 border-t border-slate-200 dark:border-slate-800">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Legend</p>
+                            <div className="space-y-1.5">
+                                {members.map((m, idx) => {
+                                    const color = MEMBER_COLORS[idx % MEMBER_COLORS.length]
+                                    return (
+                                        <div key={m.id} className="flex items-center gap-2">
+                                            <div className={`h-2.5 w-2.5 rounded-sm ${color.bg} border-l-2 ${color.border}`} />
+                                            <span className="text-[11px] text-slate-600 dark:text-slate-400 truncate">{m.profile?.full_name?.split(' ')[0] || '—'}</span>
+                                        </div>
+                                    )
+                                })}
                             </div>
-                            <select className="bg-slate-50 dark:bg-slate-800 border-none text-sm font-medium text-slate-700 dark:text-slate-300 rounded-lg focus:ring-2 focus:ring-primary cursor-pointer">
-                                <option>UTC-05:00 Eastern Time</option>
-                                <option>UTC-08:00 Pacific Time</option>
-                                <option>UTC+00:00 London</option>
-                            </select>
                         </div>
                     </div>
 
-                    {/* Calendar Grid Body */}
-                    <div className="flex-1 overflow-y-auto relative flex flex-col">
-                        {/* Days Header */}
-                        <div className="grid grid-cols-8 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 sticky top-0 z-10">
-                            <div className="p-3 text-xs font-semibold text-slate-400 text-center border-r border-slate-100 dark:border-slate-800">
-                                GMT-5
-                            </div>
-                            {weekDays.map((day, idx) => (
-                                <div key={idx} className={`p-3 text-center ${idx < 6 ? 'border-r border-slate-100 dark:border-slate-800' : ''}`}>
-                                    <div className={`text-xs font-semibold uppercase ${day.isToday ? 'text-primary' : 'text-slate-500'}`}>
-                                        {day.day}
-                                    </div>
+                    {/* Calendar Grid */}
+                    <div className="xl:col-span-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden" style={{ height: '600px' }}>
+                        {/* Toolbar */}
+                        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex-shrink-0">
+                            <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                                {selectedMember
+                                    ? `${members.find(m => m.profile_id === selectedMember)?.profile?.full_name}'s Schedule`
+                                    : 'Combined Team Schedule'}
+                            </h2>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                                {selectedMember ? 'Individual weekly availability' : 'All team members overlaid — recurring weekly schedule'}
+                            </p>
+                        </div>
+
+                        {/* Day headers */}
+                        <div className="grid grid-cols-8 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex-shrink-0">
+                            <div className="p-2 border-r border-slate-100 dark:border-slate-800 text-[10px] text-slate-400 text-center font-semibold">Time</div>
+                            {weekDates.map((day, idx) => (
+                                <div key={idx} className={`p-2 text-center ${idx < 6 ? 'border-r border-slate-100 dark:border-slate-800' : ''}`}>
+                                    <div className={`text-[10px] font-semibold uppercase ${day.isToday ? 'text-primary' : 'text-slate-500'}`}>{day.day}</div>
                                     {day.isToday ? (
-                                        <div className="text-sm font-bold text-white bg-primary rounded-full w-7 h-7 flex items-center justify-center mx-auto mt-1">
-                                            {day.date}
-                                        </div>
+                                        <div className="text-xs font-bold text-white bg-primary rounded-full w-6 h-6 flex items-center justify-center mx-auto mt-0.5">{day.date}</div>
                                     ) : (
-                                        <div className="text-sm font-bold text-slate-900 dark:text-white mt-1">
-                                            {day.date}
-                                        </div>
+                                        <div className="text-xs font-bold text-slate-900 dark:text-white mt-0.5">{day.date}</div>
                                     )}
                                 </div>
                             ))}
                         </div>
 
-                        {/* Time Grid */}
-                        <div className="relative flex-1 bg-white dark:bg-slate-900 min-h-[500px]">
-                            {/* Horizontal Lines */}
-                            <div className="absolute inset-0 flex flex-col pointer-events-none">
-                                {timeSlots.map((_, idx) => (
-                                    <div key={idx} className="flex-1 border-b border-slate-100 dark:border-slate-800"></div>
-                                ))}
-                            </div>
-
-                            {/* Grid Columns */}
-                            <div className="grid grid-cols-8 h-full absolute inset-0">
-                                {/* Time Labels */}
+                        {/* Time grid */}
+                        <div className="flex-1 overflow-y-auto relative">
+                            <div className="grid grid-cols-8 h-full min-h-[400px]">
+                                {/* Time labels */}
                                 <div className="border-r border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/30 flex flex-col">
-                                    {timeSlots.map((time, idx) => (
-                                        <div key={idx} className="flex-1 flex items-start justify-center">
-                                            <span className="text-xs text-slate-400 -translate-y-2">{time}</span>
+                                    {TIME_LABELS.map((label, i) => (
+                                        <div key={i} className="flex-1 flex items-start justify-center pt-1">
+                                            <span className="text-[10px] text-slate-400">{label}</span>
                                         </div>
                                     ))}
                                 </div>
 
-                                {/* Day Columns */}
-                                {weekDays.map((day, dayIdx) => (
+                                {/* Day columns */}
+                                {weekDates.map((day, dayIdx) => (
                                     <div
                                         key={dayIdx}
-                                        className={`${dayIdx < 6 ? 'border-r border-slate-100 dark:border-slate-800' : ''} relative ${day.isWeekend ? 'bg-slate-50/30 dark:bg-slate-900/50' : ''}`}
+                                        className={`relative ${dayIdx < 6 ? 'border-r border-slate-100 dark:border-slate-800' : ''} ${day.isWeekend ? 'bg-slate-50/40 dark:bg-slate-900/50' : ''}`}
                                     >
-                                        {/* Team Member Availability Blocks */}
-                                        {teamMembers
-                                            .filter(m => !selectedMember || m.id === selectedMember)
-                                            .map((member, memberIdx) => {
-                                                const colorScheme = memberColors[teamMembers.findIndex(tm => tm.id === member.id) % memberColors.length]
-                                                return member.availability
-                                                    .filter(block => block.dayIndex === dayIdx)
-                                                    .map((block, blockIdx) => (
-                                                        <div
-                                                            key={`${member.id}-${blockIdx}`}
-                                                            className={`absolute left-1 right-1 p-1 rounded-r-md cursor-pointer transition ${colorScheme.bg} border-l-4 ${colorScheme.border} hover:opacity-80`}
-                                                            style={{
-                                                                top: `${(block.startSlot / timeSlots.length) * 100}%`,
-                                                                height: `${(block.duration / timeSlots.length) * 100}%`,
-                                                                marginLeft: selectedMember ? '4px' : `${memberIdx * 3}px`,
-                                                                width: selectedMember ? 'calc(100% - 8px)' : `calc(100% - ${memberIdx * 3 + 8}px)`,
-                                                                zIndex: teamMembers.length - memberIdx
-                                                            }}
-                                                        >
-                                                            <p className={`text-[10px] font-bold ${colorScheme.text} truncate`}>
-                                                                {selectedMember ? `${timeSlots[block.startSlot]?.split(' ')[0]}` : member.name.split(' ')[0]}
-                                                            </p>
-                                                        </div>
-                                                    ))
-                                            })}
+                                        {/* Hour lines */}
+                                        {TIME_LABELS.map((_, i) => (
+                                            <div
+                                                key={i}
+                                                className="absolute left-0 right-0 border-b border-slate-100 dark:border-slate-800"
+                                                style={{ top: `${(i / (TIME_LABELS.length - 1)) * 100}%` }}
+                                            />
+                                        ))}
+
+                                        {/* Availability blocks */}
+                                        {displayMembers.map((m, memberIdx) => {
+                                            const colorIdx = members.findIndex(mm => mm.profile_id === m.profile_id)
+                                            const color = MEMBER_COLORS[colorIdx % MEMBER_COLORS.length]
+                                            const blocks = getBlocksForMemberAndDay(m.profile_id, dayIdx)
+                                            const totalVisible = displayMembers.length
+
+                                            return blocks.map((block, blockIdx) => {
+                                                const startSlot = timeToSlot(block.start_time)
+                                                const endSlot = timeToSlot(block.end_time)
+                                                if (startSlot === null || endSlot === null || startSlot < 0) return null
+                                                const clampedStart = Math.max(0, startSlot)
+                                                const clampedEnd = Math.min(8, endSlot)
+                                                if (clampedEnd <= clampedStart) return null
+
+                                                const topPct = slotToPercent(clampedStart)
+                                                const heightPct = slotToPercent(clampedEnd - clampedStart)
+
+                                                const offset = selectedMember ? 2 : memberIdx * 2
+                                                const widthCalc = selectedMember
+                                                    ? 'calc(100% - 4px)'
+                                                    : `calc(${100 / totalVisible}% - 2px)`
+
+                                                return (
+                                                    <div
+                                                        key={`${m.profile_id}-${blockIdx}`}
+                                                        className={`absolute rounded-r-sm cursor-pointer px-1 py-0.5 ${color.bg} border-l-2 ${color.border} hover:opacity-80 transition-opacity overflow-hidden`}
+                                                        style={{
+                                                            top: `${topPct}%`,
+                                                            height: `${heightPct}%`,
+                                                            left: selectedMember ? '2px' : `calc(${(memberIdx / totalVisible) * 100}% + 1px)`,
+                                                            width: widthCalc,
+                                                            zIndex: members.length - colorIdx,
+                                                            minHeight: '8px',
+                                                        }}
+                                                        title={`${m.profile?.full_name} — ${block.start_time} to ${block.end_time}`}
+                                                    >
+                                                        <p className={`text-[9px] font-bold ${color.text} truncate leading-tight`}>
+                                                            {selectedMember
+                                                                ? `${block.start_time}–${block.end_time}`
+                                                                : m.profile?.full_name?.split(' ')[0]}
+                                                        </p>
+                                                    </div>
+                                                )
+                                            })
+                                        })}
                                     </div>
                                 ))}
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            )}
 
-            {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <button className="flex items-center gap-4 p-5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary hover:shadow-lg transition-all group">
-                    <div className="size-12 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-colors">
-                        <span className="material-symbols-outlined">person_add</span>
+            {/* Coverage Summary Table */}
+            {members.length > 0 && (
+                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                    <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800">
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white">Weekly Coverage Summary</h3>
+                        <p className="text-xs text-slate-500 mt-0.5">Days each member has availability set</p>
                     </div>
-                    <div className="text-left">
-                        <p className="text-sm font-bold text-slate-900 dark:text-white">Invite Team Member</p>
-                        <p className="text-xs text-slate-500">Add new consultant to the team</p>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b border-slate-100 dark:border-slate-800">
+                                    <th className="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase">Member</th>
+                                    {WEEKDAYS.map(d => (
+                                        <th key={d} className="text-center px-2 py-3 text-xs font-bold text-slate-500 uppercase">{d}</th>
+                                    ))}
+                                    <th className="text-center px-3 py-3 text-xs font-bold text-slate-500 uppercase">Days</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                                {members.map((m, idx) => {
+                                    const avail = availability[m.profile_id] || []
+                                    const color = MEMBER_COLORS[idx % MEMBER_COLORS.length]
+                                    const daysSet = new Set(avail.map(a => a.weekday))
+
+                                    return (
+                                        <tr key={m.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                            <td className="px-5 py-3">
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`size-2.5 rounded-full ${color.dot}`} />
+                                                    <span className="font-medium text-slate-900 dark:text-white text-sm">{m.profile?.full_name || '—'}</span>
+                                                </div>
+                                            </td>
+                                            {[0, 1, 2, 3, 4, 5, 6].map(dayIdx => (
+                                                <td key={dayIdx} className="text-center px-2 py-3">
+                                                    {daysSet.has(dayIdx) ? (
+                                                        <span className={`inline-flex size-6 items-center justify-center rounded-full ${color.bg} ${color.text}`}>
+                                                            <span className="material-symbols-outlined text-[14px]">check</span>
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex size-6 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
+                                                            <span className="material-symbols-outlined text-[14px] text-slate-300">remove</span>
+                                                        </span>
+                                                    )}
+                                                </td>
+                                            ))}
+                                            <td className="text-center px-3 py-3">
+                                                <span className="text-sm font-bold text-slate-900 dark:text-white">{daysSet.size}</span>
+                                                <span className="text-xs text-slate-400"> /7</span>
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
+                            </tbody>
+                        </table>
                     </div>
-                </button>
-                <button className="flex items-center gap-4 p-5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary hover:shadow-lg transition-all group">
-                    <div className="size-12 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
-                        <span className="material-symbols-outlined">event</span>
-                    </div>
-                    <div className="text-left">
-                        <p className="text-sm font-bold text-slate-900 dark:text-white">Set Team Defaults</p>
-                        <p className="text-xs text-slate-500">Configure default working hours</p>
-                    </div>
-                </button>
-                <button className="flex items-center gap-4 p-5 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary hover:shadow-lg transition-all group">
-                    <div className="size-12 rounded-full bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 group-hover:bg-purple-500 group-hover:text-white transition-colors">
-                        <span className="material-symbols-outlined">notifications</span>
-                    </div>
-                    <div className="text-left">
-                        <p className="text-sm font-bold text-slate-900 dark:text-white">Availability Alerts</p>
-                        <p className="text-xs text-slate-500">Get notified of schedule changes</p>
-                    </div>
-                </button>
-            </div>
+                </div>
+            )}
         </div>
     )
 }

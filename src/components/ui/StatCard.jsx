@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { clsx } from '../../utils/clsx'
 
 const iconColors = {
@@ -10,7 +11,7 @@ const iconColors = {
     red:     'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400',
 }
 
-export default function StatCard({
+export default memo(function StatCard({
     label,
     title,       // alias for label
     value,
@@ -38,7 +39,7 @@ export default function StatCard({
                 <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</p>
                 {icon && (
                     <div className={clsx('flex size-8 items-center justify-center rounded-lg', iconColors[iconColor])}>
-                        <span className="material-symbols-outlined text-lg">{icon}</span>
+                        <span className="material-symbols-outlined text-lg" aria-hidden="true">{icon}</span>
                     </div>
                 )}
             </div>
@@ -63,4 +64,4 @@ export default function StatCard({
             )}
         </div>
     )
-}
+})

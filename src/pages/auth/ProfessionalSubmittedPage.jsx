@@ -42,7 +42,7 @@ export default function ProfessionalSubmittedPage() {
             <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-3 flex items-center justify-between">
                 <Link to="/" className="flex items-center gap-2.5 text-slate-900 dark:text-white">
                     <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-white">
-                        <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>flight_takeoff</span>
+                        <span className="material-symbols-outlined material-filled text-lg">flight_takeoff</span>
                     </div>
                     <span className="text-lg font-black tracking-tight">VisaX</span>
                 </Link>
@@ -60,7 +60,7 @@ export default function ProfessionalSubmittedPage() {
                     {/* Success icon + heading */}
                     <div className="flex flex-col items-center text-center px-8 pt-10 pb-8 border-b border-slate-100 dark:border-slate-800">
                         <div className="size-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-5">
-                            <span className="material-symbols-outlined text-green-600 dark:text-green-400 text-[32px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                            <span className="material-symbols-outlined text-green-600 dark:text-green-400 text-[32px]">check_circle</span>
                         </div>
                         <h1 className="text-2xl font-black text-slate-900 dark:text-white mb-3">
                             Application Submitted Successfully!

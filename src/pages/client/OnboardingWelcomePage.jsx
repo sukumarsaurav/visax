@@ -31,7 +31,7 @@ export default function OnboardingWelcomePage() {
             <header className="flex items-center justify-between whitespace-nowrap border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 py-4 lg:px-10">
                 <div className="flex items-center gap-3 text-slate-900 dark:text-white">
                     <div className="flex items-center justify-center text-primary">
-                        <span className="material-symbols-outlined text-3xl">flight_takeoff</span>
+                        <span className="material-symbols-outlined material-filled text-3xl">flight_takeoff</span>
                     </div>
                     <h2 className="text-lg font-black leading-tight tracking-tight">VisaX</h2>
                 </div>

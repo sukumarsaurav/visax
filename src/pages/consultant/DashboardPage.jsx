@@ -9,14 +9,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useCases } from '../../hooks/useCases'
 import { useAppointments } from '../../hooks/useAppointments'
 import { useMessages } from '../../hooks/useMessages'
-
-function formatTime(d) {
-    return new Date(d).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-}
-
-function formatDate(d) {
-    return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-}
+import { formatShortDate as formatDate, formatTime } from '../../utils/date'
 
 const statusColor = {
     in_progress: 'blue', under_review: 'blue', draft: 'slate',

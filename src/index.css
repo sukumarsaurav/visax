@@ -6,8 +6,33 @@ body {
   font-family: 'Manrope', sans-serif;
 }
 
+/* Material Symbols base */
 .material-symbols-outlined {
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Filled variant — use instead of inline fontVariationSettings */
+.material-filled {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Skip-to-content link (accessibility) */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 16px;
+  z-index: 9999;
+  padding: 8px 16px;
+  background: #2563eb;
+  color: white;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+  transition: top 0.2s;
+}
+.skip-link:focus {
+  top: 16px;
 }
 
 /* Custom scrollbar */
@@ -31,4 +56,18 @@ body {
 
 .dark ::-webkit-scrollbar-thumb {
   background: #475569;
+}
+
+/* Shimmer animation for page loader progress bar */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+.animate-shimmer {
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Shared focus-visible ring — keyboard-only focus indicator */
+.focus-ring {
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900;
 }

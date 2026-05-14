@@ -1,86 +1,111 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
-import { useEffect } from 'react'
+import { useEffect, lazy, Suspense } from 'react'
 import { supabase } from './lib/supabase'
 import { trackEvent } from './lib/integrations'
+import { CLIENT, AGENCY_ADMIN, ADMIN } from './constants/roles'
 
-// Layouts
+// Layouts — kept eager since they're needed immediately
 import DashboardLayout from './components/layout/DashboardLayout'
 import AuthLayout from './components/layout/AuthLayout'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 
+// ─── LAZY-LOADED PAGES ───────────────────────────────────────────────────────
+
 // Auth Pages
-import LoginPage from './pages/auth/LoginPage'
-import RegisterPage from './pages/auth/RegisterPage'
-import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
-import ProfessionalRegisterPage from './pages/auth/ProfessionalRegisterPage'
-import ProfessionalWelcomePage from './pages/auth/ProfessionalWelcomePage'
-import ProfessionalSubmittedPage from './pages/auth/ProfessionalSubmittedPage'
-import ProfessionalApprovedPage from './pages/auth/ProfessionalApprovedPage'
+const LoginPage = lazy(() => import('./pages/auth/LoginPage'))
+const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'))
+const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'))
+const ProfessionalRegisterPage = lazy(() => import('./pages/auth/ProfessionalRegisterPage'))
+const ProfessionalWelcomePage = lazy(() => import('./pages/auth/ProfessionalWelcomePage'))
+const ProfessionalSubmittedPage = lazy(() => import('./pages/auth/ProfessionalSubmittedPage'))
+const ProfessionalApprovedPage = lazy(() => import('./pages/auth/ProfessionalApprovedPage'))
 
 // Client Pages
-import ClientDashboard from './pages/client/DashboardPage'
-import ClientCases from './pages/client/CasesPage'
-import ClientAppointments from './pages/client/AppointmentsPage'
-import ClientInvoices from './pages/client/InvoicesPage'
-import ClientServices from './pages/client/ServicesPage'
-import OnboardingWelcomePage from './pages/client/OnboardingWelcomePage'
-import ProfileSetupPage from './pages/client/ProfileSetupPage'
-import WishlistPage from './pages/client/WishlistPage'
-import HelpCenterPage from './pages/client/HelpCenterPage'
-import MeetingConfirmationPage from './pages/client/MeetingConfirmationPage'
-import FeedbackPage from './pages/client/FeedbackPage'
-import CompareToolPage from './pages/client/CompareToolPage'
-import DocumentsPage from './pages/client/DocumentsPage'
+const ClientDashboard = lazy(() => import('./pages/client/DashboardPage'))
+const ClientCases = lazy(() => import('./pages/client/CasesPage'))
+const ClientAppointments = lazy(() => import('./pages/client/AppointmentsPage'))
+const ClientInvoices = lazy(() => import('./pages/client/InvoicesPage'))
+const ClientServices = lazy(() => import('./pages/client/ServicesPage'))
+const OnboardingWelcomePage = lazy(() => import('./pages/client/OnboardingWelcomePage'))
+const ProfileSetupPage = lazy(() => import('./pages/client/ProfileSetupPage'))
+const WishlistPage = lazy(() => import('./pages/client/WishlistPage'))
+const HelpCenterPage = lazy(() => import('./pages/client/HelpCenterPage'))
+const MeetingConfirmationPage = lazy(() => import('./pages/client/MeetingConfirmationPage'))
+const FeedbackPage = lazy(() => import('./pages/client/FeedbackPage'))
+const CompareToolPage = lazy(() => import('./pages/client/CompareToolPage'))
+const DocumentsPage = lazy(() => import('./pages/client/DocumentsPage'))
 
 // Consultant Pages
-import ConsultantDashboard from './pages/consultant/DashboardPage'
-import ConsultantClients from './pages/consultant/ClientsPage'
-import ConsultantCases from './pages/consultant/CasesPage'
-import InviteClientPage from './pages/consultant/InviteClientPage'
-import ResourceLibraryPage from './pages/consultant/ResourceLibraryPage'
-import TeamManagementPage from './pages/consultant/TeamManagementPage'
-import AnnouncementsPage from './pages/consultant/AnnouncementsPage'
-import ConsultantServicesPage from './pages/consultant/ServicesPage'
-import ConsultantMessagesPage from './pages/consultant/MessagesPage'
-import ConsultantAvailabilityPage from './pages/consultant/AvailabilityPage'
-import TeamAvailabilityPage from './pages/consultant/TeamAvailabilityPage'
-import ConsultantSettingsPage from './pages/consultant/SettingsPage'
-import ConsultantAppointmentsPage from './pages/consultant/AppointmentsPage'
-import NotificationsPage from './pages/consultant/NotificationsPage'
+const ConsultantDashboard = lazy(() => import('./pages/consultant/DashboardPage'))
+const ConsultantClients = lazy(() => import('./pages/consultant/ClientsPage'))
+const ConsultantCases = lazy(() => import('./pages/consultant/CasesPage'))
+const InviteClientPage = lazy(() => import('./pages/consultant/InviteClientPage'))
+const ResourceLibraryPage = lazy(() => import('./pages/consultant/ResourceLibraryPage'))
+const TeamManagementPage = lazy(() => import('./pages/consultant/TeamManagementPage'))
+const AnnouncementsPage = lazy(() => import('./pages/consultant/AnnouncementsPage'))
+const ConsultantServicesPage = lazy(() => import('./pages/consultant/ServicesPage'))
+const ConsultantMessagesPage = lazy(() => import('./pages/consultant/MessagesPage'))
+const ConsultantAvailabilityPage = lazy(() => import('./pages/consultant/AvailabilityPage'))
+const TeamAvailabilityPage = lazy(() => import('./pages/consultant/TeamAvailabilityPage'))
+const ConsultantSettingsPage = lazy(() => import('./pages/consultant/SettingsPage'))
+const ConsultantAppointmentsPage = lazy(() => import('./pages/consultant/AppointmentsPage'))
+const NotificationsPage = lazy(() => import('./pages/consultant/NotificationsPage'))
 
 // Admin Pages
-import AdminDashboard from './pages/admin/DashboardPage'
-import AdminAuditLog from './pages/admin/AuditLogPage'
-import AdminCommunicationSettings from './pages/admin/CommunicationSettingsPage'
-import AdminContentManagement from './pages/admin/ContentManagementPage'
-import AdminInternalAnnouncements from './pages/admin/InternalAnnouncementsPage'
-import AdminLocalizationManagement from './pages/admin/LocalizationManagementPage'
-import AdminApplicationReview from './pages/admin/ApplicationReviewPage'
-import AdminPaymentGatewaySettings from './pages/admin/PaymentGatewaySettingsPage'
-import AdminPlatformSettings from './pages/admin/PlatformSettingsPage'
-import AdminReferralProgram from './pages/admin/ReferralProgramPage'
-import AdminMarketing from './pages/admin/MarketingPage'
-import AdminResourceManagement from './pages/admin/ResourceManagementPage'
-import AdminSalesSubscriptions from './pages/admin/SalesSubscriptionsPage'
-import AdminSystemIntegrations from './pages/admin/SystemIntegrationsPage'
-import AdminUserManagement from './pages/admin/UserManagementPage'
+const AdminDashboard = lazy(() => import('./pages/admin/DashboardPage'))
+const AdminAuditLog = lazy(() => import('./pages/admin/AuditLogPage'))
+const AdminCommunicationSettings = lazy(() => import('./pages/admin/CommunicationSettingsPage'))
+const AdminContentManagement = lazy(() => import('./pages/admin/ContentManagementPage'))
+const AdminInternalAnnouncements = lazy(() => import('./pages/admin/InternalAnnouncementsPage'))
+const AdminLocalizationManagement = lazy(() => import('./pages/admin/LocalizationManagementPage'))
+const AdminApplicationReview = lazy(() => import('./pages/admin/ApplicationReviewPage'))
+const AdminPaymentGatewaySettings = lazy(() => import('./pages/admin/PaymentGatewaySettingsPage'))
+const AdminPlatformSettings = lazy(() => import('./pages/admin/PlatformSettingsPage'))
+const AdminReferralProgram = lazy(() => import('./pages/admin/ReferralProgramPage'))
+const AdminMarketing = lazy(() => import('./pages/admin/MarketingPage'))
+const AdminResourceManagement = lazy(() => import('./pages/admin/ResourceManagementPage'))
+const AdminSalesSubscriptions = lazy(() => import('./pages/admin/SalesSubscriptionsPage'))
+const AdminSystemIntegrations = lazy(() => import('./pages/admin/SystemIntegrationsPage'))
+const AdminUserManagement = lazy(() => import('./pages/admin/UserManagementPage'))
 
 // Shared pages
-import AnalyticsPage from './pages/analytics/AnalyticsPage'
+const AnalyticsPage = lazy(() => import('./pages/analytics/AnalyticsPage'))
 
 // Landing Pages
-import HomePage from './pages/landing/HomePage'
-import FindProfessionalsPage from './pages/landing/FindProfessionalsPage'
-import ConsultantProfilePage from './pages/landing/ConsultantProfilePage'
-import AgencyProfilePage from './pages/landing/AgencyProfilePage'
-import SupportPage from './pages/landing/SupportPage'
-import PricingPage from './pages/landing/PricingPage'
-import ServicesDirectoryPage from './pages/landing/ServicesDirectoryPage'
-import ServiceDetailsPage from './pages/landing/ServiceDetailsPage'
+const HomePage = lazy(() => import('./pages/landing/HomePage'))
+const FindProfessionalsPage = lazy(() => import('./pages/landing/FindProfessionalsPage'))
+const ConsultantProfilePage = lazy(() => import('./pages/landing/ConsultantProfilePage'))
+const AgencyProfilePage = lazy(() => import('./pages/landing/AgencyProfilePage'))
+const SupportPage = lazy(() => import('./pages/landing/SupportPage'))
+const PricingPage = lazy(() => import('./pages/landing/PricingPage'))
+const ServicesDirectoryPage = lazy(() => import('./pages/landing/ServicesDirectoryPage'))
+const ServiceDetailsPage = lazy(() => import('./pages/landing/ServiceDetailsPage'))
+const AboutPage = lazy(() => import('./pages/landing/AboutPage'))
+const PrivacyPage = lazy(() => import('./pages/landing/PrivacyPage'))
+const TermsPage = lazy(() => import('./pages/landing/TermsPage'))
 
 // Misc
-import NotFoundPage from './pages/NotFoundPage'
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
+
+// ─── SUSPENSE FALLBACK ───────────────────────────────────────────────────────
+
+function PageLoader() {
+    return (
+        <div className="flex h-full min-h-[300px] items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+                <div className="flex size-12 items-center justify-center rounded-xl bg-primary text-white animate-pulse shadow-lg shadow-primary/20">
+                    <span className="material-symbols-outlined material-filled text-2xl">flight_takeoff</span>
+                </div>
+                <div className="w-32 h-1 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                    <div className="h-full w-1/2 bg-primary rounded-full animate-shimmer" />
+                </div>
+            </div>
+        </div>
+    )
+}
+
+// ─── GA4 ─────────────────────────────────────────────────────────────────────
 
 // GA4 auto-inject: loads gtag.js when Google Analytics is connected
 function useGoogleAnalytics() {
@@ -113,19 +138,16 @@ function PageViewTracker() {
     return null
 }
 
-// Role constants
-const CLIENT = ['client']
-const PROFESSIONAL = ['individual', 'agency_admin', 'agency_member']
-const AGENCY_ADMIN = ['agency_admin']
-const AGENCY_STAFF = ['agency_admin', 'agency_member']
-const ADMIN = ['admin']
-
 // Root redirect based on role
 function RootRedirect() {
     const { isAuthenticated, getDashboardPath, loading } = useAuth()
     if (loading) return null
     if (isAuthenticated) return <Navigate to={getDashboardPath()} replace />
-    return <HomePage />
+    return (
+        <Suspense fallback={<PageLoader />}>
+            <HomePage />
+        </Suspense>
+    )
 }
 
 export default function App() {
@@ -133,150 +155,155 @@ export default function App() {
     return (
         <Router>
             <PageViewTracker />
-            <Routes>
+            <Suspense fallback={<PageLoader />}>
+                <Routes>
 
-                {/* Public Landing */}
-                <Route path="/" element={<RootRedirect />} />
-                <Route path="/find-professionals" element={<FindProfessionalsPage />} />
-                <Route path="/consultant/:id" element={<ConsultantProfilePage />} />
-                <Route path="/agency/:id" element={<AgencyProfilePage />} />
-                <Route path="/help" element={<SupportPage />} />
-                <Route path="/support" element={<SupportPage />} />
-                <Route path="/pricing" element={<PricingPage />} />
-                <Route path="/services" element={<ServicesDirectoryPage />} />
-                <Route path="/services/:serviceId" element={<ServiceDetailsPage />} />
+                    {/* Public Landing */}
+                    <Route path="/" element={<RootRedirect />} />
+                    <Route path="/find-professionals" element={<FindProfessionalsPage />} />
+                    <Route path="/consultant/:id" element={<ConsultantProfilePage />} />
+                    <Route path="/agency/:id" element={<AgencyProfilePage />} />
+                    <Route path="/help" element={<Navigate to="/support" replace />} />
+                    <Route path="/support" element={<SupportPage />} />
+                    <Route path="/about" element={<AboutPage />} />
+                    <Route path="/privacy" element={<PrivacyPage />} />
+                    <Route path="/terms" element={<TermsPage />} />
+                    <Route path="/pricing" element={<PricingPage />} />
+                    <Route path="/services" element={<ServicesDirectoryPage />} />
+                    <Route path="/services/:serviceId" element={<ServiceDetailsPage />} />
 
-                {/* Auth — redirect to dashboard if already logged in */}
-                <Route element={<AuthLayout />}>
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route path="/register" element={<RegisterPage />} />
-                    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                </Route>
+                    {/* Auth — redirect to dashboard if already logged in */}
+                    <Route element={<AuthLayout />}>
+                        <Route path="/login" element={<LoginPage />} />
+                        <Route path="/register" element={<RegisterPage />} />
+                        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                    </Route>
 
-                {/* Professional registration flow (standalone, two-panel design) */}
-                <Route path="/professional-register" element={<ProfessionalWelcomePage />} />
-                <Route path="/professional-register/form" element={<ProfessionalRegisterPage />} />
+                    {/* Professional registration flow (standalone, two-panel design) */}
+                    <Route path="/professional-register" element={<ProfessionalWelcomePage />} />
+                    <Route path="/professional-register/form" element={<ProfessionalRegisterPage />} />
 
-                {/* Professional post-registration pages */}
-                <Route path="/professional-submitted" element={<ProfessionalSubmittedPage />} />
-                <Route path="/professional-approved" element={<ProfessionalApprovedPage />} />
+                    {/* Professional post-registration pages */}
+                    <Route path="/professional-submitted" element={<ProfessionalSubmittedPage />} />
+                    <Route path="/professional-approved" element={<ProfessionalApprovedPage />} />
 
-                {/* Client Onboarding (protected, no sidebar) */}
-                <Route path="/client/onboarding" element={
-                    <ProtectedRoute allowedRoles={CLIENT}><OnboardingWelcomePage /></ProtectedRoute>
-                } />
-                <Route path="/client/profile-setup" element={
-                    <ProtectedRoute allowedRoles={CLIENT}><ProfileSetupPage /></ProtectedRoute>
-                } />
+                    {/* Client Onboarding (protected, no sidebar) */}
+                    <Route path="/client/onboarding" element={
+                        <ProtectedRoute allowedRoles={CLIENT}><OnboardingWelcomePage /></ProtectedRoute>
+                    } />
+                    <Route path="/client/profile-setup" element={
+                        <ProtectedRoute allowedRoles={CLIENT}><ProfileSetupPage /></ProtectedRoute>
+                    } />
 
-                {/* ── CLIENT PORTAL ── */}
-                <Route path="/client" element={
-                    <ProtectedRoute allowedRoles={CLIENT}>
-                        <DashboardLayout userType="client" />
-                    </ProtectedRoute>
-                }>
-                    <Route index element={<ClientDashboard />} />
-                    <Route path="cases" element={<ClientCases />} />
-                    <Route path="appointments" element={<ClientAppointments />} />
-                    <Route path="invoices" element={<ClientInvoices />} />
-                    <Route path="services" element={<ClientServices />} />
-                    <Route path="documents" element={<DocumentsPage />} />
-                    <Route path="wishlist" element={<WishlistPage />} />
-                    <Route path="compare" element={<CompareToolPage />} />
-                    <Route path="help-center" element={<HelpCenterPage />} />
-                    <Route path="meeting-confirmation/:id" element={<MeetingConfirmationPage />} />
-                    <Route path="feedback/:appointmentId" element={<FeedbackPage />} />
-                </Route>
+                    {/* ── CLIENT PORTAL ── */}
+                    <Route path="/client" element={
+                        <ProtectedRoute allowedRoles={CLIENT}>
+                            <DashboardLayout userType="client" />
+                        </ProtectedRoute>
+                    }>
+                        <Route index element={<ClientDashboard />} />
+                        <Route path="cases" element={<ClientCases />} />
+                        <Route path="appointments" element={<ClientAppointments />} />
+                        <Route path="invoices" element={<ClientInvoices />} />
+                        <Route path="services" element={<ClientServices />} />
+                        <Route path="documents" element={<DocumentsPage />} />
+                        <Route path="wishlist" element={<WishlistPage />} />
+                        <Route path="compare" element={<CompareToolPage />} />
+                        <Route path="help-center" element={<HelpCenterPage />} />
+                        <Route path="meeting-confirmation/:id" element={<MeetingConfirmationPage />} />
+                        <Route path="feedback/:appointmentId" element={<FeedbackPage />} />
+                    </Route>
 
-                {/* ── INDIVIDUAL CONSULTANT PORTAL ── */}
-                <Route path="/consultant" element={
-                    <ProtectedRoute allowedRoles={['individual']}>
-                        <DashboardLayout userType="consultant" consultantType="individual" />
-                    </ProtectedRoute>
-                }>
-                    <Route index element={<ConsultantDashboard />} />
-                    <Route path="clients" element={<ConsultantClients />} />
-                    <Route path="cases" element={<ConsultantCases />} />
-                    <Route path="invite-client" element={<InviteClientPage />} />
-                    <Route path="resources" element={<ResourceLibraryPage />} />
-                    <Route path="services" element={<ConsultantServicesPage />} />
-                    <Route path="messages" element={<ConsultantMessagesPage />} />
-                    <Route path="availability" element={<ConsultantAvailabilityPage />} />
-                    <Route path="settings" element={<ConsultantSettingsPage />} />
-                    <Route path="appointments" element={<ConsultantAppointmentsPage />} />
-                    <Route path="notifications" element={<NotificationsPage />} />
-                    <Route path="analytics" element={<AnalyticsPage />} />
-                </Route>
+                    {/* ── INDIVIDUAL CONSULTANT PORTAL ── */}
+                    <Route path="/consultant" element={
+                        <ProtectedRoute allowedRoles={['individual']}>
+                            <DashboardLayout userType="consultant" consultantType="individual" />
+                        </ProtectedRoute>
+                    }>
+                        <Route index element={<ConsultantDashboard />} />
+                        <Route path="clients" element={<ConsultantClients />} />
+                        <Route path="cases" element={<ConsultantCases />} />
+                        <Route path="invite-client" element={<InviteClientPage />} />
+                        <Route path="resources" element={<ResourceLibraryPage />} />
+                        <Route path="services" element={<ConsultantServicesPage />} />
+                        <Route path="messages" element={<ConsultantMessagesPage />} />
+                        <Route path="availability" element={<ConsultantAvailabilityPage />} />
+                        <Route path="settings" element={<ConsultantSettingsPage />} />
+                        <Route path="appointments" element={<ConsultantAppointmentsPage />} />
+                        <Route path="notifications" element={<NotificationsPage />} />
+                        <Route path="analytics" element={<AnalyticsPage />} />
+                    </Route>
 
-                {/* ── AGENCY ADMIN PORTAL ── */}
-                <Route path="/agency" element={
-                    <ProtectedRoute allowedRoles={AGENCY_ADMIN}>
-                        <DashboardLayout userType="consultant" consultantType="agency_admin" />
-                    </ProtectedRoute>
-                }>
-                    <Route index element={<ConsultantDashboard />} />
-                    <Route path="team" element={<TeamManagementPage />} />
-                    <Route path="clients" element={<ConsultantClients />} />
-                    <Route path="cases" element={<ConsultantCases />} />
-                    <Route path="invite-client" element={<InviteClientPage />} />
-                    <Route path="resources" element={<ResourceLibraryPage />} />
-                    <Route path="services" element={<ConsultantServicesPage />} />
-                    <Route path="messages" element={<ConsultantMessagesPage />} />
-                    <Route path="availability" element={<TeamAvailabilityPage />} />
-                    <Route path="announcements" element={<AnnouncementsPage />} />
-                    <Route path="settings" element={<ConsultantSettingsPage />} />
-                    <Route path="appointments" element={<ConsultantAppointmentsPage />} />
-                    <Route path="notifications" element={<NotificationsPage />} />
-                    <Route path="analytics" element={<AnalyticsPage />} />
-                </Route>
+                    {/* ── AGENCY ADMIN PORTAL ── */}
+                    <Route path="/agency" element={
+                        <ProtectedRoute allowedRoles={AGENCY_ADMIN}>
+                            <DashboardLayout userType="consultant" consultantType="agency_admin" />
+                        </ProtectedRoute>
+                    }>
+                        <Route index element={<ConsultantDashboard />} />
+                        <Route path="team" element={<TeamManagementPage />} />
+                        <Route path="clients" element={<ConsultantClients />} />
+                        <Route path="cases" element={<ConsultantCases />} />
+                        <Route path="invite-client" element={<InviteClientPage />} />
+                        <Route path="resources" element={<ResourceLibraryPage />} />
+                        <Route path="services" element={<ConsultantServicesPage />} />
+                        <Route path="messages" element={<ConsultantMessagesPage />} />
+                        <Route path="availability" element={<TeamAvailabilityPage />} />
+                        <Route path="announcements" element={<AnnouncementsPage />} />
+                        <Route path="settings" element={<ConsultantSettingsPage />} />
+                        <Route path="appointments" element={<ConsultantAppointmentsPage />} />
+                        <Route path="notifications" element={<NotificationsPage />} />
+                        <Route path="analytics" element={<AnalyticsPage />} />
+                    </Route>
 
-                {/* ── AGENCY TEAM MEMBER PORTAL ── */}
-                <Route path="/team-member" element={
-                    <ProtectedRoute allowedRoles={['agency_member']}>
-                        <DashboardLayout userType="consultant" consultantType="agency_member" />
-                    </ProtectedRoute>
-                }>
-                    <Route index element={<ConsultantDashboard />} />
-                    <Route path="clients" element={<ConsultantClients />} />
-                    <Route path="cases" element={<ConsultantCases />} />
-                    <Route path="invite-client" element={<InviteClientPage />} />
-                    <Route path="resources" element={<ResourceLibraryPage />} />
-                    <Route path="services" element={<ConsultantServicesPage />} />
-                    <Route path="messages" element={<ConsultantMessagesPage />} />
-                    <Route path="availability" element={<ConsultantAvailabilityPage />} />
-                    <Route path="announcements" element={<AnnouncementsPage />} />
-                    <Route path="settings" element={<ConsultantSettingsPage />} />
-                    <Route path="appointments" element={<ConsultantAppointmentsPage />} />
-                    <Route path="notifications" element={<NotificationsPage />} />
-                </Route>
+                    {/* ── AGENCY TEAM MEMBER PORTAL ── */}
+                    <Route path="/team-member" element={
+                        <ProtectedRoute allowedRoles={['agency_member']}>
+                            <DashboardLayout userType="consultant" consultantType="agency_member" />
+                        </ProtectedRoute>
+                    }>
+                        <Route index element={<ConsultantDashboard />} />
+                        <Route path="clients" element={<ConsultantClients />} />
+                        <Route path="cases" element={<ConsultantCases />} />
+                        <Route path="invite-client" element={<InviteClientPage />} />
+                        <Route path="resources" element={<ResourceLibraryPage />} />
+                        <Route path="services" element={<ConsultantServicesPage />} />
+                        <Route path="messages" element={<ConsultantMessagesPage />} />
+                        <Route path="availability" element={<ConsultantAvailabilityPage />} />
+                        <Route path="announcements" element={<AnnouncementsPage />} />
+                        <Route path="settings" element={<ConsultantSettingsPage />} />
+                        <Route path="appointments" element={<ConsultantAppointmentsPage />} />
+                        <Route path="notifications" element={<NotificationsPage />} />
+                    </Route>
 
-                {/* ── PLATFORM ADMIN PORTAL ── */}
-                <Route path="/admin" element={
-                    <ProtectedRoute allowedRoles={ADMIN}>
-                        <DashboardLayout userType="admin" />
-                    </ProtectedRoute>
-                }>
-                    <Route index element={<AdminDashboard />} />
-                    <Route path="applications" element={<AdminApplicationReview />} />
-                    <Route path="audit-log" element={<AdminAuditLog />} />
-                    <Route path="communication-settings" element={<AdminCommunicationSettings />} />
-                    <Route path="content-management" element={<AdminContentManagement />} />
-                    <Route path="announcements" element={<AdminInternalAnnouncements />} />
-                    <Route path="localization" element={<AdminLocalizationManagement />} />
-                    <Route path="payment-settings" element={<AdminPaymentGatewaySettings />} />
-                    <Route path="platform-settings" element={<AdminPlatformSettings />} />
-                    <Route path="marketing" element={<AdminMarketing />} />
-                    <Route path="referral-program" element={<AdminReferralProgram />} />
-                    <Route path="resources" element={<AdminResourceManagement />} />
-                    <Route path="sales-subscriptions" element={<AdminSalesSubscriptions />} />
-                    <Route path="integrations" element={<AdminSystemIntegrations />} />
-                    <Route path="user-management" element={<AdminUserManagement />} />
-                    <Route path="analytics" element={<AnalyticsPage />} />
-                </Route>
+                    {/* ── PLATFORM ADMIN PORTAL ── */}
+                    <Route path="/admin" element={
+                        <ProtectedRoute allowedRoles={ADMIN}>
+                            <DashboardLayout userType="admin" />
+                        </ProtectedRoute>
+                    }>
+                        <Route index element={<AdminDashboard />} />
+                        <Route path="applications" element={<AdminApplicationReview />} />
+                        <Route path="audit-log" element={<AdminAuditLog />} />
+                        <Route path="communication-settings" element={<AdminCommunicationSettings />} />
+                        <Route path="content-management" element={<AdminContentManagement />} />
+                        <Route path="announcements" element={<AdminInternalAnnouncements />} />
+                        <Route path="localization" element={<AdminLocalizationManagement />} />
+                        <Route path="payment-settings" element={<AdminPaymentGatewaySettings />} />
+                        <Route path="platform-settings" element={<AdminPlatformSettings />} />
+                        <Route path="marketing" element={<AdminMarketing />} />
+                        <Route path="referral-program" element={<AdminReferralProgram />} />
+                        <Route path="resources" element={<AdminResourceManagement />} />
+                        <Route path="sales-subscriptions" element={<AdminSalesSubscriptions />} />
+                        <Route path="integrations" element={<AdminSystemIntegrations />} />
+                        <Route path="user-management" element={<AdminUserManagement />} />
+                        <Route path="analytics" element={<AnalyticsPage />} />
+                    </Route>
 
-                {/* 404 */}
-                <Route path="*" element={<NotFoundPage />} />
-            </Routes>
+                    {/* 404 */}
+                    <Route path="*" element={<NotFoundPage />} />
+                </Routes>
+            </Suspense>
         </Router>
     )
 }

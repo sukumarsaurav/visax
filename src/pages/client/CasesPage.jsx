@@ -1,15 +1,12 @@
 import Card from '../../components/ui/Card'
 import Badge from '../../components/ui/Badge'
 import { useCases } from '../../hooks/useCases'
+import { formatDate } from '../../utils/date'
 
 const statusColor = {
     draft: 'slate', in_progress: 'blue', under_review: 'blue',
     docs_pending: 'amber', action_required: 'orange',
     approved: 'green', rejected: 'red', closed: 'slate',
-}
-
-function formatDate(d) {
-    return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 export default function CasesPage() {

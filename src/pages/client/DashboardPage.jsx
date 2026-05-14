@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import Card, { CardHeader, CardTitle } from '../../components/ui/Card'
 import StatCard from '../../components/ui/StatCard'
@@ -8,6 +9,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useCases } from '../../hooks/useCases'
 import { useAppointments } from '../../hooks/useAppointments'
 import { useInvoices } from '../../hooks/useInvoices'
+import { formatDate } from '../../utils/date'
 
 const statusColors = {
     in_progress: 'blue', under_review: 'blue', draft: 'slate',
@@ -15,13 +17,95 @@ const statusColors = {
     approved: 'green', rejected: 'red', closed: 'slate',
 }
 
-function formatDate(dateStr) {
-    if (!dateStr) return '—'
-    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-}
-
 function SkeletonCard() {
     return <div className="h-28 animate-pulse rounded-xl bg-slate-200 dark:bg-slate-800" />
+}
+
+const ONBOARDING_DISMISSED_KEY = 'visax-onboarding-dismissed'
+
+function OnboardingChecklist({ profile, hasCases, hasAppointments }) {
+    const [dismissed, setDismissed] = useState(() => {
+        try { return localStorage.getItem(ONBOARDING_DISMISSED_KEY) === 'true' } catch { return false }
+    })
+
+    if (dismissed) return null
+
+    const steps = [
+        { label: 'Create your account', icon: 'check_circle', done: true, path: null },
+        { label: 'Complete your profile', icon: profile?.bio ? 'check_circle' : 'radio_button_unchecked', done: !!profile?.bio, path: '/client' },
+        { label: 'Browse services', icon: hasCases ? 'check_circle' : 'radio_button_unchecked', done: hasCases, path: '/client/services' },
+        { label: 'Book a consultation', icon: hasAppointments ? 'check_circle' : 'radio_button_unchecked', done: hasAppointments, path: '/find-professionals' },
+    ]
+
+    const completedCount = steps.filter(s => s.done).length
+    const allDone = completedCount === steps.length
+
+    // Auto-hide when all done
+    if (allDone) return null
+
+    const progress = (completedCount / steps.length) * 100
+
+    function handleDismiss() {
+        localStorage.setItem(ONBOARDING_DISMISSED_KEY, 'true')
+        setDismissed(true)
+    }
+
+    return (
+        <div className="rounded-2xl border border-primary/20 bg-gradient-to-r from-primary/5 to-blue-50 dark:from-primary/10 dark:to-slate-800/50 p-5">
+            <div className="flex items-start justify-between mb-3">
+                <div>
+                    <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <span className="material-symbols-outlined text-primary text-[20px]" aria-hidden="true">rocket_launch</span>
+                        Get Started with VisaX
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">{completedCount} of {steps.length} steps complete</p>
+                </div>
+                <button
+                    onClick={handleDismiss}
+                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+                    aria-label="Dismiss onboarding checklist"
+                >
+                    <span className="material-symbols-outlined text-[18px]">close</span>
+                </button>
+            </div>
+
+            {/* Progress bar */}
+            <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mb-4 overflow-hidden">
+                <div
+                    className="h-full bg-primary rounded-full transition-all duration-500"
+                    style={{ width: `${progress}%` }}
+                />
+            </div>
+
+            {/* Steps */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {steps.map((step, idx) => {
+                    const content = (
+                        <div
+                            key={idx}
+                            className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${
+                                step.done
+                                    ? 'bg-white/60 dark:bg-slate-800/40'
+                                    : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary/50'
+                            }`}
+                        >
+                            <span className={`material-symbols-outlined text-[20px] ${step.done ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600'}`}>
+                                {step.icon}
+                            </span>
+                            <span className={`text-sm font-medium ${step.done ? 'text-slate-400 line-through' : 'text-slate-900 dark:text-white'}`}>
+                                {step.label}
+                            </span>
+                        </div>
+                    )
+                    return step.path && !step.done ? (
+                        <Link key={idx} to={step.path}>{content}</Link>
+                    ) : (
+                        <div key={idx}>{content}</div>
+                    )
+                })}
+            </div>
+        </div>
+    )
 }
 
 export default function ClientDashboard() {
@@ -43,6 +127,13 @@ export default function ClientDashboard() {
                 </h2>
                 <p className="mt-1 text-slate-500">Here's what's happening with your cases</p>
             </div>
+
+            {/* Onboarding Checklist — shown for new users */}
+            <OnboardingChecklist
+                profile={profile}
+                hasCases={cases.length > 0}
+                hasAppointments={upcoming.length > 0}
+            />
 
             {/* Stats */}
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3">

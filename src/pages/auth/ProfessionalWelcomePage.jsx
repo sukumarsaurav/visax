@@ -38,7 +38,7 @@ export default function ProfessionalWelcomePage() {
             <header className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 py-4 lg:px-10">
                 <Link to="/" className="flex items-center gap-2.5 text-slate-900 dark:text-white">
                     <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-white">
-                        <span className="material-symbols-outlined text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>flight_takeoff</span>
+                        <span className="material-symbols-outlined material-filled text-lg">flight_takeoff</span>
                     </div>
                     <h2 className="text-lg font-black tracking-tight">VisaX</h2>
                 </Link>
