@@ -11,7 +11,7 @@ export default class ErrorBoundary extends Component {
     }
 
     componentDidCatch(error, info) {
-        console.error('VisaX ErrorBoundary caught:', error, info)
+        console.error('Immizy ErrorBoundary caught:', error, info)
     }
 
     render() {

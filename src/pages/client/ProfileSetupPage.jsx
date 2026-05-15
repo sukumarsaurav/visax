@@ -73,7 +73,7 @@ export default function ProfileSetupPage() {
                     <div className="size-8 text-primary">
                         <span className="material-symbols-outlined material-filled text-3xl">flight_takeoff</span>
                     </div>
-                    <h2 className="text-lg font-black leading-tight tracking-tight">VisaX</h2>
+                    <h2 className="text-lg font-black leading-tight tracking-tight">Immizy</h2>
                 </div>
                 <div className="flex flex-1 justify-end gap-8">
                     <button

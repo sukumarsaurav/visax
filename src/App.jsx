@@ -85,6 +85,15 @@ const ServiceDetailsPage = lazy(() => import('./pages/landing/ServiceDetailsPage
 const AboutPage = lazy(() => import('./pages/landing/AboutPage'))
 const PrivacyPage = lazy(() => import('./pages/landing/PrivacyPage'))
 const TermsPage = lazy(() => import('./pages/landing/TermsPage'))
+const CityLandingPage = lazy(() => import('./pages/landing/CityLandingPage'))
+const DestinationPage = lazy(() => import('./pages/landing/DestinationPage'))
+const UnclaimedProfilePage = lazy(() => import('./pages/landing/UnclaimedProfilePage'))
+
+// Auth pages (additional)
+const ClaimProfilePage = lazy(() => import('./pages/auth/ClaimProfilePage'))
+
+// Admin pages (additional)
+const AdminUnclaimedProfiles = lazy(() => import('./pages/admin/UnclaimedProfilesPage'))
 
 // Misc
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
@@ -166,6 +175,8 @@ export default function App() {
                     <Route path="/" element={<RootRedirect />} />
                     <Route path="/find-professionals" element={<FindProfessionalsPage />} />
                     <Route path="/consultant/:id" element={<ConsultantProfilePage />} />
+                    <Route path="/consultant/unclaimed/:id" element={<UnclaimedProfilePage />} />
+                    <Route path="/claim-profile" element={<ClaimProfilePage />} />
                     <Route path="/agency/:id" element={<AgencyProfilePage />} />
                     <Route path="/help" element={<Navigate to="/support" replace />} />
                     <Route path="/support" element={<SupportPage />} />
@@ -175,6 +186,10 @@ export default function App() {
                     <Route path="/pricing" element={<PricingPage />} />
                     <Route path="/services" element={<ServicesDirectoryPage />} />
                     <Route path="/services/:serviceId" element={<ServiceDetailsPage />} />
+                    {/* City SEO pages — /immigration-consultant-delhi, -mumbai, etc. */}
+                    <Route path="/immigration-consultant-:city" element={<CityLandingPage />} />
+                    {/* Destination SEO pages — /immigration/canada-pr, /immigration/australia-pr, etc. */}
+                    <Route path="/immigration/:destination" element={<DestinationPage />} />
 
                     {/* Auth — redirect to dashboard if already logged in */}
                     <Route element={<AuthLayout />}>
@@ -296,6 +311,7 @@ export default function App() {
                     }>
                         <Route index element={<AdminDashboard />} />
                         <Route path="applications" element={<AdminApplicationReview />} />
+                        <Route path="unclaimed-profiles" element={<AdminUnclaimedProfiles />} />
                         <Route path="audit-log" element={<AdminAuditLog />} />
                         <Route path="communication-settings" element={<AdminCommunicationSettings />} />
                         <Route path="content-management" element={<AdminContentManagement />} />

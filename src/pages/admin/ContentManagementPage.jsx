@@ -14,7 +14,7 @@ const sections = [
 
 const DEFAULT_CONTENT = {
     landing: { headline: 'Find your new home in a new country.', subheadline: 'Connect with trusted landlords, community members, and legal experts to streamline your immigration journey.', body: 'Join over 50,000 immigrants who have successfully settled using our platform. We verify every listing to ensure your safety and peace of mind.', alt_text: 'Happy family moving into new apartment', status: 'published' },
-    about: { headline: 'About VisaX', subheadline: 'We simplify immigration for everyone.', body: 'VisaX is a marketplace connecting immigrants with trusted consultants and legal experts worldwide.', status: 'published' },
+    about: { headline: 'About Immizy', subheadline: 'We simplify immigration for everyone.', body: 'Immizy is a marketplace connecting immigrants with trusted consultants and legal experts worldwide.', status: 'published' },
     faq: { headline: 'Frequently Asked Questions', subheadline: 'Find answers to common questions.', body: '', status: 'published' },
     blog: { headline: 'Latest News & Updates', subheadline: 'Stay informed about immigration changes.', body: '', status: 'published' },
     email: { headline: 'Email Templates', subheadline: 'Manage all system email templates.', body: '', status: 'published' },

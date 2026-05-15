@@ -5,7 +5,7 @@ import { navItems } from '../../data/navConfig'
 import { useAuth } from '../../contexts/AuthContext'
 import { useFocusTrap } from '../../hooks/useFocusTrap'
 
-const RECENT_KEY = 'visax-cmd-recent'
+const RECENT_KEY = 'immizy-cmd-recent'
 const MAX_RECENT = 5
 
 function getRecent() {
@@ -244,7 +244,7 @@ export default function CommandPalette() {
                             <span>↵ Select</span>
                             <span>ESC Close</span>
                         </div>
-                        <span>VisaX Command Palette</span>
+                        <span>Immizy Command Palette</span>
                     </div>
                 </div>
             </div>

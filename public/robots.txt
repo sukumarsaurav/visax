@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Disallow authenticated/internal routes
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /settings
+Disallow: /onboarding
+Disallow: /profile-setup
+
+Sitemap: https://immizy.in/sitemap.xml

@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useSEO } from '../../hooks/useSEO'
+import { SEO } from '../../lib/seo'
 import { Link } from 'react-router-dom'
 import PublicHeader from '../../components/layout/PublicHeader'
 import Footer from '../../components/layout/Footer'
@@ -73,6 +75,7 @@ const faqs = [
 ]
 
 export default function PricingPage() {
+    useSEO(SEO.pricing)
     const [billingPeriod, setBillingPeriod] = useState('monthly')
 
     const getPrice = (plan) => {

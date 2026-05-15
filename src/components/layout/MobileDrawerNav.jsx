@@ -7,11 +7,11 @@ import { useAuth } from '../../contexts/AuthContext'
 import toast from 'react-hot-toast'
 
 const logoConfig = {
-    client:        { name: 'VisaX', subtitle: 'Client Portal',    icon: 'flight_takeoff' },
-    individual:    { name: 'VisaX', subtitle: 'Professional Portal', icon: 'flight_takeoff' },
-    agency_admin:  { name: 'VisaX', subtitle: 'Agency Console',   icon: 'business' },
-    agency_member: { name: 'VisaX', subtitle: 'Team Portal',      icon: 'groups' },
-    admin:         { name: 'VisaX', subtitle: 'Admin Dashboard',  icon: 'flight_takeoff' },
+    client:        { name: 'Immizy', subtitle: 'Client Portal',    icon: 'flight_takeoff' },
+    individual:    { name: 'Immizy', subtitle: 'Professional Portal', icon: 'flight_takeoff' },
+    agency_admin:  { name: 'Immizy', subtitle: 'Agency Console',   icon: 'business' },
+    agency_member: { name: 'Immizy', subtitle: 'Team Portal',      icon: 'groups' },
+    admin:         { name: 'Immizy', subtitle: 'Admin Dashboard',  icon: 'flight_takeoff' },
 }
 
 const rootPaths = ['/client', '/consultant', '/agency', '/team-member', '/admin']

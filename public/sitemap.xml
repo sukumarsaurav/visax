@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <!-- Core pages -->
+  <url><loc>https://immizy.in/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://immizy.in/find-professionals</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://immizy.in/services</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://immizy.in/pricing</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://immizy.in/about</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://immizy.in/support</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+
+  <!-- Auth pages -->
+  <url><loc>https://immizy.in/login</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://immizy.in/register</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://immizy.in/professional-register</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+
+  <!-- Legal -->
+  <url><loc>https://immizy.in/privacy</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://immizy.in/terms</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
+
+  <!-- City SEO pages -->
+  <url><loc>https://immizy.in/immigration-consultant-delhi</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://immizy.in/immigration-consultant-mumbai</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://immizy.in/immigration-consultant-bangalore</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://immizy.in/immigration-consultant-hyderabad</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://immizy.in/immigration-consultant-chennai</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://immizy.in/immigration-consultant-pune</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://immizy.in/immigration-consultant-ahmedabad</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+
+  <!-- Destination country pages -->
+  <url><loc>https://immizy.in/immigration/canada-pr</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://immizy.in/immigration/australia-pr</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://immizy.in/immigration/germany-job-seeker</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://immizy.in/immigration/uk-skilled-worker</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://immizy.in/immigration/portugal-d7</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+
+</urlset>

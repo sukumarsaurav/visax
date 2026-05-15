@@ -64,7 +64,7 @@ export default function TeamManagementPage() {
             if (error) toast.error(error.message)
             else { toast.success('Invite sent!'); setInviteEmail(''); fetchTeam() }
         } else {
-            toast.error('No VisaX account found with that email')
+            toast.error('No Immizy account found with that email')
         }
         setInviting(false)
     }
@@ -117,7 +117,7 @@ export default function TeamManagementPage() {
                         {inviting ? 'Sending…' : 'Send Invite'}
                     </button>
                 </form>
-                <p className="mt-2 text-xs text-slate-400">The person must already have a VisaX account.</p>
+                <p className="mt-2 text-xs text-slate-400">The person must already have a Immizy account.</p>
             </Card>
 
             {/* Member list */}

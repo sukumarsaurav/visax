@@ -33,7 +33,7 @@ export default function OnboardingWelcomePage() {
                     <div className="flex items-center justify-center text-primary">
                         <span className="material-symbols-outlined material-filled text-3xl">flight_takeoff</span>
                     </div>
-                    <h2 className="text-lg font-black leading-tight tracking-tight">VisaX</h2>
+                    <h2 className="text-lg font-black leading-tight tracking-tight">Immizy</h2>
                 </div>
                 <Link
                     to="/login"
@@ -51,7 +51,7 @@ export default function OnboardingWelcomePage() {
                         <div className="flex flex-col gap-8 lg:pr-8 order-2 lg:order-1">
                             <div className="flex flex-col gap-4">
                                 <span className="text-primary font-bold tracking-wide uppercase text-sm">
-                                    Welcome to VisaX
+                                    Welcome to Immizy
                                 </span>
                                 <h1 className="text-slate-900 dark:text-white text-4xl lg:text-5xl font-black leading-tight tracking-tight">
                                     Your Journey <br />Starts Here

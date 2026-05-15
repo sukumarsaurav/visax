@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom'
+import { useSEO } from '../../hooks/useSEO'
+import { SEO } from '../../lib/seo'
 
 const values = [
     { icon: 'verified_user', title: 'Trust & Transparency', color: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400', desc: 'Every professional on our platform is verified. We publish credentials, reviews, and success rates so you can choose with confidence.' },
@@ -22,6 +24,7 @@ const team = [
 ]
 
 export default function AboutPage() {
+    useSEO(SEO.about)
     return (
         <div className="min-h-screen bg-white dark:bg-[#0d1117]">
             {/* Hero */}
@@ -38,7 +41,7 @@ export default function AboutPage() {
                         <span className="text-blue-400">Powered by Experts.</span>
                     </h1>
                     <p className="text-lg md:text-xl text-slate-300 max-w-2xl mx-auto leading-relaxed">
-                        We started VisaX because navigating immigration felt impossibly hard — even for people who work in the industry. We decided to change that.
+                        We started Immizy because navigating immigration felt impossibly hard — even for people who work in the industry. We decided to change that.
                     </p>
                 </div>
             </section>
@@ -49,7 +52,7 @@ export default function AboutPage() {
                     <div>
                         <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-4">Our Mission</h2>
                         <p className="text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-                            VisaX exists to make quality immigration guidance accessible to everyone — regardless of where you are in the world, how much you earn, or what language you speak.
+                            Immizy exists to make quality immigration guidance accessible to everyone — regardless of where you are in the world, how much you earn, or what language you speak.
                         </p>
                         <p className="text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
                             Immigration is one of the most consequential decisions a person makes. Yet millions of people face it alone, misled by unqualified "consultants" or buried in bureaucratic paperwork.
@@ -126,7 +129,7 @@ export default function AboutPage() {
             <section className="py-20 px-6 bg-gradient-to-br from-primary to-blue-700 text-white text-center">
                 <div className="max-w-2xl mx-auto">
                     <h2 className="text-3xl font-black mb-4">Ready to start your journey?</h2>
-                    <p className="text-blue-100 mb-8">Join thousands of people who have navigated immigration successfully with VisaX.</p>
+                    <p className="text-blue-100 mb-8">Join thousands of people who have navigated immigration successfully with Immizy.</p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                         <Link to="/find-professionals"
                             className="bg-white text-primary font-bold px-6 py-3 rounded-xl hover:bg-blue-50 transition-colors">

@@ -4,11 +4,11 @@ import Button from '../../components/ui/Button'
 import { supabase } from '../../lib/supabase'
 
 const emailTemplates = [
-    { id: 1, name: 'Welcome Email', subject: 'Welcome to VisaX!', body: 'Hi {{client_name}},\n\nWelcome to VisaX! We are thrilled to have you on board.\n\nBest regards,\nThe VisaX Team', status: 'active' },
-    { id: 2, name: 'Password Reset', subject: 'Reset your password', body: 'Hi {{client_name}},\n\nClick the link below to reset your password: {{login_url}}\n\nBest regards,\nThe VisaX Team', status: 'active' },
-    { id: 3, name: 'Case Status Update', subject: 'Update on Case #{{case_id}}', body: 'Hi {{client_name}},\n\nYour case {{case_id}} status has been updated to: {{case_status}}\n\nBest regards,\nThe VisaX Team', status: 'draft' },
-    { id: 4, name: 'Document Request', subject: 'Action Required: Documents', body: 'Hi {{client_name}},\n\nWe need additional documents from you. Please log in to upload them.\n\nBest regards,\nThe VisaX Team', status: 'active' },
-    { id: 5, name: 'Appointment Confirmation', subject: 'Appointment Confirmed', body: 'Hi {{client_name}},\n\nYour appointment on {{appointment_date}} has been confirmed.\n\nBest regards,\nThe VisaX Team', status: 'active' }
+    { id: 1, name: 'Welcome Email', subject: 'Welcome to Immizy!', body: 'Hi {{client_name}},\n\nWelcome to Immizy! We are thrilled to have you on board.\n\nBest regards,\nThe Immizy Team', status: 'active' },
+    { id: 2, name: 'Password Reset', subject: 'Reset your password', body: 'Hi {{client_name}},\n\nClick the link below to reset your password: {{login_url}}\n\nBest regards,\nThe Immizy Team', status: 'active' },
+    { id: 3, name: 'Case Status Update', subject: 'Update on Case #{{case_id}}', body: 'Hi {{client_name}},\n\nYour case {{case_id}} status has been updated to: {{case_status}}\n\nBest regards,\nThe Immizy Team', status: 'draft' },
+    { id: 4, name: 'Document Request', subject: 'Action Required: Documents', body: 'Hi {{client_name}},\n\nWe need additional documents from you. Please log in to upload them.\n\nBest regards,\nThe Immizy Team', status: 'active' },
+    { id: 5, name: 'Appointment Confirmation', subject: 'Appointment Confirmed', body: 'Hi {{client_name}},\n\nYour appointment on {{appointment_date}} has been confirmed.\n\nBest regards,\nThe Immizy Team', status: 'active' }
 ]
 
 const variables = {

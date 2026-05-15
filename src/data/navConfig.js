@@ -1,5 +1,5 @@
 // Unified navigation configuration for all user roles
-// All brand references use VisaX
+// All brand references use Immizy
 
 export const navItems = {
     client: [
@@ -59,6 +59,7 @@ export const navItems = {
         { group: 'Users & Access', items: [
             { label: 'Users',        icon: 'manage_accounts',  path: '/admin/user-management' },
             { label: 'Applications', icon: 'description',      path: '/admin/applications', badgeCount: 0 },
+            { label: 'Unclaimed',    icon: 'person_add',       path: '/admin/unclaimed-profiles' },
             { label: 'Audit Log',    icon: 'verified_user',    path: '/admin/audit-log' },
         ]},
         { group: 'Content & Comms', items: [

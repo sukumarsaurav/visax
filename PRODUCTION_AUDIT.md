@@ -1,4 +1,4 @@
-# VisaX — Production Readiness Audit
+# Immizy — Production Readiness Audit
 **Date:** 2026-05-14 | **Target:** 1000 concurrent users | **Engineer:** Senior DB Review
 
 ---

@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom'
+import { useSEO } from '../../hooks/useSEO'
+import { SEO } from '../../lib/seo'
 
 const LAST_UPDATED = 'May 14, 2026'
 
@@ -9,7 +11,7 @@ const sections = [
         icon: 'database',
         content: [
             { subtitle: 'Information you provide directly', text: 'When you create an account, we collect your name, email address, phone number, and any profile information you choose to add. Professionals additionally provide credentials, licensing information, and professional history for verification purposes.' },
-            { subtitle: 'Information from your use of the platform', text: 'We collect data about how you use VisaX, including pages viewed, features used, search queries, appointment bookings, messages sent (metadata only), and documents uploaded. We also log IP addresses, browser type, device information, and timestamps.' },
+            { subtitle: 'Information from your use of the platform', text: 'We collect data about how you use Immizy, including pages viewed, features used, search queries, appointment bookings, messages sent (metadata only), and documents uploaded. We also log IP addresses, browser type, device information, and timestamps.' },
             { subtitle: 'Payment information', text: 'Payment card details are processed directly by our payment processor (Stripe) and are never stored on our servers. We retain only transaction metadata such as amount, date, and last four digits of the card.' },
             { subtitle: 'Communications', text: 'If you contact our support team or communicate with professionals through the platform, we store those communications to provide the service and resolve disputes.' },
         ],
@@ -32,7 +34,7 @@ const sections = [
         content: [
             { subtitle: 'With professionals and clients', text: 'When you book a consultation or communicate through the platform, relevant profile information is shared with the other party to enable the service.' },
             { subtitle: 'With service providers', text: 'We share data with trusted third-party vendors (e.g., Stripe for payments, SendGrid for email, cloud storage providers) who are contractually bound to protect it and may only use it to provide services to us.' },
-            { subtitle: 'We do not sell your data', text: 'VisaX does not sell, rent, or trade your personal information to third parties for their marketing purposes. Full stop.' },
+            { subtitle: 'We do not sell your data', text: 'Immizy does not sell, rent, or trade your personal information to third parties for their marketing purposes. Full stop.' },
             { subtitle: 'Business transfers', text: 'In the event of a merger, acquisition, or sale of assets, your data may be transferred to the successor entity. We will notify you by email or prominent notice on the platform before your data is subject to a different privacy policy.' },
         ],
     },
@@ -53,7 +55,7 @@ const sections = [
             { subtitle: 'Access and portability', text: 'You may request a copy of all personal data we hold about you, in a machine-readable format, at any time from your account settings.' },
             { subtitle: 'Correction', text: 'You can update most of your profile information directly from your account settings. For data you cannot edit yourself, contact support.' },
             { subtitle: 'Deletion', text: 'You can delete your account at any time. We will process the deletion as described in the Data Retention section above.' },
-            { subtitle: 'Objection and restriction', text: 'You have the right to object to or restrict certain processing of your data, particularly for direct marketing. To exercise this right, contact privacy@visax.com.' },
+            { subtitle: 'Objection and restriction', text: 'You have the right to object to or restrict certain processing of your data, particularly for direct marketing. To exercise this right, contact privacy@immizy.in.' },
             { subtitle: 'GDPR and CCPA', text: 'If you are located in the European Economic Area or California, you have additional rights under GDPR and the CCPA respectively. Contact us to exercise these rights.' },
         ],
     },
@@ -80,6 +82,7 @@ const sections = [
 ]
 
 export default function PrivacyPage() {
+    useSEO(SEO.privacy)
     return (
         <div className="min-h-screen bg-white dark:bg-[#0d1117]">
             {/* Header */}
@@ -98,7 +101,7 @@ export default function PrivacyPage() {
                     </div>
                     <p className="text-slate-500 dark:text-slate-400">Last updated: {LAST_UPDATED}</p>
                     <p className="mt-4 text-slate-600 dark:text-slate-400 leading-relaxed">
-                        At VisaX, your privacy is fundamental to how we build our product. This policy explains what data we collect, how we use it, and the controls you have over it. We've written it to be readable, not just legally compliant.
+                        At Immizy, your privacy is fundamental to how we build our product. This policy explains what data we collect, how we use it, and the controls you have over it. We've written it to be readable, not just legally compliant.
                     </p>
                 </div>
             </section>
@@ -147,8 +150,8 @@ export default function PrivacyPage() {
                         <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-3">
                             For privacy-related questions or to exercise your rights, contact our Privacy Team:
                         </p>
-                        <p className="text-sm font-medium text-slate-900 dark:text-white">VisaX Inc.</p>
-                        <a href="mailto:privacy@visax.com" className="text-sm text-primary hover:underline">privacy@visax.com</a>
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">Immizy Inc.</p>
+                        <a href="mailto:privacy@immizy.in" className="text-sm text-primary hover:underline">privacy@immizy.in</a>
                     </section>
                 </article>
             </div>

@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useSEO } from '../../hooks/useSEO'
+import { SEO } from '../../lib/seo'
 import { Link, useNavigate } from 'react-router-dom'
 import PublicHeader from '../../components/layout/PublicHeader'
 import Footer from '../../components/layout/Footer'
@@ -23,6 +25,7 @@ const quickFilters = [
 ]
 
 export default function FindProfessionalsPage() {
+    useSEO(SEO.findProfessionals)
     const [professionals, setProfessionals] = useState([])
     const [loading, setLoading] = useState(true)
     const [loadingMore, setLoadingMore] = useState(false)
@@ -48,6 +51,7 @@ export default function FindProfessionalsPage() {
     const [priceMap, setPriceMap] = useState({})
     const [agencyMap, setAgencyMap] = useState({}) // owner_id -> { id, name, memberCount }
     const [memberAgencyMap, setMemberAgencyMap] = useState({}) // consultant_id -> agency name
+    const [unclaimedProfiles, setUnclaimedProfiles] = useState([])
 
     useEffect(() => {
         loadMeta()
@@ -62,11 +66,12 @@ export default function FindProfessionalsPage() {
     async function loadMeta() {
         // consultant_rating_summary is a pre-aggregated materialized view —
         // one row per consultant instead of one row per review.
-        const [ratingsRes, servicesRes, agenciesRes, membersRes] = await Promise.all([
+        const [ratingsRes, servicesRes, agenciesRes, membersRes, unclaimedRes] = await Promise.all([
             supabase.from('consultant_rating_summary').select('consultant_id, avg_rating, review_count'),
             supabase.from('services').select('provider_id, price').eq('is_active', true),
             supabase.from('agencies').select('id, owner_id, name'),
             supabase.from('agency_members').select('profile_id, agency_id, agency:agencies(name)').eq('status', 'active'),
+            supabase.from('unclaimed_profiles').select('id, full_name, bio, avatar_url, specializations, languages, years_experience, city, role').eq('is_claimed', false).limit(30),
         ])
 
         // Build rating map from pre-aggregated view (no in-memory aggregation needed)
@@ -102,6 +107,7 @@ export default function FindProfessionalsPage() {
             memberMap[m.profile_id] = { agencyId: m.agency_id, agencyName: m.agency?.name }
         }
         setMemberAgencyMap(memberMap)
+        setUnclaimedProfiles(unclaimedRes.data || [])
     }
 
     async function fetchProfessionals(pageNum = 0, reset = false) {
@@ -491,6 +497,58 @@ export default function FindProfessionalsPage() {
                                             {loadingMore ? 'Loading...' : 'Show More Professionals'}
                                             <span className="material-symbols-outlined text-sm">expand_more</span>
                                         </button>
+                                    </div>
+                                )}
+
+                                {/* ── Unclaimed profiles section ── */}
+                                {unclaimedProfiles.length > 0 && (
+                                    <div className="mt-12 pt-10 border-t border-slate-200 dark:border-slate-700">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="material-symbols-outlined text-amber-500 text-[20px]">pending</span>
+                                            <h2 className="text-base font-black text-slate-900 dark:text-white">More consultants on Immizy</h2>
+                                        </div>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+                                            These profiles haven't been claimed yet. Enquire directly — we'll notify them and help you connect.
+                                        </p>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                                            {unclaimedProfiles
+                                                .filter(u => !appliedSearch || u.full_name?.toLowerCase().includes(appliedSearch.toLowerCase()) || u.specializations?.some(s => s.toLowerCase().includes(appliedSearch.toLowerCase())))
+                                                .map(u => {
+                                                    const initials = u.full_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+                                                    return (
+                                                        <Link
+                                                            key={u.id}
+                                                            to={`/consultant/unclaimed/${u.id}`}
+                                                            className="group flex items-start gap-4 p-4 bg-white dark:bg-slate-800 rounded-xl border border-amber-200 dark:border-amber-800/50 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+                                                        >
+                                                            <div className="size-12 rounded-xl bg-gradient-to-br from-slate-400 to-slate-500 flex items-center justify-center text-white font-bold text-sm shrink-0 overflow-hidden">
+                                                                {u.avatar_url
+                                                                    ? <img src={u.avatar_url} alt={u.full_name} className="w-full h-full object-cover" />
+                                                                    : initials}
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-center gap-2 flex-wrap">
+                                                                    <span className="font-bold text-slate-900 dark:text-white text-sm truncate">{u.full_name}</span>
+                                                                    <span className="text-[10px] font-bold bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-full shrink-0">Unclaimed</span>
+                                                                </div>
+                                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                                    {u.role === 'agency_admin' ? 'Agency' : 'Consultant'}
+                                                                    {u.city ? ` · ${u.city}` : ''}
+                                                                    {u.years_experience > 0 ? ` · ${u.years_experience}+ yrs` : ''}
+                                                                </p>
+                                                                {u.specializations?.length > 0 && (
+                                                                    <div className="flex flex-wrap gap-1 mt-2">
+                                                                        {u.specializations.slice(0, 2).map(s => (
+                                                                            <span key={s} className="text-[10px] px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-full">{s}</span>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <span className="material-symbols-outlined text-slate-300 group-hover:text-primary transition-colors text-[18px] shrink-0 mt-1">chevron_right</span>
+                                                        </Link>
+                                                    )
+                                                })}
+                                        </div>
                                     </div>
                                 )}
 

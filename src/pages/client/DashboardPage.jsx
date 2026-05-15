@@ -21,7 +21,7 @@ function SkeletonCard() {
     return <div className="h-28 animate-pulse rounded-xl bg-slate-200 dark:bg-slate-800" />
 }
 
-const ONBOARDING_DISMISSED_KEY = 'visax-onboarding-dismissed'
+const ONBOARDING_DISMISSED_KEY = 'immizy-onboarding-dismissed'
 
 function OnboardingChecklist({ profile, hasCases, hasAppointments }) {
     const [dismissed, setDismissed] = useState(() => {
@@ -56,7 +56,7 @@ function OnboardingChecklist({ profile, hasCases, hasAppointments }) {
                 <div>
                     <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
                         <span className="material-symbols-outlined text-primary text-[20px]" aria-hidden="true">rocket_launch</span>
-                        Get Started with VisaX
+                        Get Started with Immizy
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">{completedCount} of {steps.length} steps complete</p>
                 </div>

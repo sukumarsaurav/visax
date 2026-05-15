@@ -73,7 +73,7 @@ function LeftPanel({ step, totalSteps, accountType }) {
                     <div className="flex size-9 items-center justify-center rounded-lg bg-white/20 backdrop-blur-sm">
                         <span className="material-symbols-outlined material-filled text-xl">flight_takeoff</span>
                     </div>
-                    <span className="text-xl font-black tracking-tight">VisaX</span>
+                    <span className="text-xl font-black tracking-tight">Immizy</span>
                 </Link>
 
                 <div className="flex flex-col gap-2 mb-10">
@@ -130,7 +130,7 @@ function LeftPanel({ step, totalSteps, accountType }) {
                         <span className="material-symbols-outlined text-yellow-300 text-[16px]">star</span>
                         <span className="text-sm font-bold">4.9/5 from 500+ professionals</span>
                     </div>
-                    <p className="text-xs text-blue-200 leading-relaxed">"VisaX helped me triple my client base in 6 months." — Maria G., Immigration Attorney</p>
+                    <p className="text-xs text-blue-200 leading-relaxed">"Immizy helped me triple my client base in 6 months." — Maria G., Immigration Attorney</p>
                 </div>
             </div>
         </div>
@@ -254,7 +254,7 @@ export default function ProfessionalRegisterPage() {
                         <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-white">
                             <span className="material-symbols-outlined material-filled text-lg">flight_takeoff</span>
                         </div>
-                        <span className="font-black text-slate-900 dark:text-white">VisaX</span>
+                        <span className="font-black text-slate-900 dark:text-white">Immizy</span>
                     </div>
                     <Link
                         to="/professional-register"

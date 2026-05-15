@@ -44,7 +44,7 @@ export default function ProfessionalSubmittedPage() {
                     <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-white">
                         <span className="material-symbols-outlined material-filled text-lg">flight_takeoff</span>
                     </div>
-                    <span className="text-lg font-black tracking-tight">VisaX</span>
+                    <span className="text-lg font-black tracking-tight">Immizy</span>
                 </Link>
                 <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-500 dark:text-slate-400">
                     <span className="cursor-default">Dashboard</span>
@@ -66,7 +66,7 @@ export default function ProfessionalSubmittedPage() {
                             Application Submitted Successfully!
                         </h1>
                         <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed max-w-md">
-                            Thank you for applying to join the VisaX Professional Network. We have received your registration details and documents.
+                            Thank you for applying to join the Immizy Professional Network. We have received your registration details and documents.
                         </p>
                     </div>
 

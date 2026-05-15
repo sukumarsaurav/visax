@@ -16,7 +16,7 @@ export default function NotFoundPage() {
                 <div>
                     <h1 className="text-6xl font-black text-slate-900 dark:text-white">404</h1>
                     <h2 className="mt-2 text-xl font-bold text-slate-700 dark:text-slate-300">Page not found</h2>
-                    <p className="mt-2 text-slate-500">This destination doesn't exist on the VisaX map. Let's get you back on track.</p>
+                    <p className="mt-2 text-slate-500">This destination doesn't exist on the Immizy map. Let's get you back on track.</p>
                 </div>
                 <div className="flex gap-3">
                     <button

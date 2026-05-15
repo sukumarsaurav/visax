@@ -53,7 +53,7 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-2xl font-black text-slate-900 dark:text-white">Platform Overview</h2>
-                    <p className="text-sm text-slate-500">Real-time VisaX admin dashboard</p>
+                    <p className="text-sm text-slate-500">Real-time Immizy admin dashboard</p>
                 </div>
                 <div className="flex gap-3">
                     <Link to="/admin/applications">

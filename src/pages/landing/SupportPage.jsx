@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import PublicHeader from '../../components/layout/PublicHeader'
 import Footer from '../../components/layout/Footer'
 import { supabase } from '../../lib/supabase'
+import { useSEO } from '../../hooks/useSEO'
+import { SEO } from '../../lib/seo'
 
 const issueCategories = [
     { value: 'technical', label: 'Technical Bug' },
@@ -33,6 +35,7 @@ const faqItems = [
 ]
 
 export default function SupportPage() {
+    useSEO(SEO.support)
     const [category, setCategory] = useState('')
     const [urgency, setUrgency] = useState('medium')
     const [description, setDescription] = useState('')
@@ -64,7 +67,7 @@ export default function SupportPage() {
         if (dbError) {
             // Fallback: show error but don't block UX entirely
             console.error('Support ticket error:', dbError)
-            setError('Failed to submit. Please email us directly at support@visax.com')
+            setError('Failed to submit. Please email us directly at support@immizy.in')
             setSubmitting(false)
             return
         }
@@ -278,8 +281,8 @@ export default function SupportPage() {
                             <div>
                                 <h3 className="font-bold text-slate-900 dark:text-white mb-1">Email Support</h3>
                                 <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">Our team typically responds within 24 hours.</p>
-                                <a href="mailto:support@visax.com" className="text-primary font-medium text-sm hover:underline">
-                                    support@visax.com
+                                <a href="mailto:support@immizy.in" className="text-primary font-medium text-sm hover:underline">
+                                    support@immizy.in
                                 </a>
                             </div>
                         </div>

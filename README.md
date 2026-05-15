@@ -1,4 +1,4 @@
-# VisaX
+# Immizy
 
 A modern visa consultation and immigration services platform built with React, Vite, and Supabase.
 
@@ -29,7 +29,7 @@ Create a `.env.local` file in the root directory:
 ```env
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-VITE_APP_NAME=VisaX
+VITE_APP_NAME=Immizy
 ```
 
 ### Development

@@ -23,7 +23,7 @@ export default function PublicHeader() {
                     <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-white">
                         <span className="material-symbols-outlined material-filled text-lg">flight_takeoff</span>
                     </div>
-                    <span className="text-lg font-black tracking-tight">VisaX</span>
+                    <span className="text-lg font-black tracking-tight">Immizy</span>
                 </Link>
                 <div className="flex flex-1 justify-end gap-8">
                     <nav className="hidden md:flex items-center gap-8">

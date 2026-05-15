@@ -45,7 +45,7 @@ export default function ProfessionalApprovedPage() {
                     <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-white">
                         <span className="material-symbols-outlined material-filled text-lg">flight_takeoff</span>
                     </div>
-                    <span className="text-lg font-black tracking-tight">VisaX</span>
+                    <span className="text-lg font-black tracking-tight">Immizy</span>
                 </Link>
                 <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-500 dark:text-slate-400">
                     <Link to={dashPath} className="hover:text-slate-900 dark:hover:text-white transition-colors">Dashboard</Link>
@@ -67,7 +67,7 @@ export default function ProfessionalApprovedPage() {
                             Your Account is Now Active!
                         </h1>
                         <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed max-w-md">
-                            Congratulations, <strong className="text-slate-900 dark:text-white">{agencyName}</strong>! Your application has been successfully reviewed. You now have full access to the VisaX Professional Network.
+                            Congratulations, <strong className="text-slate-900 dark:text-white">{agencyName}</strong>! Your application has been successfully reviewed. You now have full access to the Immizy Professional Network.
                         </p>
                     </div>
 

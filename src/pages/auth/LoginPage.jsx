@@ -3,8 +3,11 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import toast from 'react-hot-toast'
 import { friendlyError } from '../../lib/errors'
+import { useSEO } from '../../hooks/useSEO'
+import { SEO } from '../../lib/seo'
 
 export default function LoginPage() {
+    useSEO(SEO.login)
     const navigate = useNavigate()
     const location = useLocation()
     const { signIn, getDashboardPath } = useAuth()
@@ -50,7 +53,7 @@ export default function LoginPage() {
         <div className="flex w-full max-w-sm flex-col gap-6">
             <div className="text-center">
                 <h1 className="text-2xl font-black text-slate-900 dark:text-white">Welcome back</h1>
-                <p className="mt-1 text-sm text-slate-500">Sign in to your VisaX account</p>
+                <p className="mt-1 text-sm text-slate-500">Sign in to your Immizy account</p>
             </div>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>

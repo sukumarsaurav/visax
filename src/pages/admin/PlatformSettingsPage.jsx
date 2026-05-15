@@ -66,7 +66,7 @@ export default function PlatformSettingsPage() {
     const [toast, setToast] = useState(null)
     const [lastSaved, setLastSaved] = useState(null)
 
-    const [general, setGeneral] = useState({ platform_name: 'VisaX', support_email: 'support@visax.com', max_upload_mb: 25, maintenance_mode: false })
+    const [general, setGeneral] = useState({ platform_name: 'Immizy', support_email: 'support@immizy.in', max_upload_mb: 25, maintenance_mode: false })
     const [security, setSecurity] = useState({ session_timeout_hours: 24, two_factor_required: false, password_min_length: 8 })
     const [maintenanceMsg, setMaintenanceMsg] = useState('We are currently performing scheduled maintenance. We will be back shortly.')
     const [intSettings, setIntSettings] = useState({ stripe: { enabled: true, mode: 'live' }, zoom: { enabled: true }, sendgrid: { enabled: false }, hubspot: { enabled: false } })

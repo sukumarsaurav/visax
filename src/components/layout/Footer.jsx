@@ -43,7 +43,7 @@ export default function Footer() {
                             <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-white">
                                 <span className="material-symbols-outlined material-filled text-lg">flight_takeoff</span>
                             </div>
-                            <span className="font-black text-lg">VisaX</span>
+                            <span className="font-black text-lg">Immizy</span>
                         </div>
                         <p className="text-sm text-slate-500 dark:text-slate-400">
                             Empowering your journey with the right guidance, every step of the way.
@@ -105,7 +105,7 @@ export default function Footer() {
                 {/* Bottom Bar */}
                 <div className="border-t border-slate-100 dark:border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
                     <p className="text-xs text-slate-400">
-                        © {new Date().getFullYear()} VisaX Inc. All rights reserved.
+                        © {new Date().getFullYear()} Immizy Inc. All rights reserved.
                     </p>
                     <div className="flex gap-6">
                         <Link to="/privacy" className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">

@@ -1,12 +1,14 @@
 import { Link } from 'react-router-dom'
 import PublicHeader from '../../components/layout/PublicHeader'
 import Footer from '../../components/layout/Footer'
+import { useSEO } from '../../hooks/useSEO'
+import { SEO } from '../../lib/seo'
 
 const benefits = [
     {
         icon: 'verified_user',
         title: 'Get Verified & Build Trust',
-        description: 'Earn the VisaX Verified badge. Clients prioritise verified professionals when booking.'
+        description: 'Earn the Immizy Verified badge. Clients prioritise verified professionals when booking.'
     },
     {
         icon: 'people',
@@ -34,6 +36,7 @@ const stats = [
 ]
 
 export default function ProfessionalWelcomePage() {
+    useSEO(SEO.professionalWelcome)
     return (
         <div className="flex min-h-screen flex-col bg-white dark:bg-[#101822] overflow-x-hidden">
             <PublicHeader />
@@ -78,7 +81,7 @@ export default function ProfessionalWelcomePage() {
                                             ))}
                                         </div>
                                         <div>
-                                            <p className="text-xs font-bold text-slate-900 dark:text-white">500+ professionals trust VisaX</p>
+                                            <p className="text-xs font-bold text-slate-900 dark:text-white">500+ professionals trust Immizy</p>
                                             <div className="flex items-center gap-0.5 mt-0.5">
                                                 {[...Array(5)].map((_, i) => (
                                                     <span key={i} className="material-symbols-outlined text-yellow-400 text-[12px]">star</span>
@@ -99,7 +102,7 @@ export default function ProfessionalWelcomePage() {
                                     Professional Registration
                                 </span>
                                 <h1 className="text-slate-900 dark:text-white text-4xl lg:text-5xl font-black leading-tight tracking-tight">
-                                    Grow Your Practice<br />with <span className="text-primary">VisaX</span>
+                                    Grow Your Practice<br />with <span className="text-primary">Immizy</span>
                                 </h1>
                                 <p className="text-slate-500 dark:text-slate-400 text-lg font-normal leading-relaxed max-w-[480px]">
                                     Join 500+ immigration professionals and agencies managing their entire practice — clients, cases, and consultations — in one place.

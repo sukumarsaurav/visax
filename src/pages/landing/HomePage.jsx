@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { useSEO } from '../../hooks/useSEO'
+import { SEO } from '../../lib/seo'
 import { Link } from 'react-router-dom'
 import Button from '../../components/ui/Button'
 import Avatar from '../../components/ui/Avatar'
@@ -15,7 +17,7 @@ const features = [
 ]
 
 const testimonials = [
-    { name: 'Priya M.', role: 'Software Engineer', initials: 'PM', color: 'bg-violet-500', text: 'VisaX made our H-1B process incredibly smooth. Having everything in one place — documents, appointments, case tracking — was a game changer.' },
+    { name: 'Priya M.', role: 'Software Engineer', initials: 'PM', color: 'bg-violet-500', text: 'Immizy made our H-1B process incredibly smooth. Having everything in one place — documents, appointments, case tracking — was a game changer.' },
     { name: 'Carlos R.', role: 'Family Visa Applicant', initials: 'CR', color: 'bg-emerald-500', text: 'Found a consultant who spoke my language and understood my situation. Got my Green Card approved in record time. Highly recommend!' },
     { name: 'Sarah K.', role: 'International Student', initials: 'SK', color: 'bg-amber-500', text: 'The document tracking alone saved me weeks of stress. My consultant caught a missing form before submission — worth every penny.' },
 ]
@@ -28,6 +30,7 @@ const steps = [
 ]
 
 export default function HomePage() {
+    useSEO(SEO.home)
     const [featuredConsultant, setFeaturedConsultant] = useState(null)
     const [platformStats, setPlatformStats] = useState({ consultants: 0, avgRating: null, reviews: 0 })
 

@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { useSEO } from '../../hooks/useSEO'
+import { SEO } from '../../lib/seo'
 import { Link } from 'react-router-dom'
 import PublicHeader from '../../components/layout/PublicHeader'
 import Footer from '../../components/layout/Footer'
@@ -18,6 +20,7 @@ const ICON_COLORS = [
 ]
 
 export default function ServicesDirectoryPage() {
+    useSEO(SEO.services)
     const [services, setServices] = useState([])
     const [loading, setLoading] = useState(true)
     const [loadingMore, setLoadingMore] = useState(false)

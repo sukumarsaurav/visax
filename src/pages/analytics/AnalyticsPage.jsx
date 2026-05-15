@@ -9,7 +9,7 @@ function EmptyAnalytics() {
     return (
         <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-4">
             <span className="material-symbols-outlined text-[56px]">analytics</span>
-            <p className="text-base font-semibold">Analytics data will appear here as you use VisaX</p>
+            <p className="text-base font-semibold">Analytics data will appear here as you use Immizy</p>
             <p className="text-sm">Manage cases and appointments to see your stats grow.</p>
         </div>
     )

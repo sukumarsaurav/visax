@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 
-const LOCALE_KEY = 'visax-locale'
+const LOCALE_KEY = 'immizy-locale'
 
 /**
  * Reads the user's stored locale preference and keeps document.documentElement.lang

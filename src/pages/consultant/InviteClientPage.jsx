@@ -37,7 +37,7 @@ export default function InviteClientPage() {
     const [toast, setToast] = useState('')
 
     const [email, setEmail] = useState('')
-    const [message, setMessage] = useState('Welcome to the VisaX Client Portal. Please click the link below to set up your account and access your case information.')
+    const [message, setMessage] = useState('Welcome to the Immizy Client Portal. Please click the link below to set up your account and access your case information.')
     const [permissions, setPermissions] = useState(DEFAULT_PERMISSIONS)
 
     useEffect(() => {
