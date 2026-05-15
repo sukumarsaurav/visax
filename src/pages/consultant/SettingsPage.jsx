@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import Button from '../../components/ui/Button'
+import AvatarUpload from '../../components/ui/AvatarUpload'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
+import { uploadAvatar } from '../../lib/storage'
 
 const settingsTabs = [
     { id: 'profile', label: 'Profile', icon: 'person' },
@@ -63,6 +65,7 @@ export default function SettingsPage() {
     const [profile, setProfile] = useState({
         full_name: '', email: '', phone: '', bio: '',
         years_experience: '', languages: '', specializations: '',
+        avatar_url: '',
     })
     const [notifications, setNotifications] = useState({
         case_updates_email: true,
@@ -97,12 +100,21 @@ export default function SettingsPage() {
                 years_experience: data.years_experience || '',
                 languages: (data.languages || []).join(', '),
                 specializations: (data.specializations || []).join(', '),
+                avatar_url: data.avatar_url || '',
             })
             if (data.notification_preferences) {
                 setNotifications(prev => ({ ...prev, ...data.notification_preferences }))
             }
         }
         setLoading(false)
+    }
+
+    async function handleAvatarUpload(file) {
+        const url = await uploadAvatar(file, user.id)
+        await supabase.from('profiles').update({ avatar_url: url }).eq('id', user.id)
+        setProfile(p => ({ ...p, avatar_url: url }))
+        setToast('Profile photo updated!')
+        return url
     }
 
     const handleSaveProfile = async () => {
@@ -214,6 +226,21 @@ export default function SettingsPage() {
                                 <p className="text-sm text-slate-500">Update your public profile details.</p>
                             </div>
                             <div className="p-6 space-y-6">
+                                {/* Avatar */}
+                                <div className="flex items-center gap-5 pb-2 border-b border-slate-100 dark:border-slate-800">
+                                    <AvatarUpload
+                                        currentUrl={profile.avatar_url}
+                                        name={profile.full_name}
+                                        onUpload={handleAvatarUpload}
+                                        size="lg"
+                                    />
+                                    <div>
+                                        <p className="text-sm font-semibold text-slate-900 dark:text-white">Profile Photo</p>
+                                        <p className="text-xs text-slate-500 mt-0.5">Click the camera icon to upload. JPG, PNG or WebP, max 5 MB.</p>
+                                        <p className="text-xs text-slate-400 mt-1">Photo is saved immediately on upload.</p>
+                                    </div>
+                                </div>
+
                                 <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                                     <InputField
                                         label="Full Name"

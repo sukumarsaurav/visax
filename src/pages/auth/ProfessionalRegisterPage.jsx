@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import toast from 'react-hot-toast'
 import { friendlyError } from '../../lib/errors'
+import { supabase } from '../../lib/supabase'
+import { uploadAvatar, uploadDocument, validateDocFile } from '../../lib/storage'
 
 const expertiseAreas = [
     'Skilled Worker Visa',
@@ -143,9 +145,15 @@ export default function ProfessionalRegisterPage() {
     const [step, setStep] = useState(1)
     const [accountType, setAccountType] = useState('individual')
     const [submitting, setSubmitting] = useState(false)
+    const [submitStatus, setSubmitStatus] = useState('')
     const [errors, setErrors] = useState({})
     const [uploadedFiles, setUploadedFiles] = useState([])
     const fileInputRef = useRef(null)
+
+    // Profile photo (stored locally until submit)
+    const [avatarFile, setAvatarFile] = useState(null)
+    const [avatarPreview, setAvatarPreview] = useState(null)
+    const photoInputRef = useRef(null)
 
     // Step 1 - Basic Info
     const [firstName, setFirstName] = useState('')
@@ -205,22 +213,104 @@ export default function ProfessionalRegisterPage() {
         setSubmitting(true)
         try {
             const role = accountType === 'agency' ? 'agency_admin' : 'individual'
-            const { error } = await signUp({
+            setSubmitStatus('Creating account…')
+
+            const { data, error } = await signUp({
                 email,
                 password,
                 fullName: `${firstName} ${lastName}`.trim(),
                 role,
             })
+
             if (error) {
                 toast.error(friendlyError(error))
-            } else {
-                navigate('/professional-submitted')
+                setSubmitting(false)
+                setSubmitStatus('')
+                return
             }
+
+            const userId = data?.user?.id
+            if (!userId) {
+                navigate('/professional-submitted')
+                return
+            }
+
+            // Upload profile photo
+            let avatarUrl = null
+            if (avatarFile) {
+                try {
+                    setSubmitStatus('Uploading profile photo…')
+                    avatarUrl = await uploadAvatar(avatarFile, userId)
+                } catch (e) {
+                    toast.error('Photo upload failed — you can add it later in Settings.')
+                }
+            }
+
+            // Upload credential documents
+            const docPaths = []
+            if (uploadedFiles.length > 0) {
+                setSubmitStatus(`Uploading ${uploadedFiles.length} document${uploadedFiles.length > 1 ? 's' : ''}…`)
+                for (const file of uploadedFiles) {
+                    try {
+                        const path = await uploadDocument(file, userId)
+                        docPaths.push({ name: file.name, path, size: file.size, mime_type: file.type })
+                    } catch (e) {
+                        toast.error(`Failed to upload ${file.name}`)
+                    }
+                }
+            }
+
+            // Update profile with extra fields
+            const profileUpdate = {
+                bio: bio || null,
+                years_experience: parseInt(experience) || null,
+                languages: languages.length ? languages : null,
+                specializations: expertise.length ? expertise : null,
+            }
+            if (avatarUrl) profileUpdate.avatar_url = avatarUrl
+
+            await supabase.from('profiles').update(profileUpdate).eq('id', userId)
+
+            // Store credential document records
+            if (docPaths.length > 0) {
+                await supabase.from('documents').insert(
+                    docPaths.map(d => ({
+                        name: d.name,
+                        file_path: d.path,
+                        file_size: d.size,
+                        mime_type: d.mime_type,
+                        uploaded_by: userId,
+                        client_id: userId,
+                    }))
+                )
+            }
+
+            navigate('/professional-submitted')
         } catch (err) {
             toast.error('Something went wrong. Please try again.')
         } finally {
             setSubmitting(false)
+            setSubmitStatus('')
         }
+    }
+
+    function handlePhotoSelect(e) {
+        const file = e.target.files?.[0]
+        if (!file) return
+        if (!file.type.startsWith('image/')) { toast.error('Please select an image file'); return }
+        if (file.size > 5 * 1024 * 1024) { toast.error('Photo must be under 5 MB'); return }
+        setAvatarFile(file)
+        setAvatarPreview(URL.createObjectURL(file))
+    }
+
+    function handleDocSelect(e) {
+        const files = Array.from(e.target.files)
+        const invalid = files.filter(f => validateDocFile(f))
+        if (invalid.length) { toast.error(`${invalid[0].name}: ${validateDocFile(invalid[0])}`); return }
+        setUploadedFiles(prev => {
+            const existing = prev.map(f => f.name)
+            return [...prev, ...files.filter(f => !existing.includes(f.name))]
+        })
     }
 
     const toggleExpertise = (area) =>
@@ -527,22 +617,37 @@ export default function ProfessionalRegisterPage() {
                                 </div>
                             </div>
 
+                            {/* Profile Photo */}
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Profile Photo <span className="font-normal text-slate-400">(optional)</span></label>
+                                <div className="flex items-center gap-4">
+                                    <div className="size-16 rounded-full overflow-hidden border-2 border-slate-200 dark:border-slate-600 shrink-0 bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-black text-xl">
+                                        {avatarPreview
+                                            ? <img src={avatarPreview} alt="" className="w-full h-full object-cover" />
+                                            : <span>{(firstName?.[0] || '') + (lastName?.[0] || '') || '?'}</span>
+                                        }
+                                    </div>
+                                    <div>
+                                        <button type="button" onClick={() => photoInputRef.current?.click()}
+                                            className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold border border-slate-300 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-200 hover:border-primary hover:text-primary transition-colors">
+                                            <span className="material-symbols-outlined text-[15px]">photo_camera</span>
+                                            {avatarPreview ? 'Change photo' : 'Upload photo'}
+                                        </button>
+                                        <p className="text-[11px] text-slate-400 mt-1">JPG, PNG, WebP · max 5 MB</p>
+                                    </div>
+                                    <input ref={photoInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handlePhotoSelect} className="hidden" />
+                                </div>
+                            </div>
+
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Credentials & Licences</label>
                                 <input
                                     ref={fileInputRef}
                                     type="file"
-                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    accept=".pdf,.jpg,.jpeg,.png,.webp"
                                     multiple
                                     className="hidden"
-                                    onChange={(e) => {
-                                        const files = Array.from(e.target.files)
-                                        setUploadedFiles(prev => {
-                                            const existing = prev.map(f => f.name)
-                                            const newFiles = files.filter(f => !existing.includes(f.name))
-                                            return [...prev, ...newFiles]
-                                        })
-                                    }}
+                                    onChange={handleDocSelect}
                                 />
                                 <div
                                     onClick={() => fileInputRef.current?.click()}
@@ -550,10 +655,11 @@ export default function ProfessionalRegisterPage() {
                                     onDrop={(e) => {
                                         e.preventDefault()
                                         const files = Array.from(e.dataTransfer.files)
+                                        const invalid = files.find(f => validateDocFile(f))
+                                        if (invalid) { toast.error(`${invalid.name}: ${validateDocFile(invalid)}`); return }
                                         setUploadedFiles(prev => {
                                             const existing = prev.map(f => f.name)
-                                            const newFiles = files.filter(f => !existing.includes(f.name))
-                                            return [...prev, ...newFiles]
+                                            return [...prev, ...files.filter(f => !existing.includes(f.name))]
                                         })
                                     }}
                                     className="w-full rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/30 p-6 flex flex-col items-center justify-center gap-2 text-center hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:border-primary/40 transition-colors cursor-pointer group"
@@ -735,7 +841,7 @@ export default function ProfessionalRegisterPage() {
                             {submitting ? (
                                 <>
                                     <span className="animate-spin material-symbols-outlined text-[16px]">progress_activity</span>
-                                    Submitting…
+                                    {submitStatus || 'Submitting…'}
                                 </>
                             ) : step === totalSteps ? (
                                 <>
