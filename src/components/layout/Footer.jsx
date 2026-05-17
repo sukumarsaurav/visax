@@ -12,23 +12,19 @@ const SOCIAL_ICONS = {
 
 // Module-level cache so the DB is only queried once per app session
 let _socialLinksCache = null
+let _legalCache = null
 
 export default function Footer() {
     const [socialLinks, setSocialLinks] = useState(_socialLinksCache || {})
+    const [legal, setLegal] = useState(_legalCache || {})
 
     useEffect(() => {
-        if (_socialLinksCache) return
-        supabase
-            .from('platform_settings')
-            .select('value')
-            .eq('key', 'social_links')
-            .single()
-            .then(({ data }) => {
-                if (data?.value) {
-                    _socialLinksCache = data.value
-                    setSocialLinks(data.value)
-                }
-            })
+        const toFetch = []
+        if (!_socialLinksCache) toFetch.push(supabase.from('platform_settings').select('value').eq('key', 'social_links').single()
+            .then(({ data }) => { if (data?.value) { _socialLinksCache = data.value; setSocialLinks(data.value) } }))
+        if (!_legalCache) toFetch.push(supabase.from('platform_settings').select('value').eq('key', 'legal').single()
+            .then(({ data }) => { if (data?.value) { _legalCache = data.value; setLegal(data.value) } }))
+        if (toFetch.length) Promise.all(toFetch)
     }, [])
 
     const activeSocials = Object.entries(SOCIAL_ICONS).filter(([key]) => socialLinks[key])
@@ -108,12 +104,16 @@ export default function Footer() {
                         © {new Date().getFullYear()} Immizy Inc. All rights reserved.
                     </p>
                     <div className="flex gap-6">
-                        <Link to="/privacy" className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
-                            Privacy
-                        </Link>
-                        <Link to="/terms" className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
-                            Terms
-                        </Link>
+                        {legal.privacy_url ? (
+                            <a href={legal.privacy_url} target="_blank" rel="noopener noreferrer" className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Privacy</a>
+                        ) : (
+                            <Link to="/privacy" className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Privacy</Link>
+                        )}
+                        {legal.terms_url ? (
+                            <a href={legal.terms_url} target="_blank" rel="noopener noreferrer" className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Terms</a>
+                        ) : (
+                            <Link to="/terms" className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">Terms</Link>
+                        )}
                     </div>
                 </div>
             </div>

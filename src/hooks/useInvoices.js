@@ -4,29 +4,30 @@ import { useAuth } from '../contexts/AuthContext'
 
 const PAGE_SIZE = 50
 
-export function useInvoices() {
-    const { user } = useAuth()
+export function useInvoices({ limit } = {}) {
+    const { user, profile } = useAuth()
     const [invoices, setInvoices] = useState([])
     const [loading, setLoading] = useState(true)
     const [loadingMore, setLoadingMore] = useState(false)
     const [error, setError] = useState(null)
     const [totalCount, setTotalCount] = useState(0)
     const [page, setPage] = useState(0)
+    const effectiveSize = limit || PAGE_SIZE
     const hasMore = invoices.length < totalCount
 
     useEffect(() => {
-        if (!user) return
+        if (!user || !profile) return
         fetchInvoices(0)
-    }, [user])
+    }, [user, profile])
 
     async function fetchInvoices(pageNum = 0) {
         if (pageNum === 0) setLoading(true)
         else setLoadingMore(true)
 
-        const from = pageNum * PAGE_SIZE
-        const to = from + PAGE_SIZE - 1
+        const from = pageNum * effectiveSize
+        const to = from + effectiveSize - 1
 
-        const { data, error, count } = await supabase
+        let query = supabase
             .from('invoices')
             .select(`
                 id, invoice_number, amount, currency, status, due_date, paid_at, created_at,
@@ -35,6 +36,14 @@ export function useInvoices() {
             `, { count: pageNum === 0 ? 'exact' : undefined })
             .order('created_at', { ascending: false })
             .range(from, to)
+
+        if (profile?.role === 'individual' || profile?.role === 'agency_admin' || profile?.role === 'agency_member') {
+            query = query.eq('consultant_id', user.id)
+        } else if (profile?.role === 'client') {
+            query = query.eq('client_id', user.id)
+        }
+
+        const { data, error, count } = await query
 
         if (error) {
             setError(error.message)

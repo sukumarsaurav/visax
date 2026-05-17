@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
-import Card, { CardHeader, CardTitle } from '../../components/ui/Card'
+import { toast } from 'react-hot-toast'
+import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import Avatar from '../../components/ui/Avatar'
 import { supabase } from '../../lib/supabase'
+import { useDebounce } from '../../hooks/useDebounce'
+import { escField } from '../../lib/csvEscape'
 
 const ACTION_COLORS = {
     'User Approved': 'blue',
@@ -17,15 +20,26 @@ const ACTION_COLORS = {
     'System': 'slate',
 }
 
+const ENTITY_TYPES = ['', 'profile', 'resource', 'announcement', 'settings', 'promotion']
 const PAGE_SIZE = 20
+
 
 export default function AdminAuditLog() {
     const [logs, setLogs] = useState([])
     const [total, setTotal] = useState(0)
     const [loading, setLoading] = useState(true)
-    const [search, setSearch] = useState('')
     const [page, setPage] = useState(0)
     const [selectedLog, setSelectedLog] = useState(null)
+
+    // Filters
+    const [actionSearch, setActionSearch] = useState('')
+    const [userSearch, setUserSearch] = useState('')
+    const [entityType, setEntityType] = useState('')
+    const [dateFrom, setDateFrom] = useState('')
+    const [dateTo, setDateTo] = useState('')
+
+    const debouncedAction = useDebounce(actionSearch, 300)
+    const debouncedUser = useDebounce(userSearch, 300)
 
     const fetchLogs = useCallback(async () => {
         setLoading(true)
@@ -35,29 +49,55 @@ export default function AdminAuditLog() {
             .order('created_at', { ascending: false })
             .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
-        if (search.trim()) {
-            query = query.ilike('action', `%${search}%`)
+        if (debouncedAction.trim()) query = query.ilike('action', `%${debouncedAction}%`)
+        if (entityType) query = query.eq('entity_type', entityType)
+        if (dateFrom) query = query.gte('created_at', `${dateFrom}T00:00:00.000Z`)
+        if (dateTo) query = query.lte('created_at', `${dateTo}T23:59:59.999Z`)
+
+        const { data, count, error } = await query
+        if (error) toast.error('Failed to load audit logs')
+        else {
+            // Client-side user filter (PostgREST doesn't support filtering on joined columns easily)
+            let rows = data || []
+            if (debouncedUser.trim()) {
+                const q = debouncedUser.toLowerCase()
+                rows = rows.filter(l =>
+                    l.profiles?.full_name?.toLowerCase().includes(q) ||
+                    l.profiles?.email?.toLowerCase().includes(q)
+                )
+            }
+            setLogs(rows)
+            setTotal(count || 0)
         }
-
-        const { data, count } = await query
-        setLogs(data || [])
-        setTotal(count || 0)
         setLoading(false)
-    }, [search, page])
+    }, [debouncedAction, debouncedUser, entityType, dateFrom, dateTo, page])
 
+    useEffect(() => { setPage(0) }, [debouncedAction, debouncedUser, entityType, dateFrom, dateTo])
     useEffect(() => { fetchLogs() }, [fetchLogs])
 
+    const clearFilters = () => {
+        setActionSearch('')
+        setUserSearch('')
+        setEntityType('')
+        setDateFrom('')
+        setDateTo('')
+        setPage(0)
+    }
+
     const exportCSV = () => {
-        const headers = ['Timestamp', 'User', 'Action', 'Entity Type', 'IP Address']
+        const headers = ['Timestamp', 'User', 'Email', 'Role', 'Action', 'Entity Type', 'Entity ID', 'IP Address']
         const rows = logs.map(l => [
             new Date(l.created_at).toISOString(),
-            l.profiles?.full_name || l.profiles?.email || 'System',
+            l.profiles?.full_name || 'System',
+            l.profiles?.email || '',
+            l.profiles?.role || 'system',
             l.action,
             l.entity_type || '',
+            l.entity_id || '',
             l.ip_address || '',
         ])
-        const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
-        const blob = new Blob([csv], { type: 'text/csv' })
+        const csv = [headers, ...rows].map(r => r.map(escField).join(',')).join('\n')
+        const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url; a.download = 'audit_logs.csv'; a.click()
@@ -71,34 +111,80 @@ export default function AdminAuditLog() {
             green: 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300',
             red: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300',
             purple: 'bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
-            orange: 'bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
             slate: 'bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
         }
         return map[color] || map.slate
     }
 
     const totalPages = Math.ceil(total / PAGE_SIZE)
+    const hasActiveFilters = actionSearch || userSearch || entityType || dateFrom || dateTo
 
     return (
         <div className="flex flex-col gap-6">
-            {/* Actions */}
+            {/* Header */}
             <div className="flex items-center justify-between">
                 <p className="text-slate-500 dark:text-slate-400 text-sm">{total.toLocaleString()} total entries</p>
                 <Button variant="outline" icon="download" onClick={exportCSV}>Export CSV</Button>
             </div>
 
-            {/* Search */}
-            <Card className="flex flex-col md:flex-row gap-4 items-center">
-                <div className="relative flex-1 w-full">
-                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center material-symbols-outlined text-slate-400">search</span>
-                    <input
-                        className="block w-full pl-10 pr-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-1 focus:ring-primary text-sm"
-                        placeholder="Search by action..."
-                        value={search}
-                        onChange={e => { setSearch(e.target.value); setPage(0) }}
-                    />
+            {/* Filters */}
+            <Card className="flex flex-col gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                    {/* Action search */}
+                    <div className="relative">
+                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center material-symbols-outlined text-slate-400 text-[18px]">search</span>
+                        <input
+                            className="block w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-1 focus:ring-primary text-sm"
+                            placeholder="Filter by action…"
+                            value={actionSearch}
+                            onChange={e => setActionSearch(e.target.value)}
+                        />
+                    </div>
+
+                    {/* User search */}
+                    <div className="relative">
+                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center material-symbols-outlined text-slate-400 text-[18px]">person</span>
+                        <input
+                            className="block w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-1 focus:ring-primary text-sm"
+                            placeholder="Filter by user name or email…"
+                            value={userSearch}
+                            onChange={e => setUserSearch(e.target.value)}
+                        />
+                    </div>
+
+                    {/* Entity type */}
+                    <select
+                        value={entityType}
+                        onChange={e => setEntityType(e.target.value)}
+                        className="w-full py-2 px-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-1 focus:ring-primary">
+                        <option value="">All entity types</option>
+                        {ENTITY_TYPES.filter(Boolean).map(t => (
+                            <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                        ))}
+                    </select>
+
+                    {/* Clear */}
+                    <button
+                        onClick={clearFilters}
+                        disabled={!hasActiveFilters}
+                        className="text-sm text-slate-500 hover:text-primary font-medium disabled:opacity-40 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[18px]">filter_list_off</span>
+                        Clear filters
+                    </button>
                 </div>
-                <button onClick={() => { setSearch(''); setPage(0) }} className="text-sm text-slate-500 hover:text-primary font-medium whitespace-nowrap">Clear filters</button>
+
+                {/* Date range */}
+                <div className="flex flex-wrap gap-3 items-center">
+                    <span className="text-sm text-slate-500 font-medium">Date range:</span>
+                    <div className="flex items-center gap-2">
+                        <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
+                            className="py-1.5 px-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-1 focus:ring-primary" />
+                        <span className="text-slate-400">to</span>
+                        <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
+                            min={dateFrom}
+                            className="py-1.5 px-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-1 focus:ring-primary" />
+                    </div>
+                </div>
             </Card>
 
             {/* Table */}
@@ -114,13 +200,13 @@ export default function AdminAuditLog() {
                         </thead>
                         <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-100 dark:divide-slate-800">
                             {loading ? (
-                                [1, 2, 3, 4, 5].map(i => (
+                                [1,2,3,4,5].map(i => (
                                     <tr key={i}><td colSpan={6} className="px-6 py-4"><div className="h-6 animate-pulse rounded bg-slate-100 dark:bg-slate-800" /></td></tr>
                                 ))
                             ) : logs.length === 0 ? (
                                 <tr><td colSpan={6} className="px-6 py-16 text-center text-sm text-slate-400">
                                     <span className="material-symbols-outlined text-[48px] block mb-2">history</span>
-                                    No audit logs yet. Actions taken by admins will appear here.
+                                    {hasActiveFilters ? 'No logs match the current filters.' : 'No audit logs yet. Admin actions will appear here.'}
                                 </td></tr>
                             ) : logs.map((log) => (
                                 <tr key={log.id} onClick={() => setSelectedLog(selectedLog?.id === log.id ? null : log)}
@@ -153,12 +239,14 @@ export default function AdminAuditLog() {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right">
                                         <button className="text-slate-400 hover:text-primary p-1 rounded-full">
-                                            <span className="material-symbols-outlined text-[20px]">{selectedLog?.id === log.id ? 'expand_less' : 'expand_more'}</span>
+                                            <span className="material-symbols-outlined text-[20px]">
+                                                {selectedLog?.id === log.id ? 'expand_less' : 'expand_more'}
+                                            </span>
                                         </button>
                                     </td>
                                 </tr>
                             ))}
-                            {/* Expanded row */}
+                            {/* Expanded detail row */}
                             {logs.map((log) => selectedLog?.id === log.id ? (
                                 <tr key={`${log.id}-details`} className="bg-slate-50 dark:bg-slate-800/30">
                                     <td colSpan={6} className="px-8 py-4">
@@ -169,7 +257,9 @@ export default function AdminAuditLog() {
                                                     {Object.entries(log.details).map(([k, v]) => (
                                                         <div key={k} className="flex gap-2">
                                                             <span className="text-slate-400 capitalize">{k}:</span>
-                                                            <span className="text-slate-700 dark:text-slate-300 font-medium">{typeof v === 'object' ? JSON.stringify(v) : String(v)}</span>
+                                                            <span className="text-slate-700 dark:text-slate-300 font-medium">
+                                                                {typeof v === 'object' ? JSON.stringify(v) : String(v)}
+                                                            </span>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -188,7 +278,9 @@ export default function AdminAuditLog() {
                 {/* Pagination */}
                 <div className="border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30 px-6 py-4 flex items-center justify-between">
                     <p className="text-sm text-slate-500 dark:text-slate-400">
-                        Showing <span className="font-bold text-slate-900 dark:text-white">{Math.min(page * PAGE_SIZE + 1, total)}</span>–<span className="font-bold text-slate-900 dark:text-white">{Math.min((page + 1) * PAGE_SIZE, total)}</span> of <span className="font-bold text-slate-900 dark:text-white">{total.toLocaleString()}</span>
+                        Showing <span className="font-bold text-slate-900 dark:text-white">{total === 0 ? 0 : page * PAGE_SIZE + 1}</span>–
+                        <span className="font-bold text-slate-900 dark:text-white">{Math.min((page + 1) * PAGE_SIZE, total)}</span>{' '}
+                        of <span className="font-bold text-slate-900 dark:text-white">{total.toLocaleString()}</span>
                     </p>
                     <div className="flex gap-1">
                         <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}

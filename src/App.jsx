@@ -1,8 +1,9 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
-import { useEffect, lazy, Suspense } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { supabase } from './lib/supabase'
 import { trackEvent } from './lib/integrations'
+import { loadPlatformConfig, getMaintenanceMode, getMaintenanceMessage } from './lib/platformConfig'
 import { CLIENT, AGENCY_ADMIN, ADMIN } from './constants/roles'
 import { useDocumentLang } from './hooks/useDocumentLang'
 
@@ -97,6 +98,7 @@ const AdminUnclaimedProfiles = lazy(() => import('./pages/admin/UnclaimedProfile
 
 // Misc
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
+const MaintenancePage = lazy(() => import('./pages/MaintenancePage'))
 
 // ─── SUSPENSE FALLBACK ───────────────────────────────────────────────────────
 
@@ -162,12 +164,44 @@ function RootRedirect() {
     )
 }
 
+// Blocks non-admin access when maintenance_mode is enabled.
+// Allows /login through so admins can still authenticate.
+function MaintenanceGate({ children }) {
+    const { profile, loading: authLoading } = useAuth()
+    const location = useLocation()
+    const [maintenance, setMaintenance] = useState(false)
+    const [configReady, setConfigReady] = useState(false)
+
+    useEffect(() => {
+        loadPlatformConfig().then(() => {
+            setMaintenance(getMaintenanceMode())
+            setConfigReady(true)
+        })
+    }, [])
+
+    if (!configReady || authLoading) return null
+
+    const isAdmin = profile?.role === 'admin'
+    const isLoginPage = location.pathname === '/login'
+
+    if (maintenance && !isAdmin && !isLoginPage) {
+        return (
+            <Suspense fallback={null}>
+                <MaintenancePage />
+            </Suspense>
+        )
+    }
+
+    return children
+}
+
 export default function App() {
     useGoogleAnalytics()
     useDocumentLang()
     return (
         <Router>
             <PageViewTracker />
+            <MaintenanceGate>
             <Suspense fallback={<PageLoader />}>
                 <Routes>
 
@@ -332,6 +366,7 @@ export default function App() {
                     <Route path="*" element={<NotFoundPage />} />
                 </Routes>
             </Suspense>
+            </MaintenanceGate>
         </Router>
     )
 }

@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
+import { toast } from 'react-hot-toast'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import Avatar from '../../components/ui/Avatar'
 import { supabase } from '../../lib/supabase'
 import { createStripePaymentLink, slackNotify, trackEvent } from '../../lib/integrations'
+import { escField } from '../../lib/csvEscape'
 
 const STATUS_COLORS = {
     paid: 'bg-green-50 text-green-700 border-green-100 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800',
@@ -25,13 +27,8 @@ export default function SalesSubscriptionsPage() {
     const [search, setSearch] = useState('')
     const [statusFilter, setStatusFilter] = useState('all')
     const [stats, setStats] = useState({ totalRevenue: 0, pending: 0, overdue: 0, count: 0 })
-    const [toast, setToast] = useState(null)
+    const [statsLoading, setStatsLoading] = useState(true)
     const [generatingLink, setGeneratingLink] = useState(null)
-
-    const showToast = (msg, type = 'success') => {
-        setToast({ msg, type })
-        setTimeout(() => setToast(null), 3000)
-    }
 
     const fetchInvoices = useCallback(async () => {
         setLoading(true)
@@ -49,21 +46,30 @@ export default function SalesSubscriptionsPage() {
         setTotal(count || 0)
 
         // Stats
-        const { data: allData } = await supabase.from('invoices').select('amount, status')
-        const all = allData || []
-        setStats({
-            totalRevenue: all.filter(i => i.status === 'paid').reduce((s, i) => s + Number(i.amount || 0), 0),
-            pending: all.filter(i => i.status === 'pending').length,
-            overdue: all.filter(i => i.status === 'overdue').length,
-            count: all.length,
-        })
         setLoading(false)
     }, [page, statusFilter])
+
+    // Stats from server-side aggregate RPC — no full-table scan
+    const fetchStats = useCallback(async () => {
+        setStatsLoading(true)
+        const { data } = await supabase.rpc('get_invoice_stats')
+        if (data) {
+            setStats({
+                totalRevenue: Number(data.total_revenue || 0),
+                pending: Number(data.pending || 0),
+                overdue: Number(data.overdue || 0),
+                count: Number(data.total_count || 0),
+            })
+        }
+        setStatsLoading(false)
+    }, [])
 
     const fetchPromotions = useCallback(async () => {
         const { data } = await supabase.from('promotions').select('*').order('created_at', { ascending: false })
         setPromotions(data || [])
     }, [])
+
+    useEffect(() => { fetchStats() }, [fetchStats])
 
     useEffect(() => {
         if (activeTab === 'invoices') fetchInvoices()
@@ -80,7 +86,7 @@ export default function SalesSubscriptionsPage() {
             customer_email: inv.profiles?.email,
         })
         if (result.success) {
-            showToast('Payment link created — opening in new tab')
+            toast.success('Payment link created — opening in new tab')
             window.open(result.url, '_blank')
             slackNotify('payment.received', {
                 client: inv.profiles?.full_name || 'Unknown',
@@ -91,16 +97,25 @@ export default function SalesSubscriptionsPage() {
             trackEvent('payment_link_generated', { amount: inv.amount })
             fetchInvoices()
         } else {
-            showToast(result.error || 'Failed to create payment link', 'error')
+            toast.error(result.error || 'Failed to create payment link')
         }
         setGeneratingLink(null)
     }
 
     const exportCSV = () => {
-        const headers = ['Invoice #', 'Client', 'Amount', 'Status', 'Due Date', 'Created']
-        const rows = invoices.map(i => [i.invoice_number || i.id.slice(0, 8), i.profiles?.full_name || i.profiles?.email || '', `$${i.amount}`, i.status, i.due_date || '', new Date(i.created_at).toLocaleDateString()])
-        const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
-        const blob = new Blob([csv], { type: 'text/csv' })
+        const headers = ['Invoice #', 'Client', 'Email', 'Amount', 'Currency', 'Status', 'Due Date', 'Created']
+        const rows = invoices.map(i => [
+            i.invoice_number || i.id.slice(0, 8),
+            i.profiles?.full_name || '',
+            i.profiles?.email || '',
+            i.amount,
+            i.currency || 'USD',
+            i.status,
+            i.due_date || '',
+            new Date(i.created_at).toLocaleDateString(),
+        ])
+        const csv = [headers, ...rows].map(r => r.map(escField).join(',')).join('\n')
+        const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url; a.download = 'invoices.csv'; a.click()
@@ -111,12 +126,6 @@ export default function SalesSubscriptionsPage() {
 
     return (
         <div className="flex flex-col gap-6">
-            {toast && (
-                <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-semibold text-white ${toast.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
-                    {toast.msg}
-                </div>
-            )}
-
             {/* Actions */}
             <div className="flex justify-end gap-3">
                 <Button variant="outline" icon="download" onClick={exportCSV}>Report</Button>

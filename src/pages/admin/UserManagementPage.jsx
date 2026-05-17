@@ -1,22 +1,28 @@
 import { useState, useEffect, useCallback } from 'react'
+import { toast } from 'react-hot-toast'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import Avatar from '../../components/ui/Avatar'
+import ConfirmModal from '../../components/ui/ConfirmModal'
 import { supabase } from '../../lib/supabase'
 import { slackNotify, mailchimpSync, trackEvent } from '../../lib/integrations'
 import { friendlyError } from '../../lib/errors'
+import { writeAuditLog } from '../../lib/auditLog'
+import { useDebounce } from '../../hooks/useDebounce'
 
 const ROLE_LABELS = { client: 'Client', individual: 'Consultant', agency_admin: 'Agency', agency_member: 'Team Member', admin: 'Admin' }
 const ROLE_COLORS = { client: 'blue', individual: 'purple', agency_admin: 'emerald', agency_member: 'indigo', admin: 'red' }
 const STATUS_LABELS = { active: 'Active', pending_review: 'Pending Review', inactive: 'Inactive', suspended: 'Suspended' }
-const STATUS_COLORS = { active: 'emerald', pending_review: 'amber', inactive: 'slate', suspended: 'red' }
 
 const PAGE_SIZE = 10
+const ROLE_FILTER = { 'All Users': null, 'Clients': 'client', 'Consultants': 'individual', 'Agencies': 'agency_admin' }
 
 export default function UserManagementPage() {
     const [users, setUsers] = useState([])
     const [total, setTotal] = useState(0)
+    const [kpi, setKpi] = useState({ pending_verification: 0, consultants: 0, agencies: 0 })
     const [loading, setLoading] = useState(true)
+    const [kpiLoading, setKpiLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [page, setPage] = useState(0)
     const [search, setSearch] = useState('')
@@ -24,41 +30,56 @@ export default function UserManagementPage() {
     const [selectedUser, setSelectedUser] = useState(null)
     const [drawerOpen, setDrawerOpen] = useState(false)
     const [editForm, setEditForm] = useState({})
-    const [toast, setToast] = useState(null)
+    const [confirm, setConfirm] = useState(null) // { action: 'suspend'|'unsuspend', label, message }
 
-    const roleFilter = { 'All Users': null, 'Clients': 'client', 'Consultants': 'individual', 'Agencies': 'agency_admin' }
+    const debouncedSearch = useDebounce(search, 300)
 
-    const showToast = (msg, type = 'success') => {
-        setToast({ msg, type })
-        setTimeout(() => setToast(null), 3000)
-    }
+    // ── KPI counts via RPC (single round-trip, server-side aggregates) ───────
+    useEffect(() => {
+        async function loadKpi() {
+            setKpiLoading(true)
+            const { data } = await supabase.rpc('get_admin_dashboard_stats')
+            if (data) {
+                setKpi({
+                    pending_verification: Number(data.pending_verification || 0),
+                    consultants: Number(data.consultants || 0),
+                    agencies: Number(data.agencies || 0),
+                })
+            }
+            setKpiLoading(false)
+        }
+        loadKpi()
+    }, [])
 
     const fetchUsers = useCallback(async () => {
         setLoading(true)
         let query = supabase.from('profiles').select('*', { count: 'exact' })
-
-        const role = roleFilter[activeFilter]
+        const role = ROLE_FILTER[activeFilter]
         if (role) query = query.eq('role', role)
-        if (search.trim()) {
-            query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`)
+        if (debouncedSearch.trim()) {
+            query = query.or(`full_name.ilike.%${debouncedSearch}%,email.ilike.%${debouncedSearch}%`)
         }
-
         const { data, count, error } = await query
             .order('created_at', { ascending: false })
             .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
 
-        if (!error) {
-            setUsers(data || [])
-            setTotal(count || 0)
-        }
+        if (error) toast.error(friendlyError(error, 'Failed to load users'))
+        setUsers(data || [])
+        setTotal(count || 0)
         setLoading(false)
-    }, [activeFilter, search, page])
+    }, [activeFilter, debouncedSearch, page])
 
     useEffect(() => { fetchUsers() }, [fetchUsers])
 
     const handleUserClick = (user) => {
         setSelectedUser(user)
-        setEditForm({ full_name: user.full_name || '', email: user.email, role: user.role, application_status: user.application_status || 'active', is_verified: user.is_verified })
+        setEditForm({
+            full_name: user.full_name || '',
+            email: user.email,
+            role: user.role,
+            application_status: user.application_status || 'active',
+            is_verified: user.is_verified,
+        })
         setDrawerOpen(true)
     }
 
@@ -73,10 +94,15 @@ export default function UserManagementPage() {
         }).eq('id', selectedUser.id)
 
         if (error) {
-            showToast(friendlyError(error, 'Failed to save changes'), 'error')
+            toast.error(friendlyError(error, 'Failed to save changes'))
         } else {
-            showToast('User updated successfully')
-            // Sync role change to Mailchimp
+            toast.success('User updated successfully')
+            await writeAuditLog({
+                action: 'User Updated',
+                entityType: 'profile',
+                entityId: selectedUser.id,
+                details: { role: editForm.role, status: editForm.application_status, is_verified: editForm.is_verified },
+            })
             if (selectedUser.email) {
                 mailchimpSync({ email: selectedUser.email, full_name: editForm.full_name, role: editForm.role })
             }
@@ -87,15 +113,24 @@ export default function UserManagementPage() {
         setSaving(false)
     }
 
-    const handleSuspend = async () => {
+    const executeSuspend = async () => {
         if (!selectedUser) return
         setSaving(true)
         const newStatus = selectedUser.application_status === 'suspended' ? 'active' : 'suspended'
-        const { error } = await supabase.from('profiles').update({ application_status: newStatus }).eq('id', selectedUser.id)
+        const { error } = await supabase.from('profiles')
+            .update({ application_status: newStatus })
+            .eq('id', selectedUser.id)
+
         if (error) {
-            showToast(friendlyError(error, 'Action failed'), 'error')
+            toast.error(friendlyError(error, 'Action failed'))
         } else {
-            showToast(`User ${newStatus === 'suspended' ? 'suspended' : 'reactivated'}`)
+            toast.success(`User ${newStatus === 'suspended' ? 'suspended' : 'reactivated'}`)
+            await writeAuditLog({
+                action: newStatus === 'suspended' ? 'User Suspended' : 'User Updated',
+                entityType: 'profile',
+                entityId: selectedUser.id,
+                details: { new_status: newStatus },
+            })
             if (newStatus === 'suspended') {
                 slackNotify('user.suspended', { name: selectedUser.full_name, email: selectedUser.email })
                 trackEvent('user_suspended')
@@ -104,6 +139,7 @@ export default function UserManagementPage() {
             setDrawerOpen(false)
         }
         setSaving(false)
+        setConfirm(null)
     }
 
     const handleResetPassword = async () => {
@@ -111,12 +147,11 @@ export default function UserManagementPage() {
         const { error } = await supabase.auth.resetPasswordForEmail(selectedUser.email, {
             redirectTo: `${window.location.origin}/reset-password`,
         })
-        showToast(error ? friendlyError(error, 'Failed to send reset email') : 'Password reset email sent', error ? 'error' : 'success')
+        if (error) toast.error(friendlyError(error, 'Failed to send reset email'))
+        else toast.success('Password reset email sent')
     }
 
     const exportCSV = () => {
-        // Neutralise CSV/formula injection: values starting with =+-@ are prefixed
-        // with a single quote so Excel/Sheets won't evaluate them as formulas.
         const escField = (val) => {
             const s = String(val ?? '')
             const safe = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s
@@ -138,12 +173,16 @@ export default function UserManagementPage() {
         URL.revokeObjectURL(url)
     }
 
-    const closeDrawer = () => setDrawerOpen(false)
-    const totalPages = Math.ceil(total / PAGE_SIZE)
-
     const getRoleColor = (role) => {
         const c = ROLE_COLORS[role] || 'slate'
-        const map = { blue: 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800', purple: 'bg-purple-50 text-purple-700 border-purple-100 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800', emerald: 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800', indigo: 'bg-indigo-50 text-indigo-700 border-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800', red: 'bg-red-50 text-red-700 border-red-100 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800', slate: 'bg-slate-50 text-slate-700 border-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700' }
+        const map = {
+            blue: 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
+            purple: 'bg-purple-50 text-purple-700 border-purple-100 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800',
+            emerald: 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
+            indigo: 'bg-indigo-50 text-indigo-700 border-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-800',
+            red: 'bg-red-50 text-red-700 border-red-100 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800',
+            slate: 'bg-slate-50 text-slate-700 border-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700',
+        }
         return map[c] || map.slate
     }
 
@@ -152,33 +191,51 @@ export default function UserManagementPage() {
         return map[status] || 'bg-slate-400'
     }
 
+    const totalPages = Math.ceil(total / PAGE_SIZE)
+
+    // Sliding window: show up to 5 page buttons centred around current page
+    const pageButtons = (() => {
+        const half = 2
+        let start = Math.max(0, page - half)
+        let end = Math.min(totalPages - 1, start + 4)
+        start = Math.max(0, end - 4)
+        const pages = []
+        for (let i = start; i <= end; i++) pages.push(i)
+        return pages
+    })()
+
     return (
         <div className="flex flex-col gap-6 h-full relative">
-            {/* Toast */}
-            {toast && (
-                <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-semibold text-white transition-all ${toast.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
-                    {toast.msg}
-                </div>
-            )}
+            {/* Confirm modal for destructive actions */}
+            <ConfirmModal
+                open={!!confirm}
+                onClose={() => setConfirm(null)}
+                onConfirm={executeSuspend}
+                title={confirm?.label || ''}
+                message={confirm?.message || ''}
+                confirmLabel={confirm?.label || 'Confirm'}
+                variant="danger"
+                loading={saving}
+            />
 
             {/* Actions */}
             <div className="flex justify-end gap-3">
                 <Button variant="outline" icon="file_download" onClick={exportCSV}>Export</Button>
             </div>
 
-            {/* KPI Cards */}
+            {/* KPI Cards — all wired to real data */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                    { label: 'Total Users', value: total.toLocaleString(), trend: 'All registered users', trendColor: 'slate', icon: 'group', iconColor: 'blue' },
-                    { label: 'Pending Verification', value: '—', trend: 'Requires attention', trendColor: 'amber', icon: 'verified_user', iconColor: 'amber' },
-                    { label: 'Consultants', value: '—', trend: 'Active professionals', trendColor: 'slate', icon: 'school', iconColor: 'purple' },
-                    { label: 'Agencies', value: '—', trend: 'Registered agencies', trendColor: 'slate', icon: 'apartment', iconColor: 'emerald' }
+                    { label: 'Total Users', value: loading ? '—' : total.toLocaleString(), trend: 'All registered users', trendColor: 'slate', icon: 'group', iconColor: 'blue' },
+                    { label: 'Pending Verification', value: kpiLoading ? '—' : kpi.pending_verification, trend: 'Awaiting review', trendColor: kpi.pending_verification > 0 ? 'amber' : 'slate', icon: 'verified_user', iconColor: 'amber' },
+                    { label: 'Consultants', value: kpiLoading ? '—' : kpi.consultants, trend: 'Active professionals', trendColor: 'slate', icon: 'school', iconColor: 'purple' },
+                    { label: 'Agencies', value: kpiLoading ? '—' : kpi.agencies, trend: 'Registered agencies', trendColor: 'slate', icon: 'apartment', iconColor: 'emerald' },
                 ].map((stat) => (
                     <Card key={stat.label} className="flex items-start justify-between">
                         <div>
                             <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">{stat.label}</p>
                             <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{stat.value}</h3>
-                            <p className={`text-xs font-medium mt-2 flex items-center gap-1 ${stat.trendColor === 'green' ? 'text-green-600' : stat.trendColor === 'amber' ? 'text-amber-600' : 'text-slate-500'}`}>
+                            <p className={`text-xs font-medium mt-2 flex items-center gap-1 ${stat.trendColor === 'amber' ? 'text-amber-600' : 'text-slate-500'}`}>
                                 {stat.trendColor === 'amber' && <span className="material-symbols-outlined text-[16px]">warning</span>}
                                 {stat.trend}
                             </p>
@@ -193,7 +250,7 @@ export default function UserManagementPage() {
             {/* Filters */}
             <Card className="flex flex-col lg:flex-row gap-4 justify-between items-center">
                 <div className="flex w-full lg:w-auto flex-1 gap-2 overflow-x-auto pb-2 lg:pb-0">
-                    {['All Users', 'Clients', 'Consultants', 'Agencies'].map((filter) => (
+                    {Object.keys(ROLE_FILTER).map((filter) => (
                         <button key={filter} onClick={() => { setActiveFilter(filter); setPage(0) }}
                             className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${activeFilter === filter ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300'}`}>
                             {filter}
@@ -226,7 +283,7 @@ export default function UserManagementPage() {
                         </thead>
                         <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-200 dark:divide-slate-800">
                             {loading ? (
-                                [1, 2, 3, 4, 5].map(i => (
+                                [1,2,3,4,5].map(i => (
                                     <tr key={i}>
                                         <td colSpan={6} className="px-6 py-4">
                                             <div className="h-8 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
@@ -256,7 +313,7 @@ export default function UserManagementPage() {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex items-center gap-1.5">
-                                            <div className={`h-2 w-2 rounded-full ${getStatusDot(user.application_status)}`}></div>
+                                            <div className={`h-2 w-2 rounded-full ${getStatusDot(user.application_status)}`} />
                                             <span className="text-sm text-slate-700 dark:text-slate-300 font-medium">{STATUS_LABELS[user.application_status] || 'Active'}</span>
                                         </div>
                                     </td>
@@ -264,11 +321,9 @@ export default function UserManagementPage() {
                                         {new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        {user.is_verified ? (
-                                            <span className="flex items-center gap-1 text-emerald-600 text-xs font-semibold"><span className="material-symbols-outlined text-sm">verified</span> Verified</span>
-                                        ) : (
-                                            <span className="text-xs text-slate-400">Not verified</span>
-                                        )}
+                                        {user.is_verified
+                                            ? <span className="flex items-center gap-1 text-emerald-600 text-xs font-semibold"><span className="material-symbols-outlined text-sm">verified</span> Verified</span>
+                                            : <span className="text-xs text-slate-400">Not verified</span>}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <button className="text-slate-400 hover:text-primary transition-colors p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700">
@@ -280,17 +335,22 @@ export default function UserManagementPage() {
                         </tbody>
                     </table>
                 </div>
-                {/* Pagination */}
+
+                {/* Pagination with sliding window */}
                 <div className="border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30 px-6 py-4 flex items-center justify-between">
                     <p className="text-sm text-slate-500 dark:text-slate-400">
-                        Showing <span className="font-bold text-slate-900 dark:text-white">{page * PAGE_SIZE + 1}</span> to <span className="font-bold text-slate-900 dark:text-white">{Math.min((page + 1) * PAGE_SIZE, total)}</span> of <span className="font-bold text-slate-900 dark:text-white">{total.toLocaleString()}</span> results
+                        Showing <span className="font-bold text-slate-900 dark:text-white">{total === 0 ? 0 : page * PAGE_SIZE + 1}</span>
+                        {' '}to{' '}
+                        <span className="font-bold text-slate-900 dark:text-white">{Math.min((page + 1) * PAGE_SIZE, total)}</span>
+                        {' '}of{' '}
+                        <span className="font-bold text-slate-900 dark:text-white">{total.toLocaleString()}</span> results
                     </p>
                     <div className="flex gap-1">
                         <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
                             className="px-2 py-2 rounded-l-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-500 disabled:opacity-40">
                             <span className="material-symbols-outlined text-[20px]">chevron_left</span>
                         </button>
-                        {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => (
+                        {pageButtons.map(i => (
                             <button key={i} onClick={() => setPage(i)}
                                 className={`px-4 py-2 border text-sm ${page === i ? 'border-primary bg-blue-50 dark:bg-blue-900/20 font-bold text-primary' : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500'}`}>
                                 {i + 1}
@@ -307,19 +367,17 @@ export default function UserManagementPage() {
             {/* Slide-over Drawer */}
             {drawerOpen && selectedUser && (
                 <div className="fixed inset-0 z-50 overflow-hidden">
-                    <div className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm transition-opacity" onClick={closeDrawer}></div>
+                    <div className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={() => setDrawerOpen(false)} />
                     <div className="absolute inset-y-0 right-0 flex max-w-full pl-10">
                         <div className="w-screen max-w-[420px] transform transition-transform animate-slide-in-right">
                             <div className="flex h-full flex-col bg-white dark:bg-slate-900 shadow-2xl">
-                                {/* Header */}
                                 <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between bg-white dark:bg-slate-800">
                                     <h3 className="text-lg font-bold text-slate-900 dark:text-white">Edit User</h3>
-                                    <button onClick={closeDrawer} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
+                                    <button onClick={() => setDrawerOpen(false)} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
                                         <span className="material-symbols-outlined text-[20px]">close</span>
                                     </button>
                                 </div>
 
-                                {/* Content */}
                                 <div className="flex-1 overflow-y-auto p-6">
                                     <div className="flex flex-col items-center mb-6">
                                         <Avatar size="xl" alt={selectedUser.full_name} src={selectedUser.avatar_url} />
@@ -327,9 +385,6 @@ export default function UserManagementPage() {
                                         <p className="text-sm text-slate-500 dark:text-slate-400">{selectedUser.email}</p>
                                         <div className="flex gap-2 mt-3">
                                             <span className={`px-3 py-1 text-xs font-bold rounded-full border ${getRoleColor(selectedUser.role)}`}>{ROLE_LABELS[selectedUser.role] || selectedUser.role}</span>
-                                            <span className={`px-3 py-1 text-xs font-bold rounded-full flex items-center gap-1 ${selectedUser.application_status === 'suspended' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' : selectedUser.application_status === 'pending_review' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'}`}>
-                                                {STATUS_LABELS[selectedUser.application_status] || 'Active'}
-                                            </span>
                                         </div>
                                     </div>
 
@@ -385,14 +440,19 @@ export default function UserManagementPage() {
                                     </div>
                                 </div>
 
-                                {/* Footer */}
                                 <div className="p-6 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 space-y-3">
                                     <Button className="w-full" onClick={handleSave} disabled={saving}>
-                                        {saving ? 'Saving...' : 'Save Changes'}
+                                        {saving ? 'Saving…' : 'Save Changes'}
                                     </Button>
                                     <div className="flex gap-3">
                                         <Button variant="outline" className="flex-1" onClick={handleResetPassword}>Reset Password</Button>
-                                        <Button variant="danger" className="flex-1" onClick={handleSuspend} disabled={saving}>
+                                        <Button variant="danger" className="flex-1" disabled={saving}
+                                            onClick={() => setConfirm({
+                                                label: selectedUser.application_status === 'suspended' ? 'Reactivate User' : 'Suspend User',
+                                                message: selectedUser.application_status === 'suspended'
+                                                    ? `Reactivate ${selectedUser.full_name || selectedUser.email}? They will regain full platform access.`
+                                                    : `Suspend ${selectedUser.full_name || selectedUser.email}? They will lose access to the platform immediately.`,
+                                            })}>
                                             {selectedUser.application_status === 'suspended' ? 'Reactivate' : 'Suspend'}
                                         </Button>
                                     </div>

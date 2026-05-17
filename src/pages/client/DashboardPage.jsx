@@ -3,13 +3,12 @@ import { Link } from 'react-router-dom'
 import Card, { CardHeader, CardTitle } from '../../components/ui/Card'
 import StatCard from '../../components/ui/StatCard'
 import Badge from '../../components/ui/Badge'
-import Avatar from '../../components/ui/Avatar'
 import Button from '../../components/ui/Button'
 import { useAuth } from '../../contexts/AuthContext'
 import { useCases } from '../../hooks/useCases'
 import { useAppointments } from '../../hooks/useAppointments'
 import { useInvoices } from '../../hooks/useInvoices'
-import { formatDate } from '../../utils/date'
+import { formatDate, formatDateTime } from '../../utils/date'
 
 const statusColors = {
     in_progress: 'blue', under_review: 'blue', draft: 'slate',
@@ -32,7 +31,7 @@ function OnboardingChecklist({ profile, hasCases, hasAppointments }) {
 
     const steps = [
         { label: 'Create your account', icon: 'check_circle', done: true, path: null },
-        { label: 'Complete your profile', icon: profile?.bio ? 'check_circle' : 'radio_button_unchecked', done: !!profile?.bio, path: '/client' },
+        { label: 'Complete your profile', icon: profile?.bio ? 'check_circle' : 'radio_button_unchecked', done: !!profile?.bio, path: '/client/profile-setup' },
         { label: 'Browse services', icon: hasCases ? 'check_circle' : 'radio_button_unchecked', done: hasCases, path: '/client/services' },
         { label: 'Book a consultation', icon: hasAppointments ? 'check_circle' : 'radio_button_unchecked', done: hasAppointments, path: '/find-professionals' },
     ]
@@ -40,7 +39,6 @@ function OnboardingChecklist({ profile, hasCases, hasAppointments }) {
     const completedCount = steps.filter(s => s.done).length
     const allDone = completedCount === steps.length
 
-    // Auto-hide when all done
     if (allDone) return null
 
     const progress = (completedCount / steps.length) * 100
@@ -69,7 +67,6 @@ function OnboardingChecklist({ profile, hasCases, hasAppointments }) {
                 </button>
             </div>
 
-            {/* Progress bar */}
             <div className="h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mb-4 overflow-hidden">
                 <div
                     className="h-full bg-primary rounded-full transition-all duration-500"
@@ -77,18 +74,14 @@ function OnboardingChecklist({ profile, hasCases, hasAppointments }) {
                 />
             </div>
 
-            {/* Steps */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {steps.map((step, idx) => {
-                    const content = (
-                        <div
-                            key={idx}
-                            className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${
-                                step.done
-                                    ? 'bg-white/60 dark:bg-slate-800/40'
-                                    : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary/50'
-                            }`}
-                        >
+                    const inner = (
+                        <div className={`flex items-center gap-3 p-3 rounded-xl transition-colors ${
+                            step.done
+                                ? 'bg-white/60 dark:bg-slate-800/40'
+                                : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary/50'
+                        }`}>
                             <span className={`material-symbols-outlined text-[20px] ${step.done ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600'}`}>
                                 {step.icon}
                             </span>
@@ -98,9 +91,9 @@ function OnboardingChecklist({ profile, hasCases, hasAppointments }) {
                         </div>
                     )
                     return step.path && !step.done ? (
-                        <Link key={idx} to={step.path}>{content}</Link>
+                        <Link key={idx} to={step.path}>{inner}</Link>
                     ) : (
-                        <div key={idx}>{content}</div>
+                        <div key={idx}>{inner}</div>
                     )
                 })}
             </div>
@@ -108,12 +101,17 @@ function OnboardingChecklist({ profile, hasCases, hasAppointments }) {
     )
 }
 
+function formatAmount(amount, currency = 'USD') {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(amount))
+}
+
 export default function ClientDashboard() {
     const { profile } = useAuth()
-    const { cases, loading: casesLoading } = useCases()
-    const { upcoming, loading: apptLoading } = useAppointments()
-    const { invoices, loading: invLoading } = useInvoices()
+    const { cases, loading: casesLoading, error: casesError } = useCases({ limit: 5 })
+    const { upcoming, loading: apptLoading, error: apptError } = useAppointments({ limit: 5 })
+    const { invoices, loading: invLoading, error: invError } = useInvoices({ limit: 5 })
 
+    const statsLoading = casesLoading || apptLoading || invLoading
     const activeCases = cases.filter(c => ['in_progress', 'under_review', 'docs_pending', 'action_required'].includes(c.status))
     const pendingInvoices = invoices.filter(i => i.status === 'pending')
     const nextAppt = upcoming[0]
@@ -128,7 +126,7 @@ export default function ClientDashboard() {
                 <p className="mt-1 text-slate-500">Here's what's happening with your cases</p>
             </div>
 
-            {/* Onboarding Checklist — shown for new users */}
+            {/* Onboarding Checklist */}
             <OnboardingChecklist
                 profile={profile}
                 hasCases={cases.length > 0}
@@ -137,11 +135,11 @@ export default function ClientDashboard() {
 
             {/* Stats */}
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-                {casesLoading ? [1,2,3].map(i => <SkeletonCard key={i} />) : (
+                {statsLoading ? [1,2,3].map(i => <SkeletonCard key={i} />) : (
                     <>
                         <StatCard title="Active Cases" value={activeCases.length} icon="work" color="primary" />
                         <StatCard title="Pending Invoices" value={pendingInvoices.length} icon="receipt_long" color="amber" />
-                        <StatCard title="Next Appointment" value={nextAppt ? formatDate(nextAppt.scheduled_at) : 'None'} icon="calendar_month" color="green" />
+                        <StatCard title="Next Appointment" value={nextAppt ? formatDateTime(nextAppt.scheduled_at) : 'None'} icon="calendar_month" color="green" />
                     </>
                 )}
             </div>
@@ -157,6 +155,8 @@ export default function ClientDashboard() {
                         <div className="space-y-3 mt-4">
                             {[1,2].map(i => <div key={i} className="h-16 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800" />)}
                         </div>
+                    ) : casesError ? (
+                        <p className="py-8 text-center text-sm text-red-500">{casesError}</p>
                     ) : cases.length === 0 ? (
                         <div className="flex flex-col items-center gap-2 py-10 text-slate-400">
                             <span className="material-symbols-outlined text-[40px]">folder_open</span>
@@ -175,7 +175,7 @@ export default function ClientDashboard() {
                                 <p className="text-xs text-slate-500">{c.case_number}</p>
                             </div>
                             <Badge variant={statusColors[c.status] || 'slate'}>
-                                {c.status.replace('_', ' ')}
+                                {c.status.replace(/_/g, ' ')}
                             </Badge>
                         </div>
                     ))}
@@ -191,6 +191,8 @@ export default function ClientDashboard() {
                         <div className="space-y-3 mt-4">
                             {[1,2].map(i => <div key={i} className="h-16 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800" />)}
                         </div>
+                    ) : apptError ? (
+                        <p className="py-8 text-center text-sm text-red-500">{apptError}</p>
                     ) : upcoming.length === 0 ? (
                         <div className="flex flex-col items-center gap-2 py-10 text-slate-400">
                             <span className="material-symbols-outlined text-[40px]">calendar_month</span>
@@ -203,12 +205,12 @@ export default function ClientDashboard() {
                         <div key={a.id} className="flex items-center gap-3 rounded-lg border border-slate-100 dark:border-slate-800 p-3 mt-3">
                             <div className="flex size-10 flex-shrink-0 items-center justify-center rounded-lg bg-purple-50 dark:bg-purple-900/20">
                                 <span className="material-symbols-outlined text-[20px] text-purple-600">
-                                    {a.type === 'video' ? 'videocam' : a.type === 'phone' ? 'call' : 'place'}
+                                    {a.mode === 'video' ? 'videocam' : a.mode === 'phone' ? 'call' : 'place'}
                                 </span>
                             </div>
                             <div className="min-w-0 flex-1">
                                 <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{a.title}</p>
-                                <p className="text-xs text-slate-500">{formatDate(a.scheduled_at)}</p>
+                                <p className="text-xs text-slate-500">{formatDateTime(a.scheduled_at)}</p>
                             </div>
                             <Badge variant="blue">Upcoming</Badge>
                         </div>
@@ -224,6 +226,8 @@ export default function ClientDashboard() {
                 </CardHeader>
                 {invLoading ? (
                     <div className="h-20 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800 mt-4" />
+                ) : invError ? (
+                    <p className="py-8 text-center text-sm text-red-500">{invError}</p>
                 ) : invoices.length === 0 ? (
                     <p className="py-8 text-center text-sm text-slate-400">No invoices yet</p>
                 ) : (
@@ -235,7 +239,9 @@ export default function ClientDashboard() {
                                     <p className="text-xs text-slate-500">{inv.due_date ? `Due ${formatDate(inv.due_date)}` : 'No due date'}</p>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <p className="font-bold text-slate-900 dark:text-white">${Number(inv.amount).toFixed(2)}</p>
+                                    <p className="font-bold text-slate-900 dark:text-white">
+                                        {formatAmount(inv.amount, inv.currency)}
+                                    </p>
                                     <Badge variant={inv.status === 'paid' ? 'green' : inv.status === 'overdue' ? 'red' : 'amber'}>
                                         {inv.status}
                                     </Badge>

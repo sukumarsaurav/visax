@@ -3,6 +3,15 @@ import react from '@vitejs/plugin-react'
 import compression from 'vite-plugin-compression'
 
 export default defineConfig({
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./src/test/setup.js'],
+    coverage: {
+      provider: 'v8',
+      include: ['src/pages/admin/**', 'src/lib/auditLog.js'],
+    },
+  },
   plugins: [
     react(),
     // Brotli — modern browsers, ~70% smaller than raw JS

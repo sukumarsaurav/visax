@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../contexts/AuthContext'
 
 const PAGE_SIZE = 50
 
-export function useAppointments() {
+export function useAppointments({ limit } = {}) {
     const { user, profile } = useAuth()
     const [appointments, setAppointments] = useState([])
     const [loading, setLoading] = useState(true)
@@ -12,6 +12,7 @@ export function useAppointments() {
     const [error, setError] = useState(null)
     const [totalCount, setTotalCount] = useState(0)
     const [page, setPage] = useState(0)
+    const effectiveSize = limit || PAGE_SIZE
     const hasMore = appointments.length < totalCount
 
     useEffect(() => {
@@ -23,10 +24,10 @@ export function useAppointments() {
         if (pageNum === 0) setLoading(true)
         else setLoadingMore(true)
 
-        const from = pageNum * PAGE_SIZE
-        const to = from + PAGE_SIZE - 1
+        const from = pageNum * effectiveSize
+        const to = from + effectiveSize - 1
 
-        const { data, error, count } = await supabase
+        let query = supabase
             .from('appointments')
             .select(`
                 id, scheduled_at, status, title, duration_minutes, mode, meeting_link, notes,
@@ -35,6 +36,14 @@ export function useAppointments() {
             `, { count: pageNum === 0 ? 'exact' : undefined })
             .order('scheduled_at', { ascending: false })
             .range(from, to)
+
+        if (profile?.role === 'individual' || profile?.role === 'agency_admin' || profile?.role === 'agency_member') {
+            query = query.eq('consultant_id', user.id)
+        } else if (profile?.role === 'client') {
+            query = query.eq('client_id', user.id)
+        }
+
+        const { data, error, count } = await query
 
         if (error) {
             setError(error.message)
@@ -77,8 +86,9 @@ export function useAppointments() {
         return { data, error }
     }
 
-    const upcoming = appointments.filter(a =>
-        a.status === 'upcoming' && new Date(a.scheduled_at) > new Date()
+    const upcoming = useMemo(() =>
+        appointments.filter(a => a.status === 'upcoming' && new Date(a.scheduled_at) > new Date()),
+        [appointments]
     )
 
     return {

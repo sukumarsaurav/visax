@@ -4,7 +4,9 @@ import { useAuth } from '../contexts/AuthContext'
 
 const PAGE_SIZE = 50
 
-export function useCases() {
+// Fix #3: was checking profile.user_type which doesn't exist — field is profile.role
+// Fix #5: accept optional limit so dashboard can fetch only what it needs
+export function useCases({ limit } = {}) {
     const { user, profile } = useAuth()
     const [cases, setCases] = useState([])
     const [loading, setLoading] = useState(true)
@@ -12,6 +14,7 @@ export function useCases() {
     const [error, setError] = useState(null)
     const [totalCount, setTotalCount] = useState(0)
     const [page, setPage] = useState(0)
+    const effectiveSize = limit || PAGE_SIZE
     const hasMore = cases.length < totalCount
 
     useEffect(() => {
@@ -23,10 +26,10 @@ export function useCases() {
         if (pageNum === 0) setLoading(true)
         else setLoadingMore(true)
 
-        const from = pageNum * PAGE_SIZE
-        const to = from + PAGE_SIZE - 1
+        const from = pageNum * effectiveSize
+        const to = from + effectiveSize - 1
 
-        const query = supabase
+        let query = supabase
             .from('cases')
             .select(`
                 id, case_number, title, status, progress, visa_type, destination_country, created_at, updated_at,
@@ -36,10 +39,11 @@ export function useCases() {
             .order('created_at', { ascending: false })
             .range(from, to)
 
-        if (profile?.user_type === 'individual' || profile?.user_type === 'agency_member') {
-            query.eq('consultant_id', user.id)
-        } else if (profile?.user_type === 'client') {
-            query.eq('client_id', user.id)
+        // Fix #3: use profile.role (not profile.user_type which was always undefined)
+        if (profile?.role === 'individual' || profile?.role === 'agency_admin' || profile?.role === 'agency_member') {
+            query = query.eq('consultant_id', user.id)
+        } else if (profile?.role === 'client') {
+            query = query.eq('client_id', user.id)
         }
 
         const { data, error, count } = await query

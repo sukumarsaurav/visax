@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { getMaxUploadMb } from './platformConfig'
 
 export async function uploadAvatar(file, userId) {
     const ext = file.name.split('.').pop()
@@ -21,15 +22,15 @@ export async function uploadDocument(file, userId) {
 
 const ALLOWED_DOC_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp']
 const ALLOWED_IMG_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
-const MAX_DOC_SIZE_MB = 25
 const MAX_IMG_SIZE_MB = 5
 
 export function validateDocFile(file) {
     if (!ALLOWED_DOC_TYPES.includes(file.type)) {
         return 'Only PDF, JPEG, PNG or WebP files are allowed.'
     }
-    if (file.size > MAX_DOC_SIZE_MB * 1024 * 1024) {
-        return `File must be under ${MAX_DOC_SIZE_MB}MB.`
+    const maxMb = getMaxUploadMb()
+    if (file.size > maxMb * 1024 * 1024) {
+        return `File must be under ${maxMb}MB.`
     }
     return null
 }

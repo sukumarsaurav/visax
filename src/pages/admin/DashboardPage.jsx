@@ -6,43 +6,39 @@ import Button from '../../components/ui/Button'
 import { supabase } from '../../lib/supabase'
 import { Link } from 'react-router-dom'
 
-
 export default function AdminDashboard() {
     const [stats, setStats] = useState(null)
-    const [applications, setApplications] = useState([])
+    const [recentUsers, setRecentUsers] = useState([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => { fetchStats() }, [])
 
     async function fetchStats() {
         setLoading(true)
-        const [usersRes, casesRes, invoicesRes, appsRes, pendingRes] = await Promise.all([
-            supabase.from('profiles').select('role', { count: 'exact' }),
-            supabase.from('cases').select('status', { count: 'exact' }),
-            supabase.from('invoices').select('amount, status'),
-            supabase.from('profiles').select('id, full_name, role, created_at').order('created_at', { ascending: false }).limit(5),
-            supabase.from('profiles').select('id', { count: 'exact' }).eq('application_status', 'pending_review'),
+        // Single RPC call replaces 5 separate queries + full-table invoice scan
+        const [{ data: dashData }, { data: usersData }] = await Promise.all([
+            supabase.rpc('get_admin_dashboard_stats'),
+            supabase.from('profiles')
+                .select('id, full_name, role, created_at, avatar_url')
+                .order('created_at', { ascending: false })
+                .limit(5),
         ])
-
-        const invoices = invoicesRes.data || []
-        const totalRevenue = invoices.filter(i => i.status === 'paid').reduce((s, i) => s + Number(i.amount), 0)
-        const roleMap = {}
-        for (const u of usersRes.data || []) {
-            roleMap[u.role] = (roleMap[u.role] || 0) + 1
-        }
-
-        setStats({
-            totalUsers: usersRes.count || 0,
-            totalCases: casesRes.count || 0,
-            totalRevenue: `$${totalRevenue.toLocaleString()}`,
-            pendingApplications: pendingRes.count || 0,
-            roleMap,
-        })
-        setApplications(appsRes.data || [])
+        setStats(dashData)
+        setRecentUsers(usersData || [])
         setLoading(false)
     }
 
     const roleLabel = { client: 'Client', individual: 'Consultant', agency_admin: 'Agency', agency_member: 'Team Member', admin: 'Admin' }
+
+    const roleCounts = stats?.role_counts || {}
+    const totalUsers = Number(stats?.total_users || 0)
+    const plans = [
+        { name: 'Agency Admins', count: roleCounts['agency_admin'] || 0, color: 'bg-primary' },
+        { name: 'Consultants', count: (roleCounts['individual'] || 0) + (roleCounts['agency_member'] || 0), color: 'bg-indigo-500' },
+        { name: 'Clients', count: roleCounts['client'] || 0, color: 'bg-slate-400' },
+    ]
+
+    const monthlyRevenue = stats?.monthly_revenue || []
 
     return (
         <div className="flex flex-col gap-6">
@@ -67,9 +63,14 @@ export default function AdminDashboard() {
                     <div key={i} className="h-28 animate-pulse rounded-xl bg-slate-200 dark:bg-slate-800" />
                 )) : (
                     <>
-                        <StatCard title="Total Revenue" value={stats?.totalRevenue || '$0'} icon="payments" color="green" />
-                        <StatCard title="Total Users" value={stats?.totalUsers || 0} icon="group" color="primary" />
-                        <StatCard title="Total Cases" value={stats?.totalCases || 0} icon="folder_shared" color="purple" />
+                        <StatCard
+                            title="Total Revenue"
+                            value={`$${Number(stats?.total_revenue || 0).toLocaleString()}`}
+                            icon="payments"
+                            color="green"
+                        />
+                        <StatCard title="Total Users" value={totalUsers} icon="group" color="primary" />
+                        <StatCard title="Total Cases" value={Number(stats?.total_cases || 0)} icon="folder_shared" color="purple" />
                         <Card className="border-amber-200 bg-amber-50 dark:border-amber-900/30 dark:bg-amber-900/10">
                             <div className="flex items-center justify-between">
                                 <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">Pending Review</p>
@@ -77,15 +78,15 @@ export default function AdminDashboard() {
                                     <span className="material-symbols-outlined text-lg">pending_actions</span>
                                 </div>
                             </div>
-                            <h3 className="mt-2 text-2xl font-black text-slate-900 dark:text-white">{stats?.pendingApplications || 0}</h3>
-                            <p className="text-xs text-amber-700/70 dark:text-amber-400/70">Cases under review</p>
+                            <h3 className="mt-2 text-2xl font-black text-slate-900 dark:text-white">{Number(stats?.pending_applications || 0)}</h3>
+                            <p className="text-xs text-amber-700/70 dark:text-amber-400/70">Applications under review</p>
                         </Card>
                     </>
                 )}
             </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                {/* Left: Subscription breakdown */}
+                {/* Left: Subscription breakdown + Revenue chart */}
                 <div className="flex flex-col gap-6 lg:col-span-2">
                     <Card className="overflow-hidden p-0">
                         <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-slate-800">
@@ -103,55 +104,90 @@ export default function AdminDashboard() {
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                                 {loading ? (
                                     [1,2,3].map(i => <tr key={i}><td colSpan={3} className="px-6 py-3"><div className="h-5 animate-pulse rounded bg-slate-100 dark:bg-slate-800" /></td></tr>)
-                                ) : (() => {
-                                    const rm = stats?.roleMap || {}
-                                    const total = stats?.totalUsers || 1
-                                    const plans = [
-                                        { name: 'Agency Admins', count: rm['agency_admin'] || 0, color: 'bg-primary' },
-                                        { name: 'Consultants', count: (rm['individual'] || 0) + (rm['agency_member'] || 0), color: 'bg-indigo-500' },
-                                        { name: 'Clients', count: rm['client'] || 0, color: 'bg-slate-400' },
-                                    ]
-                                    return plans.map(plan => {
-                                        const share = Math.round((plan.count / total) * 100)
-                                        return (
-                                            <tr key={plan.name} className="bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800/50">
-                                                <td className="px-6 py-4 font-semibold text-slate-900 dark:text-white">{plan.name}</td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="h-1.5 w-24 rounded-full bg-slate-100 dark:bg-slate-800">
-                                                            <div className={`h-1.5 rounded-full ${plan.color}`} style={{ width: `${share}%` }} />
-                                                        </div>
-                                                        <span className="text-slate-600 dark:text-slate-400">{share}%</span>
+                                ) : plans.map(plan => {
+                                    const share = totalUsers > 0 ? Math.round((plan.count / totalUsers) * 100) : 0
+                                    return (
+                                        <tr key={plan.name} className="bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800/50">
+                                            <td className="px-6 py-4 font-semibold text-slate-900 dark:text-white">{plan.name}</td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-1.5 w-24 rounded-full bg-slate-100 dark:bg-slate-800">
+                                                        <div className={`h-1.5 rounded-full ${plan.color}`} style={{ width: `${share}%` }} />
                                                     </div>
-                                                </td>
-                                                <td className="px-6 py-4 text-right font-semibold text-slate-700 dark:text-slate-300">{plan.count}</td>
-                                            </tr>
-                                        )
-                                    })
-                                })()}
+                                                    <span className="text-slate-600 dark:text-slate-400">{share}%</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-right font-semibold text-slate-700 dark:text-slate-300">{plan.count}</td>
+                                        </tr>
+                                    )
+                                })}
                             </tbody>
                         </table>
                     </Card>
 
-                    {/* Revenue placeholder chart */}
+                    {/* Monthly Revenue sparkline */}
                     <Card>
                         <CardHeader>
                             <div>
-                                <h3 className="font-bold text-slate-900 dark:text-white">Monthly Revenue</h3>
-                                <p className="text-sm text-slate-500">Connect analytics for live charts</p>
+                                <h3 className="font-bold text-slate-900 dark:text-white">Monthly Revenue (last 6 months)</h3>
+                                <p className="text-sm text-slate-500">Paid invoices only</p>
                             </div>
                         </CardHeader>
-                        <div className="flex h-48 items-center justify-center rounded-lg bg-slate-50 dark:bg-slate-800">
-                            <div className="text-center text-slate-400">
-                                <span className="material-symbols-outlined text-[48px]">show_chart</span>
-                                <p className="mt-2 text-sm">Chart data loads from invoices</p>
+                        {loading ? (
+                            <div className="h-48 animate-pulse rounded-lg bg-slate-50 dark:bg-slate-800 mt-4" />
+                        ) : monthlyRevenue.length === 0 ? (
+                            <div className="flex h-48 items-center justify-center rounded-lg bg-slate-50 dark:bg-slate-800">
+                                <div className="text-center text-slate-400">
+                                    <span className="material-symbols-outlined text-[48px]">show_chart</span>
+                                    <p className="mt-2 text-sm">No revenue data yet</p>
+                                </div>
                             </div>
-                        </div>
+                        ) : (
+                            <div className="mt-4 flex items-end gap-2 h-48">
+                                {monthlyRevenue.map((m, i) => {
+                                    const max = Math.max(...monthlyRevenue.map(x => Number(x.revenue || 0)), 1)
+                                    const pct = Math.round((Number(m.revenue || 0) / max) * 100)
+                                    return (
+                                        <div key={i} className="flex flex-1 flex-col items-center gap-1">
+                                            <span className="text-[10px] text-slate-500">${Number(m.revenue || 0).toLocaleString()}</span>
+                                            <div className="w-full rounded-t-sm bg-primary/20 dark:bg-primary/30 flex items-end" style={{ height: '140px' }}>
+                                                <div className="w-full rounded-t-sm bg-primary transition-all" style={{ height: `${pct}%` }} />
+                                            </div>
+                                            <span className="text-[10px] text-slate-400">{m.month}</span>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        )}
                     </Card>
                 </div>
 
                 {/* Right: Recent registrations + User mix */}
                 <div className="flex flex-col gap-6">
+                    {/* Quick-stat cards wired from RPC data */}
+                    <div className="grid grid-cols-2 gap-3">
+                        {[
+                            { label: 'Pending Verification', value: Number(stats?.pending_verification || 0), icon: 'verified_user', color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20' },
+                            { label: 'Consultants', value: Number(stats?.consultants || 0), icon: 'school', color: 'text-purple-600 bg-purple-50 dark:bg-purple-900/20' },
+                            { label: 'Agencies', value: Number(stats?.agencies || 0), icon: 'apartment', color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20' },
+                            { label: 'Overdue Invoices', value: Number(stats?.overdue_invoices || 0), icon: 'receipt_long', color: 'text-red-600 bg-red-50 dark:bg-red-900/20' },
+                        ].map(s => (
+                            <Card key={s.label} className="p-4">
+                                {loading ? (
+                                    <div className="h-12 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
+                                ) : (
+                                    <>
+                                        <div className={`inline-flex size-8 items-center justify-center rounded-lg ${s.color} mb-2`}>
+                                            <span className="material-symbols-outlined text-[18px]">{s.icon}</span>
+                                        </div>
+                                        <p className="text-xl font-black text-slate-900 dark:text-white">{s.value}</p>
+                                        <p className="text-xs text-slate-500 mt-0.5">{s.label}</p>
+                                    </>
+                                )}
+                            </Card>
+                        ))}
+                    </div>
+
                     <Card>
                         <CardHeader>
                             <CardTitle>Recent Registrations</CardTitle>
@@ -160,11 +196,11 @@ export default function AdminDashboard() {
                             <div className="space-y-3 mt-3">
                                 {[1,2,3].map(i => <div key={i} className="h-12 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800" />)}
                             </div>
-                        ) : applications.length === 0 ? (
+                        ) : recentUsers.length === 0 ? (
                             <p className="py-6 text-center text-sm text-slate-400">No users yet</p>
-                        ) : applications.map(u => (
+                        ) : recentUsers.map(u => (
                             <div key={u.id} className="flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-800/50 mt-3">
-                                <Avatar size="md" alt={u.full_name} />
+                                <Avatar size="md" alt={u.full_name} src={u.avatar_url} />
                                 <div className="flex-1 min-w-0">
                                     <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{u.full_name || 'Unknown'}</p>
                                     <p className="text-xs text-slate-500">{roleLabel[u.role] || u.role}</p>
@@ -184,14 +220,13 @@ export default function AdminDashboard() {
                         ) : (
                             <>
                                 {(() => {
-                                    const rm = stats?.roleMap || {}
-                                    const total = stats?.totalUsers || 1
-                                    const clients = rm['client'] || 0
-                                    const consultants = (rm['individual'] || 0) + (rm['agency_member'] || 0)
-                                    const agencies = rm['agency_admin'] || 0
-                                    const cp = Math.round((clients / total) * 100)
-                                    const conp = Math.round((consultants / total) * 100)
-                                    const ap = Math.round((agencies / total) * 100)
+                                    const clients = roleCounts['client'] || 0
+                                    const consultants = (roleCounts['individual'] || 0) + (roleCounts['agency_member'] || 0)
+                                    const agencies = roleCounts['agency_admin'] || 0
+                                    const safeTotal = totalUsers || 1
+                                    const cp = Math.round((clients / safeTotal) * 100)
+                                    const conp = Math.round((consultants / safeTotal) * 100)
+                                    const ap = Math.round((agencies / safeTotal) * 100)
                                     const gradient = `conic-gradient(#136dec 0% ${cp}%, #6366f1 ${cp}% ${cp + conp}%, #cbd5e1 ${cp + conp}% 100%)`
                                     const items = [
                                         { label: 'Clients', count: clients, percent: cp, color: 'bg-primary' },
@@ -201,10 +236,9 @@ export default function AdminDashboard() {
                                     return (
                                         <>
                                             <div className="my-4 flex items-center justify-center">
-                                                <div className="relative flex size-36 items-center justify-center rounded-full"
-                                                    style={{ background: gradient }}>
+                                                <div className="relative flex size-36 items-center justify-center rounded-full" style={{ background: gradient }}>
                                                     <div className="absolute inset-4 flex flex-col items-center justify-center rounded-full bg-white dark:bg-slate-900">
-                                                        <span className="text-xl font-black text-slate-900 dark:text-white">{stats?.totalUsers || 0}</span>
+                                                        <span className="text-xl font-black text-slate-900 dark:text-white">{totalUsers}</span>
                                                         <span className="text-[10px] text-slate-500">Total</span>
                                                     </div>
                                                 </div>

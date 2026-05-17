@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
+import { toast } from 'react-hot-toast'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import { supabase } from '../../lib/supabase'
+import { writeAuditLog } from '../../lib/auditLog'
 
 const INTEGRATION_META = [
     {
@@ -145,27 +147,24 @@ const INTEGRATION_META = [
 
 export default function SystemIntegrationsPage() {
     const [intSettings, setIntSettings] = useState({})
+    const [configuredProviders, setConfiguredProviders] = useState(new Set())
     const [selectedId, setSelectedId] = useState(null)
     const [showConfigPanel, setShowConfigPanel] = useState(false)
     const [saving, setSaving] = useState(false)
     const [testing, setTesting] = useState(false)
-    const [toast, setToast] = useState(null)
     const [showSecrets, setShowSecrets] = useState({})
     const [fieldValues, setFieldValues] = useState({})
     const [testResult, setTestResult] = useState(null)
 
-    const showToast = (msg, type = 'success') => {
-        setToast({ msg, type })
-        setTimeout(() => setToast(null), 4000)
-    }
-
     const loadSettings = useCallback(async () => {
-        const { data } = await supabase
-            .from('platform_settings')
-            .select('value')
-            .eq('key', 'integrations')
-            .single()
-        if (data?.value) setIntSettings(data.value)
+        const [settingsRes, providersRes] = await Promise.all([
+            supabase.from('platform_settings').select('value').eq('key', 'integrations').single(),
+            supabase.rpc('get_configured_integration_providers'),
+        ])
+        if (settingsRes.data?.value) setIntSettings(settingsRes.data.value)
+        if (providersRes.data) {
+            setConfiguredProviders(new Set(providersRes.data.map(r => r.provider)))
+        }
     }, [])
 
     useEffect(() => { loadSettings() }, [loadSettings])
@@ -177,7 +176,10 @@ export default function SystemIntegrationsPage() {
         setSelectedId(id)
         const settings = intSettings[id] || {}
         const vals = {}
-        INTEGRATION_META.find(m => m.id === id)?.fields.forEach(f => { vals[f.key] = settings[f.key] || '' })
+        INTEGRATION_META.find(m => m.id === id)?.fields.forEach(f => {
+            // Secret fields: always start empty so user must retype to update
+            vals[f.key] = f.type === 'secret' ? '' : (settings[f.key] || '')
+        })
         setFieldValues(vals)
         setShowSecrets({})
         setTestResult(null)
@@ -189,26 +191,74 @@ export default function SystemIntegrationsPage() {
         const current = intSettings[id]?.enabled || false
         const updated = { ...intSettings, [id]: { ...(intSettings[id] || {}), enabled: !current } }
         setIntSettings(updated)
-        await supabase.from('platform_settings').upsert({ key: 'integrations', value: updated }, { onConflict: 'key' })
-        showToast(`${INTEGRATION_META.find(m => m.id === id)?.name} ${!current ? 'enabled' : 'disabled'}`)
+        const { error } = await supabase
+            .from('platform_settings')
+            .upsert({ key: 'integrations', value: updated }, { onConflict: 'key' })
+        if (error) toast.error('Failed to update integration status')
+        else toast.success(`${INTEGRATION_META.find(m => m.id === id)?.name} ${!current ? 'enabled' : 'disabled'}`)
+    }
+
+    // Separate non-secret fields from secret fields and persist them appropriately
+    const persistCredentials = async (id, values) => {
+        const meta = INTEGRATION_META.find(m => m.id === id)
+        const nonSecretUpdate = {}
+        const secretUpdate = {}
+
+        meta?.fields.forEach(f => {
+            if (f.type === 'secret') {
+                // Only write if user typed a new value (empty = keep existing)
+                if (values[f.key]) secretUpdate[f.key] = values[f.key]
+            } else {
+                nonSecretUpdate[f.key] = values[f.key]
+            }
+        })
+
+        const promises = []
+
+        // Non-secrets go into platform_settings
+        const updated = {
+            ...intSettings,
+            [id]: {
+                ...(intSettings[id] || {}),
+                enabled: intSettings[id]?.enabled || false,
+                ...nonSecretUpdate,
+            },
+        }
+        promises.push(
+            supabase.from('platform_settings').upsert({ key: 'integrations', value: updated }, { onConflict: 'key' })
+        )
+
+        // Secrets go into integration_secrets via merge RPC (never sent back to client)
+        if (Object.keys(secretUpdate).length > 0) {
+            promises.push(
+                supabase.rpc('upsert_integration_secret', {
+                    p_provider: id,
+                    p_new_secrets: secretUpdate,
+                })
+            )
+        }
+
+        const results = await Promise.all(promises)
+        const err = results.find(r => r.error)?.error
+        if (err) return { error: err }
+
+        // Update local state
+        setIntSettings(updated)
+        if (Object.keys(secretUpdate).length > 0) {
+            setConfiguredProviders(prev => new Set([...prev, id]))
+        }
+        return { error: null }
     }
 
     const handleSave = async () => {
         setSaving(true)
         setTestResult(null)
-        const updated = {
-            ...intSettings,
-            [selectedId]: {
-                ...(intSettings[selectedId] || {}),
-                enabled: selectedSettings.enabled || false,
-                ...fieldValues,
-            },
-        }
-        const { error } = await supabase.from('platform_settings').upsert({ key: 'integrations', value: updated }, { onConflict: 'key' })
-        if (error) showToast('Failed to save settings', 'error')
-        else {
-            setIntSettings(updated)
-            showToast('Credentials saved — click "Test Connection" to verify')
+        const { error } = await persistCredentials(selectedId, fieldValues)
+        if (error) {
+            toast.error('Failed to save credentials')
+        } else {
+            await writeAuditLog({ action: 'Settings Updated', entityType: 'integration', entityId: selectedId, details: { integration: selectedId } })
+            toast.success('Credentials saved — click "Test Connection" to verify')
         }
         setSaving(false)
     }
@@ -217,36 +267,39 @@ export default function SystemIntegrationsPage() {
         setTesting(true)
         setTestResult(null)
 
-        // Save first so edge function reads latest credentials
-        const updated = {
-            ...intSettings,
-            [selectedId]: { ...(intSettings[selectedId] || {}), enabled: selectedSettings.enabled || false, ...fieldValues },
+        // Persist latest credentials before testing
+        const { error: saveError } = await persistCredentials(selectedId, fieldValues)
+        if (saveError) {
+            toast.error('Failed to save credentials before testing')
+            setTesting(false)
+            return
         }
-        await supabase.from('platform_settings').upsert({ key: 'integrations', value: updated }, { onConflict: 'key' })
-        setIntSettings(updated)
 
         const { data: { session } } = await supabase.auth.getSession()
-        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/test-integration`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${session?.access_token}`,
-                apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-            },
-            body: JSON.stringify({ integration_id: selectedId }),
-        })
-        const result = await res.json()
-        setTesting(false)
-
-        if (result.success) {
-            setTestResult({ ok: true, data: result.data })
-            // Reload to get stored connected_info
-            await loadSettings()
-            showToast(`${selectedMeta?.name} connected successfully!`)
-        } else {
-            setTestResult({ ok: false, error: result.error })
-            showToast(result.error || 'Connection failed', 'error')
+        try {
+            const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/test-integration`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${session?.access_token}`,
+                    apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+                },
+                body: JSON.stringify({ integration_id: selectedId }),
+            })
+            const result = await res.json()
+            if (result.success) {
+                setTestResult({ ok: true, data: result.data })
+                await loadSettings()
+                toast.success(`${selectedMeta?.name} connected successfully!`)
+            } else {
+                setTestResult({ ok: false, error: result.error })
+                toast.error(result.error || 'Connection test failed')
+            }
+        } catch {
+            setTestResult({ ok: false, error: 'Network error — could not reach test endpoint' })
+            toast.error('Network error — could not reach test endpoint')
         }
+        setTesting(false)
     }
 
     const connectedInfo = selectedSettings.connected_info || null
@@ -255,14 +308,7 @@ export default function SystemIntegrationsPage() {
         : null
 
     return (
-        <div className="flex flex-col gap-6 relative">
-            {toast && (
-                <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-semibold text-white max-w-sm ${toast.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
-                    {toast.msg}
-                </div>
-            )}
-
-            {/* Actions */}
+        <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between">
                 <p className="text-sm text-slate-500 dark:text-slate-400">Click any integration to configure credentials and test the connection.</p>
             </div>
@@ -399,7 +445,7 @@ export default function SystemIntegrationsPage() {
                                                 </p>
                                                 {testResult.ok ? (
                                                     <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">
-                                                        Connected as: {testResult.data.account_name}
+                                                        Connected as: {testResult.data?.account_name}
                                                     </p>
                                                 ) : (
                                                     <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">{testResult.error}</p>
@@ -462,36 +508,48 @@ export default function SystemIntegrationsPage() {
                                             <span className="material-symbols-outlined text-slate-400 text-[18px]">key</span>
                                             API Credentials
                                         </h3>
-                                        {selectedMeta.fields.map(field => (
-                                            <label key={field.key} className="block">
-                                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{field.label}</span>
-                                                {field.type === 'secret' ? (
-                                                    <div className="mt-1.5 relative">
+                                        {selectedMeta.fields.map(field => {
+                                            const isConfigured = field.type === 'secret' && configuredProviders.has(selectedId)
+                                            return (
+                                                <label key={field.key} className="block">
+                                                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{field.label}</span>
+                                                    {field.type === 'secret' ? (
+                                                        <div className="mt-1.5 relative">
+                                                            <input
+                                                                className="block w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm p-2.5 pr-10 font-mono focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                                type={showSecrets[field.key] ? 'text' : 'password'}
+                                                                value={fieldValues[field.key] || ''}
+                                                                placeholder={isConfigured ? '•••••••• (already configured — type to update)' : field.placeholder}
+                                                                onChange={e => setFieldValues(v => ({ ...v, [field.key]: e.target.value }))}
+                                                                autoComplete="new-password"
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600"
+                                                                onClick={() => setShowSecrets(s => ({ ...s, [field.key]: !s[field.key] }))}
+                                                            >
+                                                                <span className="material-symbols-outlined text-[18px]">{showSecrets[field.key] ? 'visibility' : 'visibility_off'}</span>
+                                                            </button>
+                                                        </div>
+                                                    ) : (
                                                         <input
-                                                            className="block w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm p-2.5 pr-10 font-mono focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                                                            type={showSecrets[field.key] ? 'text' : 'password'}
+                                                            className="mt-1.5 block w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm p-2.5 font-mono focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                                            type="text"
                                                             value={fieldValues[field.key] || ''}
                                                             placeholder={field.placeholder}
                                                             onChange={e => setFieldValues(v => ({ ...v, [field.key]: e.target.value }))}
                                                         />
-                                                        <button
-                                                            className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600"
-                                                            onClick={() => setShowSecrets(s => ({ ...s, [field.key]: !s[field.key] }))}
-                                                        >
-                                                            <span className="material-symbols-outlined text-[18px]">{showSecrets[field.key] ? 'visibility' : 'visibility_off'}</span>
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <input
-                                                        className="mt-1.5 block w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm p-2.5 font-mono focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                                                        type="text"
-                                                        value={fieldValues[field.key] || ''}
-                                                        placeholder={field.placeholder}
-                                                        onChange={e => setFieldValues(v => ({ ...v, [field.key]: e.target.value }))}
-                                                    />
-                                                )}
-                                            </label>
-                                        ))}
+                                                    )}
+                                                </label>
+                                            )
+                                        })}
+
+                                        {configuredProviders.has(selectedId) && (
+                                            <p className="text-xs text-slate-400 flex items-center gap-1.5">
+                                                <span className="material-symbols-outlined text-[14px] text-emerald-500">lock</span>
+                                                Existing secrets are stored securely and never returned to the browser. Leave secret fields blank to keep current values.
+                                            </p>
+                                        )}
                                     </div>
 
                                     {/* Test Connection button */}
@@ -507,20 +565,22 @@ export default function SystemIntegrationsPage() {
                                     </button>
 
                                     {/* Documentation link */}
-                                    <a
-                                        href={selectedMeta.docs}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 px-4 py-3 text-sm text-blue-700 dark:text-blue-300 hover:bg-blue-100 transition-colors"
-                                        onClick={e => e.stopPropagation()}
-                                    >
-                                        <span className="material-symbols-outlined text-blue-500 text-[20px]">menu_book</span>
-                                        <div>
-                                            <p className="font-semibold">View {selectedMeta.name} Documentation</p>
-                                            <p className="text-xs text-blue-500 dark:text-blue-400 mt-0.5">Where to find your API keys</p>
-                                        </div>
-                                        <span className="material-symbols-outlined text-blue-400 ml-auto text-[18px]">open_in_new</span>
-                                    </a>
+                                    {selectedMeta.docs && (
+                                        <a
+                                            href={selectedMeta.docs}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 px-4 py-3 text-sm text-blue-700 dark:text-blue-300 hover:bg-blue-100 transition-colors"
+                                            onClick={e => e.stopPropagation()}
+                                        >
+                                            <span className="material-symbols-outlined text-blue-500 text-[20px]">menu_book</span>
+                                            <div>
+                                                <p className="font-semibold">View {selectedMeta.name} Documentation</p>
+                                                <p className="text-xs text-blue-500 dark:text-blue-400 mt-0.5">Where to find your API keys</p>
+                                            </div>
+                                            <span className="material-symbols-outlined text-blue-400 ml-auto text-[18px]">open_in_new</span>
+                                        </a>
+                                    )}
                                 </div>
 
                                 {/* Footer */}
