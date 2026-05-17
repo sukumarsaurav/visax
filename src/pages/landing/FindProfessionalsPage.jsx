@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useSEO } from '../../hooks/useSEO'
 import { SEO } from '../../lib/seo'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import PublicHeader from '../../components/layout/PublicHeader'
 import Footer from '../../components/layout/Footer'
 import Button from '../../components/ui/Button'
@@ -9,6 +9,7 @@ import Avatar from '../../components/ui/Avatar'
 import Drawer from '../../components/ui/Drawer'
 import StarRating from '../../components/ui/StarRating'
 import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../contexts/AuthContext'
 
 const PAGE_SIZE = 9
 
@@ -26,14 +27,17 @@ const quickFilters = [
 
 export default function FindProfessionalsPage() {
     useSEO(SEO.findProfessionals)
+    const { user } = useAuth()
+    const [searchParams] = useSearchParams()
     const [professionals, setProfessionals] = useState([])
     const [loading, setLoading] = useState(true)
     const [loadingMore, setLoadingMore] = useState(false)
     const [hasMore, setHasMore] = useState(false)
     const [page, setPage] = useState(0)
 
-    const [searchQuery, setSearchQuery] = useState('')
-    const [appliedSearch, setAppliedSearch] = useState('')
+    const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '')
+    const [appliedSearch, setAppliedSearch] = useState(searchParams.get('q') || '')
+    const [locationFilter, setLocationFilter] = useState(searchParams.get('location') || '')
     const [typeFilter, setTypeFilter] = useState('all') // all | individual | agency_admin | agency_member
     const [selectedLanguages, setSelectedLanguages] = useState([])
     const [minPrice, setMinPrice] = useState('')
@@ -43,7 +47,7 @@ export default function FindProfessionalsPage() {
     const [compareIds, setCompareIds] = useState([])
     const navigate = useNavigate()
 
-    // Derived language list from loaded data
+    // Derived language list from loaded data (falls back to common languages until first load)
     const [availableLanguages, setAvailableLanguages] = useState(['English', 'Spanish', 'Mandarin', 'French', 'Arabic'])
 
     // Maps for ratings and prices
@@ -61,7 +65,7 @@ export default function FindProfessionalsPage() {
         setPage(0)
         setProfessionals([])
         fetchProfessionals(0, true)
-    }, [appliedSearch, typeFilter, selectedLanguages, minPrice, maxPrice, sortBy])
+    }, [appliedSearch, locationFilter, typeFilter, selectedLanguages, minPrice, maxPrice, sortBy])
 
     async function loadMeta() {
         // consultant_rating_summary is a pre-aggregated materialized view —
@@ -128,6 +132,10 @@ export default function FindProfessionalsPage() {
             )
         }
 
+        if (locationFilter) {
+            query = query.ilike('city', `%${locationFilter}%`)
+        }
+
         if (selectedLanguages.length > 0) {
             // Filter profiles that have at least one of the selected languages
             query = query.contains('languages', selectedLanguages)
@@ -140,6 +148,11 @@ export default function FindProfessionalsPage() {
 
         if (reset || pageNum === 0) {
             setProfessionals(data || [])
+            // Derive language list from first page of results
+            if (data?.length) {
+                const langs = [...new Set(data.flatMap(p => p.languages || []))].sort()
+                if (langs.length) setAvailableLanguages(langs)
+            }
         } else {
             setProfessionals(prev => [...prev, ...(data || [])])
         }
@@ -274,6 +287,15 @@ export default function FindProfessionalsPage() {
                             {typeFilter === f.key && <span className="material-symbols-outlined text-[16px]">close</span>}
                         </button>
                     ))}
+                    {locationFilter && (
+                        <span className="flex h-10 items-center gap-2 rounded-lg px-4 text-sm font-medium bg-primary/10 text-primary border border-primary/30">
+                            <span className="material-symbols-outlined text-[16px]">location_on</span>
+                            {locationFilter}
+                            <button onClick={() => setLocationFilter('')} aria-label="Clear location filter">
+                                <span className="material-symbols-outlined text-[16px]">close</span>
+                            </button>
+                        </span>
+                    )}
                 </div>
 
                 <div className="flex flex-col lg:flex-row gap-8">
@@ -559,7 +581,10 @@ export default function FindProfessionalsPage() {
                                         <span className="text-sm font-medium">{compareIds.length} professionals selected</span>
                                         <Button
                                             size="sm"
-                                            onClick={() => navigate(`/client/compare?ids=${compareIds.join(',')}`)}
+                                            onClick={() => {
+                                                const dest = `/client/compare?ids=${compareIds.join(',')}`
+                                                user ? navigate(dest) : navigate(`/login?redirect=${encodeURIComponent(dest)}`)
+                                            }}
                                         >
                                             Compare Now
                                         </Button>

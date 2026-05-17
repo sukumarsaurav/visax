@@ -20,6 +20,7 @@ const plans = [
         ],
         buttonText: 'Get Started Free',
         buttonStyle: 'secondary',
+        cta: '/register',
         popular: false
     },
     {
@@ -37,6 +38,7 @@ const plans = [
         ],
         buttonText: 'Start Free Trial',
         buttonStyle: 'primary',
+        cta: '/register',
         popular: true
     },
     {
@@ -54,6 +56,7 @@ const plans = [
         ],
         buttonText: 'Contact Sales',
         buttonStyle: 'secondary',
+        cta: '/support#contact',
         popular: false
     }
 ]
@@ -149,12 +152,12 @@ export default function PricingPage() {
                                         <span className="text-slate-500 dark:text-slate-400 font-medium">/mo</span>
                                     </div>
                                 </div>
-                                <button className={`w-full py-3 rounded-xl font-bold text-sm transition-colors ${plan.buttonStyle === 'primary'
+                                <Link to={plan.cta} className={`w-full py-3 rounded-xl font-bold text-sm transition-colors text-center block ${plan.buttonStyle === 'primary'
                                         ? 'bg-primary text-white hover:bg-blue-600 shadow-lg shadow-blue-500/30'
                                         : 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white hover:bg-slate-200 dark:hover:bg-slate-600'
                                     }`}>
                                     {plan.buttonText}
-                                </button>
+                                </Link>
                                 <div className="flex flex-col gap-3">
                                     {plan.features.map((feature, idx) => (
                                         <div key={idx} className="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">

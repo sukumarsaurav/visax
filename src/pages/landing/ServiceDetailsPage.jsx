@@ -162,9 +162,16 @@ export default function ServiceDetailsPage() {
                                 {avgRating && (
                                     <div className="flex items-center gap-2">
                                         <div className="flex text-amber-400">
-                                            {[1, 2, 3, 4, 5].map(i => (
-                                                <span key={i} className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: i <= Math.floor(avgRating) ? "'FILL' 1" : "'FILL' 0" }}>star</span>
-                                            ))}
+                                            {[1, 2, 3, 4, 5].map(i => {
+                                                const filled = avgRating >= i
+                                                const half = !filled && avgRating >= i - 0.5
+                                                return (
+                                                    <span key={i} className={`material-symbols-outlined text-[18px] ${filled || half ? 'text-amber-400' : 'text-slate-300 dark:text-slate-600'}`}
+                                                        style={{ fontVariationSettings: "'FILL' 1" }}>
+                                                        {half ? 'star_half' : 'star'}
+                                                    </span>
+                                                )
+                                            })}
                                         </div>
                                         <span className="text-sm font-bold text-slate-900 dark:text-white">{avgRating}</span>
                                         <span className="text-sm text-slate-500">({reviews.length} reviews)</span>

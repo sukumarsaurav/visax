@@ -102,19 +102,27 @@ export default function SupportPage() {
 
                 {/* Quick Links */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-12">
-                    {[
-                        { icon: 'menu_book', color: 'blue', title: 'Documentation', desc: 'Browse our guides and tutorials to get started quickly.' },
-                        { icon: 'forum', color: 'emerald', title: 'Community Forum', desc: 'Connect with other users and share experiences.' },
-                        { icon: 'videocam', color: 'purple', title: 'Video Tutorials', desc: 'Watch step-by-step video guides for common tasks.' },
-                    ].map(item => (
-                        <div key={item.title} className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
-                            <div className={`size-12 rounded-full bg-${item.color}-50 dark:bg-${item.color}-900/20 flex items-center justify-center text-${item.color}-600 mb-4`}>
-                                <span className="material-symbols-outlined">{item.icon}</span>
-                            </div>
-                            <h3 className="font-bold text-slate-900 dark:text-white mb-2">{item.title}</h3>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">{item.desc}</p>
+                    <Link to="/privacy" className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-primary/40 transition-all group">
+                        <div className="size-12 rounded-full bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 mb-4">
+                            <span className="material-symbols-outlined">menu_book</span>
                         </div>
-                    ))}
+                        <h3 className="font-bold text-slate-900 dark:text-white mb-2 group-hover:text-primary transition-colors">Documentation</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Browse our guides and privacy policy to get started quickly.</p>
+                    </Link>
+                    <a href="#contact" className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-primary/40 transition-all group">
+                        <div className="size-12 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 mb-4">
+                            <span className="material-symbols-outlined">forum</span>
+                        </div>
+                        <h3 className="font-bold text-slate-900 dark:text-white mb-2 group-hover:text-primary transition-colors">Contact Support</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Reach our support team directly via email or the form below.</p>
+                    </a>
+                    <a href="mailto:support@immizy.in" className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-primary/40 transition-all group">
+                        <div className="size-12 rounded-full bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 mb-4">
+                            <span className="material-symbols-outlined">mail</span>
+                        </div>
+                        <h3 className="font-bold text-slate-900 dark:text-white mb-2 group-hover:text-primary transition-colors">Email Us</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Send us an email and we'll get back to you within 24 hours.</p>
+                    </a>
                 </div>
 
                 <div id="trust-safety" className="grid grid-cols-1 lg:grid-cols-5 gap-8">

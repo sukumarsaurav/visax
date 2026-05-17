@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useNavigate } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import PublicHeader from '../../components/layout/PublicHeader'
 import Footer from '../../components/layout/Footer'
 import Button from '../../components/ui/Button'
@@ -41,6 +42,7 @@ function timeAgo(d) {
 
 export default function AgencyProfilePage() {
     const { id } = useParams() // agency id (UUID from agencies table)
+    const navigate = useNavigate()
 
     const [agency, setAgency] = useState(null)
     const [owner, setOwner] = useState(null)
@@ -61,6 +63,19 @@ export default function AgencyProfilePage() {
         if (!id) return
         fetchAll()
     }, [id])
+
+    useEffect(() => {
+        if (!selectedConsultant) return
+        supabase
+            .from('consultant_availability')
+            .select('*')
+            .eq('consultant_id', selectedConsultant)
+            .eq('is_active', true)
+            .then(({ data }) => {
+                setAvailability(data || [])
+                setSelectedSlot(null)
+            })
+    }, [selectedConsultant])
 
     async function fetchAll() {
         setLoading(true)
@@ -124,7 +139,7 @@ export default function AgencyProfilePage() {
     // All team languages
     const allLanguages = [...new Set([
         ...(owner?.languages || []),
-        ...members.flatMap(m => []),
+        ...members.flatMap(m => m.profile?.languages || []),
     ])]
 
     if (loading) {
@@ -161,6 +176,16 @@ export default function AgencyProfilePage() {
     const agencyName = agency.name || owner?.full_name || 'Agency'
     const totalConsultants = members.length + 1 // members + owner
 
+    async function handleShare() {
+        const url = window.location.href
+        if (navigator.share) {
+            await navigator.share({ title: agencyName, url })
+        } else {
+            await navigator.clipboard.writeText(url)
+            toast.success('Link copied to clipboard')
+        }
+    }
+
     return (
         <div className="min-h-screen bg-background-light dark:bg-background-dark">
             <PublicHeader />
@@ -182,7 +207,7 @@ export default function AgencyProfilePage() {
                             {/* Agency Header */}
                             <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden">
                                 <div className="absolute top-0 right-0 p-6 flex gap-3">
-                                    <button className="size-10 flex items-center justify-center rounded-full bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors" title="Share">
+                                    <button onClick={handleShare} className="size-10 flex items-center justify-center rounded-full bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors" title="Share">
                                         <span className="material-symbols-outlined text-[20px]">share</span>
                                     </button>
                                 </div>
@@ -495,11 +520,21 @@ export default function AgencyProfilePage() {
                                             </div>
                                         </div>
 
-                                        <Link to="/register">
-                                            <Button className="w-full shadow-lg shadow-primary/30">
-                                                {selectedSlot ? `Book ${selectedSlot}` : 'Confirm Booking'}
-                                            </Button>
-                                        </Link>
+                                        <Button
+                                            className="w-full shadow-lg shadow-primary/30"
+                                            onClick={() => navigate('/register', {
+                                                state: {
+                                                    bookingIntent: {
+                                                        agencyId: id,
+                                                        consultantId: selectedConsultant || agency?.owner_id,
+                                                        slot: selectedSlot,
+                                                        mode: meetingType,
+                                                    }
+                                                }
+                                            })}
+                                        >
+                                            {selectedSlot ? `Book ${selectedSlot}` : 'Confirm Booking'}
+                                        </Button>
 
                                         <div className="flex items-center justify-center gap-2 mt-4 text-xs text-slate-500">
                                             <span className="material-symbols-outlined text-[14px]">lock</span>

@@ -36,7 +36,7 @@ export default function UnclaimedProfilePage() {
     async function fetchProfile() {
         const { data, error } = await supabase
             .from('unclaimed_profiles')
-            .select('id, full_name, phone, bio, avatar_url, specializations, languages, years_experience, city, role')
+            .select('id, full_name, email, phone, bio, avatar_url, specializations, languages, years_experience, city, role')
             .eq('id', id)
             .eq('is_claimed', false)
             .single()

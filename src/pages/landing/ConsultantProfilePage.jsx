@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link, useParams, useNavigate, useLocation } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import PublicHeader from '../../components/layout/PublicHeader'
 import Footer from '../../components/layout/Footer'
 import Button from '../../components/ui/Button'
@@ -125,6 +126,16 @@ export default function ConsultantProfilePage() {
 
     const minPrice = services.length > 0 ? Math.min(...services.map(s => s.price || 0)) : null
 
+    async function handleShare() {
+        const url = window.location.href
+        if (navigator.share) {
+            await navigator.share({ title: profile.full_name, url })
+        } else {
+            await navigator.clipboard.writeText(url)
+            toast.success('Link copied to clipboard')
+        }
+    }
+
     if (loading) {
         return (
             <div className="min-h-screen bg-background-light dark:bg-background-dark">
@@ -185,7 +196,7 @@ export default function ConsultantProfilePage() {
                             {/* Profile Header */}
                             <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 md:p-8 border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden">
                                 <div className="absolute top-0 right-0 p-6 flex gap-3">
-                                    <button className="size-10 flex items-center justify-center rounded-full bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors" title="Share">
+                                    <button onClick={handleShare} className="size-10 flex items-center justify-center rounded-full bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors" title="Share">
                                         <span className="material-symbols-outlined text-[20px]">share</span>
                                     </button>
                                 </div>

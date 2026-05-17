@@ -32,7 +32,7 @@ export default function ServicesDirectoryPage() {
     const [appliedSearch, setAppliedSearch] = useState('')
     const [activeCategory, setActiveCategory] = useState('All Services')
     const [categories, setCategories] = useState(['All Services'])
-    const [sortBy, setSortBy] = useState('recommended')
+    const [sortBy, setSortBy] = useState('newest')
 
     useEffect(() => {
         fetchCategoriesAndRatings()
@@ -88,8 +88,7 @@ export default function ServicesDirectoryPage() {
 
         if (sortBy === 'price_asc') query = query.order('price', { ascending: true })
         else if (sortBy === 'price_desc') query = query.order('price', { ascending: false })
-        else if (sortBy === 'newest') query = query.order('created_at', { ascending: false })
-        else query = query.order('created_at', { ascending: false }) // recommended = newest for now
+        else query = query.order('created_at', { ascending: false })
 
         query = query.range(pageNum * PAGE_SIZE, (pageNum + 1) * PAGE_SIZE - 1)
 
@@ -112,9 +111,6 @@ export default function ServicesDirectoryPage() {
         return (r.sum / r.count).toFixed(1)
     }
 
-    // Split services into featured (first 3) and rest
-    const featuredServices = services.slice(0, 3)
-    const restServices = services.slice(3)
 
     return (
         <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
@@ -198,10 +194,9 @@ export default function ServicesDirectoryPage() {
                                     onChange={e => setSortBy(e.target.value)}
                                     className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 py-2.5 px-3 text-sm font-medium text-slate-900 dark:text-white focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                                 >
-                                    <option value="recommended">Recommended</option>
+                                    <option value="newest">Newest</option>
                                     <option value="price_asc">Price: Low to High</option>
                                     <option value="price_desc">Price: High to Low</option>
-                                    <option value="newest">Newest</option>
                                 </select>
                             </div>
                         </div>
@@ -223,116 +218,66 @@ export default function ServicesDirectoryPage() {
                             </div>
                         ) : (
                             <>
-                                {/* Featured Services (first 3) */}
-                                {featuredServices.length > 0 && page === 0 && (
-                                    <div className="mb-10 flex flex-col gap-6">
+                                {/* Services List */}
+                                <div className="flex flex-col gap-6">
+                                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
                                         <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                                            {appliedSearch ? `Results for "${appliedSearch}"` : 'Featured Services'}
+                                            {appliedSearch ? `Results for "${appliedSearch}"` : 'All Services'}
                                         </h2>
-                                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                                            {featuredServices.map((svc, idx) => {
-                                                const { icon, color, bg } = ICON_COLORS[idx % ICON_COLORS.length]
-                                                const avgRating = getAvgRating(svc.provider?.id)
-                                                return (
-                                                    <div key={svc.id} className="group relative flex flex-col justify-between overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
-                                                        <div className="mb-4">
-                                                            <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-lg ${bg} ${color}`}>
-                                                                <span className="material-symbols-outlined text-2xl">{icon}</span>
-                                                            </div>
-                                                            <h3 className="mb-2 text-lg font-bold text-slate-900 dark:text-white">{svc.title}</h3>
-                                                            <p className="mb-4 text-sm leading-relaxed text-slate-500 line-clamp-2">{svc.description}</p>
-                                                            {avgRating && (
-                                                                <div className="flex items-center gap-1.5">
-                                                                    <span className="material-symbols-outlined material-filled text-lg text-yellow-400">star</span>
-                                                                    <span className="text-sm font-bold text-slate-900 dark:text-white">{avgRating}</span>
-                                                                </div>
+                                    </div>
+                                    <div className="flex flex-col gap-4">
+                                        {services.map((svc, idx) => {
+                                            const { icon, color, bg } = ICON_COLORS[idx % ICON_COLORS.length]
+                                            const avgRating = getAvgRating(svc.provider?.id)
+                                            return (
+                                                <div key={svc.id} className="flex flex-col gap-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm transition-all hover:shadow-md sm:flex-row sm:items-center">
+                                                    <div className={`flex shrink-0 items-center justify-center rounded-lg ${bg} p-3 ${color} sm:h-16 sm:w-16`}>
+                                                        <span className="material-symbols-outlined text-3xl">{icon}</span>
+                                                    </div>
+                                                    <div className="flex flex-1 flex-col gap-1">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <h3 className="text-lg font-bold text-slate-900 dark:text-white">{svc.title}</h3>
+                                                            {svc.category && (
+                                                                <span className="rounded bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-600 dark:text-slate-300">{svc.category}</span>
                                                             )}
                                                         </div>
-                                                        <div className="mt-auto border-t border-slate-100 dark:border-slate-800 pt-4">
-                                                            <div className="mb-3 flex items-center justify-between text-xs text-slate-500">
-                                                                {svc.provider?.full_name && (
-                                                                    <span>by <span className="font-bold text-slate-900 dark:text-white">{svc.provider.full_name}</span></span>
-                                                                )}
-                                                                {svc.price && (
-                                                                    <span className="font-bold text-primary">${svc.price}/hr</span>
-                                                                )}
-                                                            </div>
-                                                            <Link to={`/services/${svc.id}`}
-                                                                className="w-full block text-center rounded-lg bg-primary py-2.5 text-sm font-bold text-white transition-colors hover:bg-blue-600"
-                                                            >
-                                                                View Details
-                                                            </Link>
+                                                        <p className="text-sm text-slate-500 line-clamp-2">{svc.description}</p>
+                                                        <div className="mt-1 flex items-center gap-4 text-xs font-medium text-slate-500">
+                                                            {svc.provider?.full_name && (
+                                                                <span className="flex items-center gap-1">
+                                                                    <span className="material-symbols-outlined text-sm">person</span>
+                                                                    {svc.provider.full_name}
+                                                                </span>
+                                                            )}
+                                                            {svc.duration_minutes && (
+                                                                <span className="flex items-center gap-1">
+                                                                    <span className="material-symbols-outlined text-sm">schedule</span>
+                                                                    {svc.duration_minutes} min
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     </div>
-                                                )
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* All Services List */}
-                                {restServices.length > 0 && (
-                                    <div className="flex flex-col gap-6">
-                                        <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
-                                            <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                                                {featuredServices.length > 0 ? 'More Services' : 'All Services'}
-                                            </h2>
-                                        </div>
-
-                                        <div className="flex flex-col gap-4">
-                                            {restServices.map((svc, idx) => {
-                                                const { icon, color, bg } = ICON_COLORS[(idx + 3) % ICON_COLORS.length]
-                                                const avgRating = getAvgRating(svc.provider?.id)
-                                                return (
-                                                    <div key={svc.id} className="flex flex-col gap-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm transition-all hover:shadow-md sm:flex-row sm:items-center">
-                                                        <div className={`flex shrink-0 items-center justify-center rounded-lg ${bg} p-3 ${color} sm:h-16 sm:w-16`}>
-                                                            <span className="material-symbols-outlined text-3xl">{icon}</span>
-                                                        </div>
-                                                        <div className="flex flex-1 flex-col gap-1">
-                                                            <div className="flex flex-wrap items-center gap-2">
-                                                                <h3 className="text-lg font-bold text-slate-900 dark:text-white">{svc.title}</h3>
-                                                                {svc.category && (
-                                                                    <span className="rounded bg-slate-100 dark:bg-slate-800 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-600 dark:text-slate-300">{svc.category}</span>
-                                                                )}
+                                                    <div className="flex shrink-0 flex-col gap-3 sm:w-40 sm:items-end">
+                                                        {avgRating && (
+                                                            <div className="flex items-center gap-1">
+                                                                <span className="material-symbols-outlined material-filled text-sm text-yellow-400">star</span>
+                                                                <span className="text-sm font-bold text-slate-900 dark:text-white">{avgRating}</span>
                                                             </div>
-                                                            <p className="text-sm text-slate-500 line-clamp-2">{svc.description}</p>
-                                                            <div className="mt-1 flex items-center gap-4 text-xs font-medium text-slate-500">
-                                                                {svc.provider?.full_name && (
-                                                                    <span className="flex items-center gap-1">
-                                                                        <span className="material-symbols-outlined text-sm">person</span>
-                                                                        {svc.provider.full_name}
-                                                                    </span>
-                                                                )}
-                                                                {svc.duration_minutes && (
-                                                                    <span className="flex items-center gap-1">
-                                                                        <span className="material-symbols-outlined text-sm">schedule</span>
-                                                                        {svc.duration_minutes} min
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex shrink-0 flex-col gap-3 sm:w-40 sm:items-end">
-                                                            {avgRating && (
-                                                                <div className="flex items-center gap-1">
-                                                                    <span className="material-symbols-outlined material-filled text-sm text-yellow-400">star</span>
-                                                                    <span className="text-sm font-bold text-slate-900 dark:text-white">{avgRating}</span>
-                                                                </div>
-                                                            )}
-                                                            {svc.price && (
-                                                                <p className="text-sm font-bold text-primary">${svc.price}/hr</p>
-                                                            )}
-                                                            <Link to={`/services/${svc.id}`}
-                                                                className="w-full rounded-lg bg-slate-100 dark:bg-slate-800 px-4 py-2 text-sm font-bold text-slate-900 dark:text-white transition-colors hover:bg-slate-200 dark:hover:bg-slate-700 text-center"
-                                                            >
-                                                                See Details
-                                                            </Link>
-                                                        </div>
+                                                        )}
+                                                        {svc.price && (
+                                                            <p className="text-sm font-bold text-primary">${svc.price}/hr</p>
+                                                        )}
+                                                        <Link to={`/services/${svc.id}`}
+                                                            className="w-full rounded-lg bg-slate-100 dark:bg-slate-800 px-4 py-2 text-sm font-bold text-slate-900 dark:text-white transition-colors hover:bg-slate-200 dark:hover:bg-slate-700 text-center"
+                                                        >
+                                                            See Details
+                                                        </Link>
                                                     </div>
-                                                )
-                                            })}
-                                        </div>
+                                                </div>
+                                            )
+                                        })}
                                     </div>
-                                )}
+                                </div>
 
                                 {/* Load More */}
                                 {hasMore && (

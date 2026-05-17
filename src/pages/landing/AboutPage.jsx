@@ -118,8 +118,8 @@ export default function AboutPage() {
                         <p className="text-slate-500 dark:text-slate-400 mb-4">We're growing fast and always looking for mission-driven people.</p>
                         <Link to="/support#contact"
                             className="inline-flex items-center gap-2 bg-primary text-white font-bold px-6 py-3 rounded-xl hover:bg-primary/90 transition-colors">
-                            <span className="material-symbols-outlined text-[18px]">work</span>
-                            View Open Roles
+                            <span className="material-symbols-outlined text-[18px]">mail</span>
+                            Get in Touch
                         </Link>
                     </div>
                 </div>
