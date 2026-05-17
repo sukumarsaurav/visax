@@ -6,11 +6,6 @@ import Button from '../../components/ui/Button'
 import { supabase } from '../../lib/supabase'
 import { Link } from 'react-router-dom'
 
-const subscriptionPlans = [
-    { name: 'Enterprise (Agency)', users: 0, share: 65, status: 'Stable', color: 'primary' },
-    { name: 'Pro Consultant',      users: 0, share: 25, status: 'Growing', color: 'indigo' },
-    { name: 'Basic Client',        users: 0, share: 10, status: 'Stable',  color: 'slate' },
-]
 
 export default function AdminDashboard() {
     const [stats, setStats] = useState(null)
@@ -21,11 +16,12 @@ export default function AdminDashboard() {
 
     async function fetchStats() {
         setLoading(true)
-        const [usersRes, casesRes, invoicesRes, appsRes] = await Promise.all([
+        const [usersRes, casesRes, invoicesRes, appsRes, pendingRes] = await Promise.all([
             supabase.from('profiles').select('role', { count: 'exact' }),
             supabase.from('cases').select('status', { count: 'exact' }),
             supabase.from('invoices').select('amount, status'),
             supabase.from('profiles').select('id, full_name, role, created_at').order('created_at', { ascending: false }).limit(5),
+            supabase.from('profiles').select('id', { count: 'exact' }).eq('application_status', 'pending_review'),
         ])
 
         const invoices = invoicesRes.data || []
@@ -39,7 +35,7 @@ export default function AdminDashboard() {
             totalUsers: usersRes.count || 0,
             totalCases: casesRes.count || 0,
             totalRevenue: `$${totalRevenue.toLocaleString()}`,
-            pendingApplications: (casesRes.data || []).filter(c => c.status === 'under_review').length,
+            pendingApplications: pendingRes.count || 0,
             roleMap,
         })
         setApplications(appsRes.data || [])
@@ -99,26 +95,40 @@ export default function AdminDashboard() {
                         <table className="w-full text-left text-sm">
                             <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-800">
                                 <tr>
-                                    <th className="px-6 py-3">Plan</th>
-                                    <th className="px-6 py-3">Revenue Share</th>
-                                    <th className="px-6 py-3 text-right">Status</th>
+                                    <th className="px-6 py-3">Segment</th>
+                                    <th className="px-6 py-3">User Share</th>
+                                    <th className="px-6 py-3 text-right">Count</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                {subscriptionPlans.map(plan => (
-                                    <tr key={plan.name} className="bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800/50">
-                                        <td className="px-6 py-4 font-semibold text-slate-900 dark:text-white">{plan.name}</td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-1.5 w-24 rounded-full bg-slate-100 dark:bg-slate-800">
-                                                    <div className={`h-1.5 rounded-full ${plan.color === 'primary' ? 'bg-primary' : plan.color === 'indigo' ? 'bg-indigo-500' : 'bg-slate-400'}`} style={{ width: `${plan.share}%` }} />
-                                                </div>
-                                                <span className="text-slate-600 dark:text-slate-400">{plan.share}%</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-right font-semibold text-emerald-600 dark:text-emerald-400">{plan.status}</td>
-                                    </tr>
-                                ))}
+                                {loading ? (
+                                    [1,2,3].map(i => <tr key={i}><td colSpan={3} className="px-6 py-3"><div className="h-5 animate-pulse rounded bg-slate-100 dark:bg-slate-800" /></td></tr>)
+                                ) : (() => {
+                                    const rm = stats?.roleMap || {}
+                                    const total = stats?.totalUsers || 1
+                                    const plans = [
+                                        { name: 'Agency Admins', count: rm['agency_admin'] || 0, color: 'bg-primary' },
+                                        { name: 'Consultants', count: (rm['individual'] || 0) + (rm['agency_member'] || 0), color: 'bg-indigo-500' },
+                                        { name: 'Clients', count: rm['client'] || 0, color: 'bg-slate-400' },
+                                    ]
+                                    return plans.map(plan => {
+                                        const share = Math.round((plan.count / total) * 100)
+                                        return (
+                                            <tr key={plan.name} className="bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800/50">
+                                                <td className="px-6 py-4 font-semibold text-slate-900 dark:text-white">{plan.name}</td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="h-1.5 w-24 rounded-full bg-slate-100 dark:bg-slate-800">
+                                                            <div className={`h-1.5 rounded-full ${plan.color}`} style={{ width: `${share}%` }} />
+                                                        </div>
+                                                        <span className="text-slate-600 dark:text-slate-400">{share}%</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-right font-semibold text-slate-700 dark:text-slate-300">{plan.count}</td>
+                                            </tr>
+                                        )
+                                    })
+                                })()}
                             </tbody>
                         </table>
                     </Card>
@@ -173,30 +183,47 @@ export default function AdminDashboard() {
                             <div className="h-32 animate-pulse rounded-lg bg-slate-100 dark:bg-slate-800 mt-4" />
                         ) : (
                             <>
-                                <div className="my-4 flex items-center justify-center">
-                                    <div className="relative flex size-36 items-center justify-center rounded-full"
-                                        style={{ background: 'conic-gradient(#136dec 0% 65%, #6366f1 65% 85%, #cbd5e1 85% 100%)' }}>
-                                        <div className="absolute inset-4 flex flex-col items-center justify-center rounded-full bg-white dark:bg-slate-900">
-                                            <span className="text-xl font-black text-slate-900 dark:text-white">{stats?.totalUsers || 0}</span>
-                                            <span className="text-[10px] text-slate-500">Total</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col gap-2">
-                                    {[
-                                        { label: 'Clients', percent: 65, color: 'bg-primary' },
-                                        { label: 'Consultants', percent: 20, color: 'bg-indigo-500' },
-                                        { label: 'Agencies', percent: 15, color: 'bg-slate-300' },
-                                    ].map(item => (
-                                        <div key={item.label} className="flex items-center justify-between text-sm">
-                                            <div className="flex items-center gap-2">
-                                                <span className={`size-3 rounded-full ${item.color}`} />
-                                                <span className="text-slate-600 dark:text-slate-300">{item.label}</span>
+                                {(() => {
+                                    const rm = stats?.roleMap || {}
+                                    const total = stats?.totalUsers || 1
+                                    const clients = rm['client'] || 0
+                                    const consultants = (rm['individual'] || 0) + (rm['agency_member'] || 0)
+                                    const agencies = rm['agency_admin'] || 0
+                                    const cp = Math.round((clients / total) * 100)
+                                    const conp = Math.round((consultants / total) * 100)
+                                    const ap = Math.round((agencies / total) * 100)
+                                    const gradient = `conic-gradient(#136dec 0% ${cp}%, #6366f1 ${cp}% ${cp + conp}%, #cbd5e1 ${cp + conp}% 100%)`
+                                    const items = [
+                                        { label: 'Clients', count: clients, percent: cp, color: 'bg-primary' },
+                                        { label: 'Consultants', count: consultants, percent: conp, color: 'bg-indigo-500' },
+                                        { label: 'Agencies', count: agencies, percent: ap, color: 'bg-slate-300' },
+                                    ]
+                                    return (
+                                        <>
+                                            <div className="my-4 flex items-center justify-center">
+                                                <div className="relative flex size-36 items-center justify-center rounded-full"
+                                                    style={{ background: gradient }}>
+                                                    <div className="absolute inset-4 flex flex-col items-center justify-center rounded-full bg-white dark:bg-slate-900">
+                                                        <span className="text-xl font-black text-slate-900 dark:text-white">{stats?.totalUsers || 0}</span>
+                                                        <span className="text-[10px] text-slate-500">Total</span>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <span className="font-bold text-slate-900 dark:text-white">{item.percent}%</span>
-                                        </div>
-                                    ))}
-                                </div>
+                                            <div className="flex flex-col gap-2">
+                                                {items.map(item => (
+                                                    <div key={item.label} className="flex items-center justify-between text-sm">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className={`size-3 rounded-full ${item.color}`} />
+                                                            <span className="text-slate-600 dark:text-slate-300">{item.label}</span>
+                                                            <span className="text-xs text-slate-400">({item.count})</span>
+                                                        </div>
+                                                        <span className="font-bold text-slate-900 dark:text-white">{item.percent}%</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </>
+                                    )
+                                })()}
                             </>
                         )}
                     </Card>

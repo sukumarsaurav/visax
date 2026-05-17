@@ -65,15 +65,17 @@ export default function AvailabilityPage() {
             setSlots(merged)
         }
 
-        // Also load profile settings
+        // Also load session settings from profile
         const { data: profile } = await supabase
             .from('profiles')
             .select('notification_preferences')
             .eq('id', user.id)
             .single()
-        if (profile?.notification_preferences?.meeting_link) {
-            setMeetingLink(profile.notification_preferences.meeting_link)
-        }
+        const prefs = profile?.notification_preferences || {}
+        if (prefs.meeting_link) setMeetingLink(prefs.meeting_link)
+        if (prefs.office_location) setOfficeLocation(prefs.office_location)
+        if (prefs.session_length) setSessionLength(prefs.session_length)
+        if (prefs.buffer_minutes !== undefined) setBufferMinutes(prefs.buffer_minutes)
 
         setLoading(false)
     }
@@ -96,6 +98,23 @@ export default function AvailabilityPage() {
         const { error } = await supabase
             .from('consultant_availability')
             .upsert(upsertData, { onConflict: 'consultant_id,weekday' })
+
+        // Save session settings to profile
+        const { data: existingProfile } = await supabase
+            .from('profiles')
+            .select('notification_preferences')
+            .eq('id', user.id)
+            .single()
+        const merged = {
+            ...(existingProfile?.notification_preferences || {}),
+            session_length: sessionLength,
+            buffer_minutes: bufferMinutes,
+            meeting_link: meetingLink,
+            office_location: officeLocation,
+        }
+        await supabase.from('profiles')
+            .update({ notification_preferences: merged })
+            .eq('id', user.id)
 
         if (!error) {
             setToast('Availability saved!')

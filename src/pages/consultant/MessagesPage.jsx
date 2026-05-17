@@ -99,7 +99,7 @@ export default function MessagesPage() {
     }
 
     return (
-        <div className="flex h-[calc(100vh-8rem)] gap-0 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+        <div className="flex h-[calc(100vh-4rem)] gap-0 overflow-hidden bg-white dark:bg-slate-900 -m-4 -mb-20 md:-m-6 md:-mb-6 border-t border-slate-200 dark:border-slate-800">
             {/* Sidebar */}
             <div className="w-80 flex-shrink-0 border-r border-slate-200 dark:border-slate-800 flex flex-col">
                 <div className="p-4 border-b border-slate-100 dark:border-slate-800">

@@ -359,7 +359,6 @@ export const navItems = {
         { label: "Integrations", icon: "extension", path: "/admin/integrations" },
         { label: "Audit Log", icon: "verified_user", path: "/admin/audit-log" },
         { label: "Communication", icon: "mail", path: "/admin/communication-settings" },
-        { label: "Content", icon: "article", path: "/admin/content-management" },
         { label: "Announcements", icon: "campaign", path: "/admin/announcements" },
         { label: "Localization", icon: "language", path: "/admin/localization" },
         { label: "Payments", icon: "credit_card", path: "/admin/payment-settings" },

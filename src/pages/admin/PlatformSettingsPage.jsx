@@ -71,6 +71,8 @@ export default function PlatformSettingsPage() {
     const [maintenanceMsg, setMaintenanceMsg] = useState('We are currently performing scheduled maintenance. We will be back shortly.')
     const [intSettings, setIntSettings] = useState({ stripe: { enabled: true, mode: 'live' }, zoom: { enabled: true }, sendgrid: { enabled: false }, hubspot: { enabled: false } })
     const [social, setSocial] = useState({ twitter: '', linkedin: '', facebook: '', instagram: '', youtube: '' })
+    const [legal, setLegal] = useState({ terms_url: '', privacy_url: '' })
+    const [uploadingLegal, setUploadingLegal] = useState({ terms: false, privacy: false })
 
     const showToast = (msg, type = 'success') => {
         setToast({ msg, type })
@@ -88,6 +90,7 @@ export default function PlatformSettingsPage() {
                     if (row.key === 'integrations') setIntSettings(v => ({ ...v, ...row.value }))
                     if (row.key === 'social_links') setSocial(v => ({ ...v, ...row.value }))
                     if (row.key === 'maintenance_message') setMaintenanceMsg(row.value?.message || maintenanceMsg)
+                    if (row.key === 'legal') setLegal(v => ({ ...v, ...row.value }))
                     if (row.key === 'general') setLastSaved(row.updated_at ? new Date(row.updated_at).toLocaleString() : null)
                 }
             }
@@ -110,6 +113,7 @@ export default function PlatformSettingsPage() {
         if (activeTab === 'security') toSave.push(['security', security])
         if (activeTab === 'social') toSave.push(['social_links', social])
         if (activeTab === 'integrations') toSave.push(['integrations', intSettings])
+        if (activeTab === 'legal') toSave.push(['legal', legal])
         if (activeTab === 'maintenance') toSave.push(['maintenance_message', { message: maintenanceMsg }], ['general', { ...general }])
 
         let error = null
@@ -343,24 +347,58 @@ export default function PlatformSettingsPage() {
                         <div className="p-6 space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {[
-                                    { label: 'Terms of Service', icon: 'description' },
-                                    { label: 'Privacy Policy', icon: 'privacy_tip' },
-                                ].map(doc => (
-                                    <div key={doc.label} className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-6 flex flex-col items-center justify-center text-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group">
-                                        <span className="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors text-[32px]">{doc.icon}</span>
-                                        <h3 className="text-sm font-bold text-slate-900 dark:text-white">{doc.label}</h3>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400">Click to upload PDF</p>
-                                    </div>
-                                ))}
+                                    { label: 'Terms of Service', icon: 'description', key: 'terms' },
+                                    { label: 'Privacy Policy', icon: 'privacy_tip', key: 'privacy' },
+                                ].map(doc => {
+                                    const inputId = `legal-upload-${doc.key}`
+                                    const isUploading = uploadingLegal[doc.key]
+                                    const handleUpload = async (e) => {
+                                        const file = e.target.files?.[0]
+                                        if (!file) return
+                                        setUploadingLegal(u => ({ ...u, [doc.key]: true }))
+                                        const path = `legal/${doc.key}-${Date.now()}.pdf`
+                                        const { error } = await supabase.storage.from('documents').upload(path, file, { upsert: true })
+                                        if (error) {
+                                            showToast('Upload failed: ' + error.message, 'error')
+                                        } else {
+                                            const { data: urlData } = supabase.storage.from('documents').getPublicUrl(path)
+                                            const urlKey = `${doc.key}_url`
+                                            setLegal(l => ({ ...l, [urlKey]: urlData.publicUrl }))
+                                            showToast(`${doc.label} uploaded`)
+                                        }
+                                        setUploadingLegal(u => ({ ...u, [doc.key]: false }))
+                                    }
+                                    return (
+                                        <label key={doc.label} htmlFor={inputId}
+                                            className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-6 flex flex-col items-center justify-center text-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer group">
+                                            <input id={inputId} type="file" accept="application/pdf" className="hidden" onChange={handleUpload} />
+                                            <span className={`material-symbols-outlined text-[32px] transition-colors ${isUploading ? 'text-primary animate-pulse' : 'text-slate-400 group-hover:text-primary'}`}>{doc.icon}</span>
+                                            <h3 className="text-sm font-bold text-slate-900 dark:text-white">{doc.label}</h3>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400">{isUploading ? 'Uploading...' : 'Click to upload PDF'}</p>
+                                            {legal[`${doc.key}_url`] && (
+                                                <a href={legal[`${doc.key}_url`]} target="_blank" rel="noreferrer"
+                                                    className="text-xs text-primary hover:underline mt-1" onClick={e => e.stopPropagation()}>
+                                                    View current
+                                                </a>
+                                            )}
+                                        </label>
+                                    )
+                                })}
                             </div>
                             <div className="flex flex-col gap-2">
                                 <label className="text-sm font-medium text-slate-900 dark:text-slate-200">Terms of Service URL</label>
-                                <input className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white h-11 px-4 text-sm focus:ring-primary focus:border-primary"
+                                <input
+                                    value={legal.terms_url || ''}
+                                    onChange={e => setLegal(l => ({ ...l, terms_url: e.target.value }))}
+                                    className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white h-11 px-4 text-sm focus:ring-primary focus:border-primary"
                                     placeholder="https://..." />
                             </div>
                             <div className="flex flex-col gap-2">
                                 <label className="text-sm font-medium text-slate-900 dark:text-slate-200">Privacy Policy URL</label>
-                                <input className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white h-11 px-4 text-sm focus:ring-primary focus:border-primary"
+                                <input
+                                    value={legal.privacy_url || ''}
+                                    onChange={e => setLegal(l => ({ ...l, privacy_url: e.target.value }))}
+                                    className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white h-11 px-4 text-sm focus:ring-primary focus:border-primary"
                                     placeholder="https://..." />
                             </div>
                         </div>

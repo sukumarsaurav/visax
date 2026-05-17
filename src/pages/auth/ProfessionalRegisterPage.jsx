@@ -1,8 +1,10 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import toast from 'react-hot-toast'
 import { friendlyError } from '../../lib/errors'
+import { supabase } from '../../lib/supabase'
+import { uploadAvatar, uploadDocument, validateDocFile } from '../../lib/storage'
 
 const expertiseAreas = [
     'Skilled Worker Visa',
@@ -26,26 +28,48 @@ const agencyPlans = [
     {
         id: 'starter',
         name: 'Starter',
-        price: 199,
+        price: 4999,
+        maxTeamMembers: 3,
         description: 'Perfect for small firms just getting started.',
-        features: ['Up to 3 Team Members', '50 Cases/month', 'Basic Analytics']
+        features: ['Up to 3 Team Members', '50 Cases/month', 'Basic Analytics'],
     },
     {
         id: 'growth',
         name: 'Growth',
-        price: 399,
+        price: 8999,
+        maxTeamMembers: 15,
         description: 'For expanding agencies with active caseloads.',
         features: ['Up to 15 Team Members', '250 Cases/month', 'Advanced Reporting', 'Priority Support'],
-        recommended: true
+        recommended: true,
     },
     {
         id: 'enterprise',
         name: 'Enterprise',
-        price: 899,
+        price: 14999,
+        maxTeamMembers: null,
         description: 'Full-scale for large multinational firms.',
-        features: ['Unlimited Members', 'Unlimited Cases', 'Dedicated Account Manager', 'API Access']
-    }
+        features: ['Unlimited Members', 'Unlimited Cases', 'Dedicated Account Manager', 'API Access'],
+    },
 ]
+
+// Maps team size choice → minimum required plan
+const TEAM_SIZE_OPTIONS = [
+    { value: '1-3',   label: '1–3 people',   plan: 'starter'    },
+    { value: '4-15',  label: '4–15 people',  plan: 'growth'     },
+    { value: '16-50', label: '16–50 people', plan: 'enterprise' },
+    { value: '50+',   label: '50+ people',   plan: 'enterprise' },
+]
+
+async function loadRazorpay() {
+    return new Promise((resolve) => {
+        if (window.Razorpay) { resolve(true); return }
+        const script = document.createElement('script')
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+        script.onload = () => resolve(true)
+        script.onerror = () => resolve(false)
+        document.body.appendChild(script)
+    })
+}
 
 const stepConfig = [
     { number: 1, label: 'Account & Basics', icon: 'badge' },
@@ -143,9 +167,15 @@ export default function ProfessionalRegisterPage() {
     const [step, setStep] = useState(1)
     const [accountType, setAccountType] = useState('individual')
     const [submitting, setSubmitting] = useState(false)
+    const [submitStatus, setSubmitStatus] = useState('')
     const [errors, setErrors] = useState({})
     const [uploadedFiles, setUploadedFiles] = useState([])
     const fileInputRef = useRef(null)
+
+    // Profile photo (stored locally until submit)
+    const [avatarFile, setAvatarFile] = useState(null)
+    const [avatarPreview, setAvatarPreview] = useState(null)
+    const photoInputRef = useRef(null)
 
     // Step 1 - Basic Info
     const [firstName, setFirstName] = useState('')
@@ -176,6 +206,19 @@ export default function ProfessionalRegisterPage() {
 
     const totalSteps = accountType === 'agency' ? 3 : 2
 
+    // Auto-select minimum viable plan when team size changes
+    useEffect(() => {
+        if (!teamSize) return
+        const match = TEAM_SIZE_OPTIONS.find(o => o.value === teamSize)
+        if (!match) return
+        const currentPlan = agencyPlans.find(p => p.id === selectedPlan)
+        const requiredPlan = agencyPlans.find(p => p.id === match.plan)
+        // Only upgrade, never downgrade automatically
+        if (currentPlan && requiredPlan && requiredPlan.price > currentPlan.price) {
+            setSelectedPlan(match.plan)
+        }
+    }, [teamSize])
+
     const validateStep1 = () => {
         const e = {}
         if (!firstName.trim()) e.firstName = 'Required'
@@ -205,22 +248,188 @@ export default function ProfessionalRegisterPage() {
         setSubmitting(true)
         try {
             const role = accountType === 'agency' ? 'agency_admin' : 'individual'
-            const { error } = await signUp({
+            setSubmitStatus('Creating account…')
+
+            const { data, error } = await signUp({
                 email,
                 password,
                 fullName: `${firstName} ${lastName}`.trim(),
                 role,
             })
+
             if (error) {
                 toast.error(friendlyError(error))
-            } else {
-                navigate('/professional-submitted')
+                setSubmitting(false)
+                setSubmitStatus('')
+                return
             }
+
+            const userId = data?.user?.id
+            if (!userId) {
+                navigate('/professional-submitted')
+                return
+            }
+
+            // Upload profile photo
+            let avatarUrl = null
+            if (avatarFile) {
+                try {
+                    setSubmitStatus('Uploading profile photo…')
+                    avatarUrl = await uploadAvatar(avatarFile, userId)
+                } catch (e) {
+                    toast.error('Photo upload failed — you can add it later in Settings.')
+                }
+            }
+
+            // Upload credential documents
+            const docPaths = []
+            if (uploadedFiles.length > 0) {
+                setSubmitStatus(`Uploading ${uploadedFiles.length} document${uploadedFiles.length > 1 ? 's' : ''}…`)
+                for (const file of uploadedFiles) {
+                    try {
+                        const path = await uploadDocument(file, userId)
+                        docPaths.push({ name: file.name, path, size: file.size, mime_type: file.type })
+                    } catch (e) {
+                        toast.error(`Failed to upload ${file.name}`)
+                    }
+                }
+            }
+
+            // Update profile with all collected fields
+            const profileUpdate = {
+                bio: bio || null,
+                years_experience: experience ? parseInt(experience) || null : null,
+                languages: languages.length ? languages : null,
+                specializations: expertise.length ? expertise : null,
+                title: title || null,
+                services: services.length ? services : null,
+                phone: phone ? `${phoneCode} ${phone}`.trim() : null,
+                city: city || null,
+            }
+            if (avatarUrl) profileUpdate.avatar_url = avatarUrl
+
+            // Agency-specific fields
+            if (accountType === 'agency') {
+                profileUpdate.agency_name = agencyName || null
+                profileUpdate.registration_number = registrationNumber || null
+                profileUpdate.team_size = teamSize || null
+                profileUpdate.business_address = [address, stateName, postalCode].filter(Boolean).join(', ') || null
+                profileUpdate.postal_code = postalCode || null
+                profileUpdate.selected_plan = selectedPlan || null
+            }
+
+            await supabase.from('profiles').update(profileUpdate).eq('id', userId)
+
+            // Store credential document records
+            if (docPaths.length > 0) {
+                await supabase.from('documents').insert(
+                    docPaths.map(d => ({
+                        name: d.name,
+                        file_path: d.path,
+                        file_size: d.size,
+                        mime_type: d.mime_type,
+                        uploaded_by: userId,
+                        client_id: userId,
+                    }))
+                )
+            }
+
+            // ── Razorpay payment (agencies only) ──────────────────────────
+            if (accountType === 'agency') {
+                setSubmitStatus('Opening payment…')
+
+                const razorpayLoaded = await loadRazorpay()
+                if (!razorpayLoaded) {
+                    toast.error('Could not load payment gateway. Please check your connection.')
+                    setSubmitting(false)
+                    setSubmitStatus('')
+                    return
+                }
+
+                const { data: orderData, error: orderErr } = await supabase.functions.invoke('create-razorpay-order', {
+                    body: { planId: selectedPlan, userId },
+                })
+                if (orderErr || orderData?.error) {
+                    toast.error('Payment setup failed. Please contact support.')
+                    setSubmitting(false)
+                    setSubmitStatus('')
+                    return
+                }
+
+                await new Promise((resolve, reject) => {
+                    const plan = agencyPlans.find(p => p.id === selectedPlan)
+                    const options = {
+                        key: orderData.key_id,
+                        amount: orderData.amount,
+                        currency: 'INR',
+                        name: 'Immizy',
+                        description: `${plan?.name || selectedPlan} — Monthly Subscription`,
+                        image: 'https://immizy.in/logo.png',
+                        order_id: orderData.order_id,
+                        handler: async (response) => {
+                            try {
+                                setSubmitStatus('Verifying payment…')
+                                const { error: verifyErr } = await supabase.functions.invoke('verify-razorpay-payment', {
+                                    body: {
+                                        razorpay_payment_id: response.razorpay_payment_id,
+                                        razorpay_order_id:   response.razorpay_order_id,
+                                        razorpay_signature:  response.razorpay_signature,
+                                        userId,
+                                        planId: selectedPlan,
+                                    },
+                                })
+                                if (verifyErr) throw new Error(verifyErr.message)
+                                resolve()
+                            } catch (e) {
+                                reject(e)
+                            }
+                        },
+                        modal: { ondismiss: () => reject(new Error('cancelled')) },
+                        prefill: {
+                            name:    `${firstName} ${lastName}`.trim(),
+                            email:   email,
+                            contact: phone ? `${phoneCode}${phone}` : '',
+                        },
+                        theme: { color: '#4F46E5' },
+                    }
+                    const rzp = new window.Razorpay(options)
+                    rzp.on('payment.failed', (r) => reject(new Error(r.error?.description || 'Payment failed')))
+                    rzp.open()
+                }).catch((err) => {
+                    if (err.message === 'cancelled') {
+                        toast('Payment cancelled. You can complete it later from your dashboard.', { icon: '⚠️' })
+                    } else {
+                        toast.error(`Payment failed: ${err.message}`)
+                    }
+                })
+            }
+
+            navigate('/professional-submitted')
         } catch (err) {
             toast.error('Something went wrong. Please try again.')
         } finally {
             setSubmitting(false)
+            setSubmitStatus('')
         }
+    }
+
+    function handlePhotoSelect(e) {
+        const file = e.target.files?.[0]
+        if (!file) return
+        if (!file.type.startsWith('image/')) { toast.error('Please select an image file'); return }
+        if (file.size > 5 * 1024 * 1024) { toast.error('Photo must be under 5 MB'); return }
+        setAvatarFile(file)
+        setAvatarPreview(URL.createObjectURL(file))
+    }
+
+    function handleDocSelect(e) {
+        const files = Array.from(e.target.files)
+        const invalid = files.filter(f => validateDocFile(f))
+        if (invalid.length) { toast.error(`${invalid[0].name}: ${validateDocFile(invalid[0])}`); return }
+        setUploadedFiles(prev => {
+            const existing = prev.map(f => f.name)
+            return [...prev, ...files.filter(f => !existing.includes(f.name))]
+        })
     }
 
     const toggleExpertise = (area) =>
@@ -527,22 +736,37 @@ export default function ProfessionalRegisterPage() {
                                 </div>
                             </div>
 
+                            {/* Profile Photo */}
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Profile Photo <span className="font-normal text-slate-400">(optional)</span></label>
+                                <div className="flex items-center gap-4">
+                                    <div className="size-16 rounded-full overflow-hidden border-2 border-slate-200 dark:border-slate-600 shrink-0 bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-black text-xl">
+                                        {avatarPreview
+                                            ? <img src={avatarPreview} alt="" className="w-full h-full object-cover" />
+                                            : <span>{(firstName?.[0] || '') + (lastName?.[0] || '') || '?'}</span>
+                                        }
+                                    </div>
+                                    <div>
+                                        <button type="button" onClick={() => photoInputRef.current?.click()}
+                                            className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold border border-slate-300 dark:border-slate-600 rounded-lg text-slate-700 dark:text-slate-200 hover:border-primary hover:text-primary transition-colors">
+                                            <span className="material-symbols-outlined text-[15px]">photo_camera</span>
+                                            {avatarPreview ? 'Change photo' : 'Upload photo'}
+                                        </button>
+                                        <p className="text-[11px] text-slate-400 mt-1">JPG, PNG, WebP · max 5 MB</p>
+                                    </div>
+                                    <input ref={photoInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handlePhotoSelect} className="hidden" />
+                                </div>
+                            </div>
+
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Credentials & Licences</label>
                                 <input
                                     ref={fileInputRef}
                                     type="file"
-                                    accept=".pdf,.jpg,.jpeg,.png"
+                                    accept=".pdf,.jpg,.jpeg,.png,.webp"
                                     multiple
                                     className="hidden"
-                                    onChange={(e) => {
-                                        const files = Array.from(e.target.files)
-                                        setUploadedFiles(prev => {
-                                            const existing = prev.map(f => f.name)
-                                            const newFiles = files.filter(f => !existing.includes(f.name))
-                                            return [...prev, ...newFiles]
-                                        })
-                                    }}
+                                    onChange={handleDocSelect}
                                 />
                                 <div
                                     onClick={() => fileInputRef.current?.click()}
@@ -550,10 +774,11 @@ export default function ProfessionalRegisterPage() {
                                     onDrop={(e) => {
                                         e.preventDefault()
                                         const files = Array.from(e.dataTransfer.files)
+                                        const invalid = files.find(f => validateDocFile(f))
+                                        if (invalid) { toast.error(`${invalid.name}: ${validateDocFile(invalid)}`); return }
                                         setUploadedFiles(prev => {
                                             const existing = prev.map(f => f.name)
-                                            const newFiles = files.filter(f => !existing.includes(f.name))
-                                            return [...prev, ...newFiles]
+                                            return [...prev, ...files.filter(f => !existing.includes(f.name))]
                                         })
                                     }}
                                     className="w-full rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/30 p-6 flex flex-col items-center justify-center gap-2 text-center hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:border-primary/40 transition-colors cursor-pointer group"
@@ -633,12 +858,22 @@ export default function ProfessionalRegisterPage() {
                                             onChange={(e) => setTeamSize(e.target.value)}
                                             className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                                         >
-                                            <option value="">Select size</option>
-                                            <option value="1-5">1–5 Employees</option>
-                                            <option value="6-20">6–20 Employees</option>
-                                            <option value="21-50">21–50 Employees</option>
-                                            <option value="50+">50+ Employees</option>
+                                            <option value="">Select team size</option>
+                                            {TEAM_SIZE_OPTIONS.map(o => (
+                                                <option key={o.value} value={o.value}>{o.label}</option>
+                                            ))}
                                         </select>
+                                        {teamSize && (() => {
+                                            const match = TEAM_SIZE_OPTIONS.find(o => o.value === teamSize)
+                                            const plan = agencyPlans.find(p => p.id === match?.plan)
+                                            if (!plan) return null
+                                            return (
+                                                <p className="text-xs text-primary mt-1 flex items-center gap-1">
+                                                    <span className="material-symbols-outlined text-[13px]">info</span>
+                                                    Your team size requires the <strong>{plan.name}</strong> plan or above
+                                                </p>
+                                            )
+                                        })()}
                                     </div>
                                 </div>
                                 <div className="flex flex-col gap-1.5">
@@ -660,7 +895,23 @@ export default function ProfessionalRegisterPage() {
 
                             {/* Plan Selection */}
                             <div>
-                                <p className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-3">Choose Your Plan</p>
+                                <div className="flex items-center justify-between mb-3">
+                                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Choose Your Plan</p>
+                                    {(() => {
+                                        const activePlan = agencyPlans.find(p => p.id === selectedPlan)
+                                        const teamMatch = TEAM_SIZE_OPTIONS.find(o => o.value === teamSize)
+                                        const minPlan = agencyPlans.find(p => p.id === teamMatch?.plan)
+                                        if (activePlan && minPlan && minPlan.price > activePlan.price) {
+                                            return (
+                                                <span className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                                                    <span className="material-symbols-outlined text-[13px]">warning</span>
+                                                    Upgrade required for your team size
+                                                </span>
+                                            )
+                                        }
+                                        return null
+                                    })()}
+                                </div>
                                 <div className="flex flex-col gap-3">
                                     {agencyPlans.map((plan) => (
                                         <label key={plan.id} className="relative cursor-pointer">
@@ -690,7 +941,7 @@ export default function ProfessionalRegisterPage() {
                                                     </div>
                                                 </div>
                                                 <div className="text-right shrink-0 ml-4">
-                                                    <p className="text-xl font-black text-slate-900 dark:text-white">${plan.price}</p>
+                                                    <p className="text-xl font-black text-slate-900 dark:text-white">₹{plan.price.toLocaleString('en-IN')}</p>
                                                     <p className="text-xs text-slate-500">/month</p>
                                                 </div>
                                             </div>
@@ -735,7 +986,7 @@ export default function ProfessionalRegisterPage() {
                             {submitting ? (
                                 <>
                                     <span className="animate-spin material-symbols-outlined text-[16px]">progress_activity</span>
-                                    Submitting…
+                                    {submitStatus || 'Submitting…'}
                                 </>
                             ) : step === totalSteps ? (
                                 <>

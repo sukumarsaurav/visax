@@ -69,7 +69,7 @@ export default function ApplicationReviewPage() {
     useEffect(() => { fetchApplications() }, [activeFilter, search])
     useEffect(() => {
         if (selectedApp) {
-            setNote('')
+            setNote(selectedApp.notification_preferences?.application_notes || '')
             fetchDocuments(selectedApp.id)
         }
     }, [selectedApp?.id])
@@ -82,9 +82,19 @@ export default function ApplicationReviewPage() {
         return `${Math.floor(h / 24)}d ago`
     }
 
+    const saveNote = async (profileId) => {
+        if (!note.trim()) return
+        const { data: existing } = await supabase.from('profiles').select('notification_preferences').eq('id', profileId).single()
+        const prefs = existing?.notification_preferences || {}
+        await supabase.from('profiles').update({
+            notification_preferences: { ...prefs, application_notes: note.trim() },
+        }).eq('id', profileId)
+    }
+
     const handleApprove = async () => {
         if (!selectedApp) return
         setSaving(true)
+        await saveNote(selectedApp.id)
         const { error } = await supabase.from('profiles').update({
             application_status: 'approved',
             is_verified: true,
@@ -104,6 +114,7 @@ export default function ApplicationReviewPage() {
     const handleReject = async () => {
         if (!selectedApp) return
         setSaving(true)
+        await saveNote(selectedApp.id)
         const { error } = await supabase.from('profiles').update({
             application_status: 'rejected',
             is_verified: false,
@@ -113,7 +124,7 @@ export default function ApplicationReviewPage() {
             showToast('Failed: ' + error.message, 'error')
         } else {
             showToast('Application rejected')
-            slackNotify('application.rejected', { name: selectedApp.full_name, role: selectedApp.role, note: '' })
+            slackNotify('application.rejected', { name: selectedApp.full_name, role: selectedApp.role, note: note.trim() })
             trackEvent('application_rejected', { role: selectedApp.role })
             fetchApplications()
         }

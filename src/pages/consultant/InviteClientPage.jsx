@@ -63,19 +63,39 @@ export default function InviteClientPage() {
 
         const token = crypto.randomUUID()
         const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        const clientEmail = email.toLowerCase().trim()
 
-        const { error } = await supabase.from('client_invitations').insert({
+        const { data: inv, error } = await supabase.from('client_invitations').insert({
             consultant_id: user.id,
-            client_email: email.toLowerCase().trim(),
+            client_email: clientEmail,
             status: 'pending',
             permissions,
+            message,
             token,
             expires_at: expiresAt,
-        })
+        }).select().single()
 
-        if (!error) {
+        if (!error && inv) {
+            // Send the invitation email via edge function
+            const { data: consultantProfile } = await supabase
+                .from('profiles')
+                .select('full_name')
+                .eq('id', user.id)
+                .single()
+
+            await supabase.functions.invoke('send-client-invitation', {
+                body: {
+                    to: clientEmail,
+                    consultantName: consultantProfile?.full_name || 'Your consultant',
+                    message,
+                    token,
+                    expiresAt,
+                },
+            })
+
             setToast('Invitation sent!')
             setEmail('')
+            setMessage('Welcome to the Immizy Client Portal. Please click the link below to set up your account and access your case information.')
             fetchInvitations()
         }
         setSending(false)

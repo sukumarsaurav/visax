@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
-import { NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { NavLink, useNavigate, useLocation, Link } from 'react-router-dom'
 import { clsx } from '../../utils/clsx'
 import { navItems } from '../../data/navConfig'
 import Avatar from '../ui/Avatar'
@@ -94,6 +94,14 @@ function NavGroup({ group, items, collapsed, onToggle }) {
     )
 }
 
+const settingsPathMap = {
+    client:        '/client/settings',
+    individual:    '/consultant/settings',
+    agency_admin:  '/agency/settings',
+    agency_member: '/team-member/settings',
+    admin:         '/admin/platform-settings',
+}
+
 export default function Sidebar({ userType = 'client', consultantType = null, user }) {
     const navigate = useNavigate()
     const { signOut } = useAuth()
@@ -104,11 +112,24 @@ export default function Sidebar({ userType = 'client', consultantType = null, us
     const logo = logoConfig[logoKey] || logoConfig.client
 
     const [collapsedGroups, setCollapsedGroups] = useState(() => getStoredGroupState())
+    const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+    const profileRef = useRef()
 
     // Persist collapsed state
     useEffect(() => {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(collapsedGroups))
     }, [collapsedGroups])
+
+    // Close profile menu on outside click
+    useEffect(() => {
+        function onOutside(e) {
+            if (profileRef.current && !profileRef.current.contains(e.target)) {
+                setProfileMenuOpen(false)
+            }
+        }
+        document.addEventListener('mousedown', onOutside)
+        return () => document.removeEventListener('mousedown', onOutside)
+    }, [])
 
     const toggleGroup = useCallback((groupName) => {
         setCollapsedGroups(prev => ({ ...prev, [groupName]: !prev[groupName] }))
@@ -122,6 +143,8 @@ export default function Sidebar({ userType = 'client', consultantType = null, us
             navigate('/login')
         }
     }, [signOut, navigate])
+
+    const settingsPath = settingsPathMap[navKey] || settingsPathMap[userType]
 
     return (
         <aside className="hidden w-64 flex-col justify-between border-r border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 md:flex" aria-label="Main navigation">
@@ -164,25 +187,53 @@ export default function Sidebar({ userType = 'client', consultantType = null, us
                 </nav>
             </div>
 
-            {/* User Profile & Logout */}
-            <div className="flex flex-col gap-3">
-                {user && (
-                    <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-800/50">
+            {/* Profile card with drop-up menu */}
+            {user && (
+                <div ref={profileRef} className="relative">
+                    {/* Drop-up menu */}
+                    {profileMenuOpen && (
+                        <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden z-50">
+                            {settingsPath && (
+                                <Link
+                                    to={settingsPath}
+                                    onClick={() => setProfileMenuOpen(false)}
+                                    className="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                                >
+                                    <span className="material-symbols-outlined text-[18px] text-slate-400">settings</span>
+                                    Settings
+                                </Link>
+                            )}
+                            <div className="h-px bg-slate-100 dark:bg-slate-700" />
+                            <button
+                                onClick={() => { setProfileMenuOpen(false); handleLogout() }}
+                                className="flex w-full items-center gap-3 px-4 py-3 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                            >
+                                <span className="material-symbols-outlined text-[18px]">logout</span>
+                                Log Out
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Profile trigger */}
+                    <button
+                        onClick={() => setProfileMenuOpen(o => !o)}
+                        className={`flex w-full items-center gap-3 rounded-xl border p-3 transition-all text-left ${
+                            profileMenuOpen
+                                ? 'border-primary/40 bg-primary/5 dark:bg-primary/10'
+                                : 'border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-800/50 dark:hover:bg-slate-800'
+                        }`}
+                    >
                         <Avatar src={user.avatar_url} alt={user.full_name} size="md" />
-                        <div className="flex min-w-0 flex-col">
+                        <div className="flex min-w-0 flex-col flex-1">
                             <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{user.full_name}</p>
                             <p className="truncate text-[11px] text-slate-500 dark:text-slate-400">{user.email}</p>
                         </div>
-                    </div>
-                )}
-                <button
-                    onClick={handleLogout}
-                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-red-600 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-red-400"
-                >
-                    <span className="material-symbols-outlined text-[20px]" aria-hidden="true">logout</span>
-                    Log Out
-                </button>
-            </div>
+                        <span className={`material-symbols-outlined text-[16px] text-slate-400 transition-transform shrink-0 ${profileMenuOpen ? 'rotate-180' : ''}`}>
+                            expand_more
+                        </span>
+                    </button>
+                </div>
+            )}
         </aside>
     )
 }

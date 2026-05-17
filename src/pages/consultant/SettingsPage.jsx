@@ -1,377 +1,473 @@
 import { useState, useEffect } from 'react'
-import Button from '../../components/ui/Button'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
+import AvatarUpload from '../../components/ui/AvatarUpload'
+import { uploadAvatar } from '../../lib/storage'
+import toast from 'react-hot-toast'
 
-const settingsTabs = [
-    { id: 'profile', label: 'Profile', icon: 'person' },
-    { id: 'notifications', label: 'Notifications', icon: 'notifications' },
-    { id: 'security', label: 'Security', icon: 'lock' },
-    { id: 'language', label: 'Language & Region', icon: 'language' },
-]
+/* ─── Primitives ─────────────────────────────────────────── */
 
-function Toast({ msg, onClose }) {
-    useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t) }, [])
+function Card({ title, description, children, className = '' }) {
     return (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-xl bg-slate-900 dark:bg-white px-5 py-3 text-white dark:text-slate-900 shadow-xl text-sm font-medium">
-            <span className="material-symbols-outlined text-emerald-400 dark:text-emerald-600">check_circle</span>
-            {msg}
+        <div className={`bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden ${className}`}>
+            {(title || description) && (
+                <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800">
+                    {title && <h2 className="text-sm font-bold text-slate-900 dark:text-white">{title}</h2>}
+                    {description && <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{description}</p>}
+                </div>
+            )}
+            <div className="p-6">{children}</div>
         </div>
     )
 }
 
-function InputField({ label, icon, ...props }) {
+function Field({ label, hint, span2 = false, children }) {
     return (
-        <label className="block">
-            <span className="mb-2 block text-sm font-medium text-slate-900 dark:text-slate-200">{label}</span>
-            <div className="relative">
-                {icon && <span className="material-symbols-outlined absolute left-3 top-2.5 text-slate-400">{icon}</span>}
-                <input
-                    className={`w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 ${icon ? 'pl-10' : 'pl-4'} pr-4 py-2.5 text-slate-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none text-sm`}
-                    {...props}
-                />
-            </div>
-        </label>
+        <div className={span2 ? 'col-span-2' : ''}>
+            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wide">{label}</label>
+            {children}
+            {hint && <p className="text-[11px] text-slate-400 mt-1">{hint}</p>}
+        </div>
+    )
+}
+
+function Input({ icon, readOnly, className = '', ...props }) {
+    return (
+        <div className="relative">
+            {icon && (
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[16px] pointer-events-none">{icon}</span>
+            )}
+            <input
+                readOnly={readOnly}
+                className={`w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 ${icon ? 'pl-9' : 'pl-3.5'} pr-3.5 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:bg-white dark:focus:bg-slate-800 focus:outline-none transition-all ${readOnly ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
+                {...props}
+            />
+        </div>
     )
 }
 
 function Toggle({ value, onChange, label, description }) {
     return (
-        <div className="flex items-center justify-between py-3">
-            <div>
-                <p className="text-sm font-medium text-slate-900 dark:text-white">{label}</p>
-                {description && <p className="text-xs text-slate-500 mt-0.5">{description}</p>}
+        <div className="flex items-start justify-between gap-4 py-3 border-b border-slate-100 dark:border-slate-800 last:border-0">
+            <div className="min-w-0">
+                <p className="text-sm font-medium text-slate-800 dark:text-slate-200 leading-tight">{label}</p>
+                {description && <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">{description}</p>}
             </div>
-            <button
-                onClick={() => onChange(!value)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${value ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'}`}
-            >
-                <span className={`inline-block size-4 transform rounded-full bg-white transition-transform ${value ? 'translate-x-6' : 'translate-x-1'}`} />
+            <button type="button" onClick={() => onChange(!value)}
+                className={`relative shrink-0 inline-flex h-5 w-9 items-center rounded-full transition-colors mt-0.5 ${value ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-700'}`}>
+                <span className={`inline-block size-3.5 rounded-full bg-white shadow transition-transform ${value ? 'translate-x-4' : 'translate-x-0.5'}`} />
             </button>
         </div>
     )
 }
 
+const ROLE_LABELS = { individual: 'Consultant', agency_admin: 'Agency Admin', agency_member: 'Team Member', client: 'Client', admin: 'Admin' }
+const INDIAN_CITIES = ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad', 'Chennai', 'Pune', 'Ahmedabad', 'Kolkata', 'Jaipur', 'Surat', 'Lucknow', 'Kochi', 'Chandigarh']
+
+/* ─── Page ───────────────────────────────────────────────── */
+
 export default function SettingsPage() {
     const { user, profile: authProfile, signOut } = useAuth()
-    const [activeTab, setActiveTab] = useState('profile')
     const [loading, setLoading] = useState(true)
-    const [saving, setSaving] = useState(false)
-    const [toast, setToast] = useState('')
-    const [changingPw, setChangingPw] = useState(false)
+    const [savingProfile, setSavingProfile] = useState(false)
+    const [savingNotifs, setSavingNotifs] = useState(false)
+    const [savingPassword, setSavingPassword] = useState(false)
+    const [savingLocale, setSavingLocale] = useState(false)
 
     const [profile, setProfile] = useState({
         full_name: '', email: '', phone: '', bio: '',
-        years_experience: '', languages: '', specializations: '',
+        city: '', years_experience: '', consultation_fee: '',
+        license_number: '', website: '', linkedin_url: '',
+        languages: '', specializations: '', avatar_url: '',
+        role: '',
     })
-    const [notifications, setNotifications] = useState({
-        case_updates_email: true,
-        case_updates_push: true,
-        messages_email: true,
-        messages_push: false,
-        marketing_email: false,
-    })
-    const [language, setLanguage] = useState('en-US')
-    const [timezone, setTimezone] = useState('America/New_York')
-    const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' })
 
-    useEffect(() => {
-        if (!user) return
-        fetchProfile()
-    }, [user])
+    const [notifications, setNotifications] = useState({
+        case_updates_email: true, case_updates_push: true,
+        messages_email: true, messages_push: false, marketing_email: false,
+    })
+
+    const [passwords, setPasswords] = useState({ new: '', confirm: '' })
+    const [language, setLanguage] = useState('en-IN')
+    const [timezone, setTimezone] = useState('Asia/Kolkata')
+
+    useEffect(() => { if (user) fetchProfile() }, [user])
 
     async function fetchProfile() {
         setLoading(true)
-        const { data } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single()
-
+        const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
         if (data) {
             setProfile({
                 full_name: data.full_name || '',
                 email: data.email || user.email || '',
                 phone: data.phone || '',
                 bio: data.bio || '',
+                city: data.city || '',
                 years_experience: data.years_experience || '',
+                consultation_fee: data.consultation_fee || '',
+                license_number: data.license_number || '',
+                website: data.website || '',
+                linkedin_url: data.linkedin_url || '',
                 languages: (data.languages || []).join(', '),
                 specializations: (data.specializations || []).join(', '),
+                avatar_url: data.avatar_url || '',
+                role: data.role || '',
             })
             if (data.notification_preferences) {
-                setNotifications(prev => ({ ...prev, ...data.notification_preferences }))
+                setNotifications(p => ({ ...p, ...data.notification_preferences }))
             }
         }
         setLoading(false)
     }
 
-    const handleSaveProfile = async () => {
-        setSaving(true)
+    async function handleAvatarUpload(file) {
+        const url = await uploadAvatar(file, user.id)
+        await supabase.from('profiles').update({ avatar_url: url }).eq('id', user.id)
+        setProfile(p => ({ ...p, avatar_url: url }))
+        toast.success('Profile photo updated!')
+        return url
+    }
+
+    async function saveProfile(e) {
+        e.preventDefault()
+        setSavingProfile(true)
         const { error } = await supabase.from('profiles').update({
             full_name: profile.full_name,
-            phone: profile.phone,
-            bio: profile.bio,
+            phone: profile.phone || null,
+            bio: profile.bio || null,
+            city: profile.city || null,
             years_experience: parseInt(profile.years_experience) || null,
+            consultation_fee: parseFloat(profile.consultation_fee) || null,
+            license_number: profile.license_number || null,
+            website: profile.website || null,
+            linkedin_url: profile.linkedin_url || null,
             languages: profile.languages.split(',').map(s => s.trim()).filter(Boolean),
             specializations: profile.specializations.split(',').map(s => s.trim()).filter(Boolean),
         }).eq('id', user.id)
-
-        if (!error) setToast('Profile saved!')
-        setSaving(false)
+        setSavingProfile(false)
+        if (error) toast.error(error.message)
+        else toast.success('Profile saved!')
     }
 
-    const handleSaveNotifications = async () => {
-        setSaving(true)
-        const { error } = await supabase.from('profiles').update({
-            notification_preferences: notifications,
-        }).eq('id', user.id)
-        if (!error) setToast('Notification preferences saved!')
-        setSaving(false)
+    async function saveNotifications() {
+        setSavingNotifs(true)
+        await supabase.from('profiles').update({ notification_preferences: notifications }).eq('id', user.id)
+        setSavingNotifs(false)
+        toast.success('Notification preferences saved!')
     }
 
-    const handleChangePassword = async () => {
-        if (passwords.new !== passwords.confirm) {
-            setToast('Passwords do not match!')
-            return
-        }
-        setChangingPw(true)
+    async function savePassword(e) {
+        e.preventDefault()
+        if (passwords.new.length < 8) { toast.error('Minimum 8 characters'); return }
+        if (passwords.new !== passwords.confirm) { toast.error('Passwords do not match'); return }
+        setSavingPassword(true)
         const { error } = await supabase.auth.updateUser({ password: passwords.new })
-        if (!error) {
-            setToast('Password updated!')
-            setPasswords({ current: '', new: '', confirm: '' })
-        }
-        setChangingPw(false)
+        setSavingPassword(false)
+        if (error) toast.error(error.message)
+        else { toast.success('Password updated!'); setPasswords({ new: '', confirm: '' }) }
     }
+
+    async function saveLocale() {
+        setSavingLocale(true)
+        await supabase.from('profiles').update({ locale: language, timezone }).eq('id', user.id)
+        setSavingLocale(false)
+        toast.success('Preferences saved!')
+    }
+
+    const specs = profile.specializations.split(',').map(s => s.trim()).filter(Boolean)
 
     if (loading) {
         return (
-            <div className="flex gap-8 min-h-[calc(100vh-8rem)]">
-                <div className="w-64 hidden lg:block animate-pulse bg-slate-100 dark:bg-slate-800 rounded-xl" />
-                <div className="flex-1 space-y-4">
-                    {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-20 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800" />)}
+            <div className="space-y-4">
+                <div className="h-36 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+                    <div className="lg:col-span-3 h-96 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                    <div className="lg:col-span-2 h-96 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
                 </div>
             </div>
         )
     }
 
     return (
-        <div className="flex gap-8 min-h-[calc(100vh-8rem)] -m-4 lg:-m-8">
-            {toast && <Toast msg={toast} onClose={() => setToast('')} />}
+        <div className="space-y-5">
 
-            {/* Sidebar */}
-            <aside className="hidden lg:flex flex-col w-72 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sticky top-0 h-[calc(100vh-8rem)] overflow-y-auto">
-                <div className="flex flex-col gap-2">
-                    <h3 className="mb-2 px-2 text-xs font-bold uppercase tracking-wider text-slate-500">Settings</h3>
-                    {settingsTabs.map(tab => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 font-medium transition-colors text-left ${activeTab === tab.id
-                                ? 'bg-primary/10 text-primary'
-                                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                            }`}
-                        >
-                            <span className="material-symbols-outlined">{tab.icon}</span>
-                            {tab.label}
+            {/* ── Profile hero card ─────────────────────────────── */}
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+                {/* Top gradient banner */}
+                <div className="h-20 bg-gradient-to-r from-indigo-500 via-purple-500 to-blue-500 relative">
+                    <div className="absolute inset-0 opacity-20"
+                        style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+                </div>
+
+                <div className="px-6 pb-5">
+                    {/* Avatar overlapping the banner */}
+                    <div className="flex items-end gap-5 -mt-10 mb-4">
+                        <div className="relative">
+                            <div className="ring-4 ring-white dark:ring-slate-900 rounded-full">
+                                <AvatarUpload
+                                    currentUrl={profile.avatar_url}
+                                    name={profile.full_name}
+                                    onUpload={handleAvatarUpload}
+                                    size="lg"
+                                />
+                            </div>
+                        </div>
+                        <div className="pb-1 flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <h1 className="text-xl font-black text-slate-900 dark:text-white leading-tight">
+                                    {profile.full_name || 'Your Name'}
+                                </h1>
+                                {profile.role && (
+                                    <span className="text-[11px] font-bold bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                                        {ROLE_LABELS[profile.role] || profile.role}
+                                    </span>
+                                )}
+                            </div>
+                            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5 truncate">{profile.email}</p>
+                        </div>
+                    </div>
+
+                    {/* Quick stats row */}
+                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+                        {profile.city && (
+                            <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
+                                <span className="material-symbols-outlined text-[15px] text-slate-400">location_on</span>
+                                {profile.city}
+                            </div>
+                        )}
+                        {profile.years_experience && (
+                            <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
+                                <span className="material-symbols-outlined text-[15px] text-slate-400">work_history</span>
+                                {profile.years_experience} yrs experience
+                            </div>
+                        )}
+                        {profile.consultation_fee && (
+                            <div className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400">
+                                <span className="material-symbols-outlined text-[15px] text-slate-400">currency_rupee</span>
+                                ₹{Number(profile.consultation_fee).toLocaleString('en-IN')}/session
+                            </div>
+                        )}
+                        {profile.website && (
+                            <a href={profile.website} target="_blank" rel="noreferrer"
+                                className="flex items-center gap-1.5 text-sm text-primary hover:underline">
+                                <span className="material-symbols-outlined text-[15px]">language</span>
+                                Website
+                            </a>
+                        )}
+                        {profile.linkedin_url && (
+                            <a href={profile.linkedin_url} target="_blank" rel="noreferrer"
+                                className="flex items-center gap-1.5 text-sm text-primary hover:underline">
+                                <span className="material-symbols-outlined text-[15px]">link</span>
+                                LinkedIn
+                            </a>
+                        )}
+                        {specs.length > 0 && (
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                {specs.slice(0, 3).map(s => (
+                                    <span key={s} className="text-[11px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full">{s}</span>
+                                ))}
+                                {specs.length > 3 && <span className="text-[11px] text-slate-400">+{specs.length - 3} more</span>}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* ── Two-column grid ──────────────────────────────────── */}
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 items-start">
+
+                {/* LEFT — profile form (3/5) */}
+                <form onSubmit={saveProfile} className="lg:col-span-3 space-y-5">
+                    <Card title="Basic Information">
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Full Name">
+                                <Input placeholder="Your full name" value={profile.full_name}
+                                    onChange={e => setProfile(p => ({ ...p, full_name: e.target.value }))} />
+                            </Field>
+                            <Field label="Email" hint="Contact support to change">
+                                <Input icon="mail" type="email" readOnly value={profile.email} />
+                            </Field>
+                            <Field label="Phone">
+                                <Input icon="call" type="tel" placeholder="+91 98765 43210"
+                                    value={profile.phone} onChange={e => setProfile(p => ({ ...p, phone: e.target.value }))} />
+                            </Field>
+                            <Field label="City">
+                                <div className="relative">
+                                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[16px] pointer-events-none">location_on</span>
+                                    <input list="city-list" placeholder="Mumbai"
+                                        value={profile.city} onChange={e => setProfile(p => ({ ...p, city: e.target.value }))}
+                                        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 pl-9 pr-3.5 py-2 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all" />
+                                    <datalist id="city-list">{INDIAN_CITIES.map(c => <option key={c} value={c} />)}</datalist>
+                                </div>
+                            </Field>
+                            <Field label="Years of Experience">
+                                <Input type="number" min="0" max="60" placeholder="8"
+                                    value={profile.years_experience}
+                                    onChange={e => setProfile(p => ({ ...p, years_experience: e.target.value }))} />
+                            </Field>
+                            <Field label="Consultation Fee (₹)" hint="Per session">
+                                <Input icon="currency_rupee" type="number" min="0" placeholder="2000"
+                                    value={profile.consultation_fee}
+                                    onChange={e => setProfile(p => ({ ...p, consultation_fee: e.target.value }))} />
+                            </Field>
+                            <Field label="License / ICCRC No." span2>
+                                <Input icon="badge" placeholder="R123456"
+                                    value={profile.license_number}
+                                    onChange={e => setProfile(p => ({ ...p, license_number: e.target.value }))} />
+                            </Field>
+                        </div>
+                    </Card>
+
+                    <Card title="Professional Bio">
+                        <textarea rows={4} maxLength={500}
+                            placeholder="Tell clients about your expertise and experience…"
+                            value={profile.bio} onChange={e => setProfile(p => ({ ...p, bio: e.target.value }))}
+                            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all resize-none" />
+                        <p className="text-[11px] text-slate-400 text-right mt-1">{profile.bio.length}/500</p>
+                    </Card>
+
+                    <Card title="Online Presence">
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Website">
+                                <Input icon="language" type="url" placeholder="https://yoursite.in"
+                                    value={profile.website}
+                                    onChange={e => setProfile(p => ({ ...p, website: e.target.value }))} />
+                            </Field>
+                            <Field label="LinkedIn">
+                                <Input icon="link" type="url" placeholder="linkedin.com/in/…"
+                                    value={profile.linkedin_url}
+                                    onChange={e => setProfile(p => ({ ...p, linkedin_url: e.target.value }))} />
+                            </Field>
+                        </div>
+                    </Card>
+
+                    <Card title="Expertise">
+                        <div className="grid grid-cols-2 gap-3">
+                            <Field label="Languages" hint="Comma-separated">
+                                <Input placeholder="English, Hindi, Gujarati"
+                                    value={profile.languages}
+                                    onChange={e => setProfile(p => ({ ...p, languages: e.target.value }))} />
+                            </Field>
+                            <Field label="Specialisations" hint="Comma-separated">
+                                <Input placeholder="Canada PR, Australia PR"
+                                    value={profile.specializations}
+                                    onChange={e => setProfile(p => ({ ...p, specializations: e.target.value }))} />
+                            </Field>
+                        </div>
+                    </Card>
+
+                    <div className="flex justify-end">
+                        <button type="submit" disabled={savingProfile}
+                            className="flex items-center gap-2 px-6 py-2.5 bg-primary hover:bg-blue-600 disabled:opacity-60 text-white text-sm font-bold rounded-xl transition-all shadow-sm shadow-primary/30">
+                            <span className={`material-symbols-outlined text-[16px] ${savingProfile ? 'animate-spin' : ''}`}>
+                                {savingProfile ? 'progress_activity' : 'save'}
+                            </span>
+                            {savingProfile ? 'Saving…' : 'Save Profile'}
                         </button>
-                    ))}
-                </div>
-                <div className="mt-auto pt-4 border-t border-slate-200 dark:border-slate-800">
-                    <button
-                        onClick={signOut}
-                        className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-slate-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 transition-colors"
-                    >
-                        <span className="material-symbols-outlined">logout</span>
-                        <span className="font-medium">Sign Out</span>
-                    </button>
-                </div>
-            </aside>
-
-            {/* Main Content */}
-            <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950 p-4 lg:p-8">
-                <div className="max-w-3xl mx-auto space-y-6">
-                    <div>
-                        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Settings</h1>
-                        <p className="mt-1 text-slate-500">Manage your profile, preferences, and account security.</p>
                     </div>
+                </form>
 
-                    {/* Mobile Tabs */}
-                    <div className="flex gap-1 lg:hidden bg-white dark:bg-slate-900 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
-                        {settingsTabs.map(tab => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`flex-1 py-2 text-xs font-medium rounded-lg transition-colors ${activeTab === tab.id ? 'bg-primary text-white' : 'text-slate-600 hover:bg-slate-100'}`}
-                            >{tab.label}</button>
-                        ))}
-                    </div>
+                {/* RIGHT — side settings (2/5) */}
+                <div className="lg:col-span-2 space-y-5">
 
-                    {/* Profile Tab */}
-                    {activeTab === 'profile' && (
-                        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
-                            <div className="border-b border-slate-200 dark:border-slate-800 px-6 py-4">
-                                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Profile Information</h2>
-                                <p className="text-sm text-slate-500">Update your public profile details.</p>
-                            </div>
-                            <div className="p-6 space-y-6">
-                                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                                    <InputField
-                                        label="Full Name"
-                                        value={profile.full_name}
-                                        onChange={e => setProfile(p => ({ ...p, full_name: e.target.value }))}
-                                        placeholder="Your full name"
-                                    />
-                                    <InputField
-                                        label="Email Address"
-                                        icon="mail"
-                                        type="email"
-                                        value={profile.email}
-                                        readOnly
-                                        className="opacity-60 cursor-not-allowed"
-                                        placeholder="your@email.com"
-                                    />
-                                    <InputField
-                                        label="Phone Number"
-                                        icon="call"
-                                        type="tel"
-                                        value={profile.phone}
-                                        onChange={e => setProfile(p => ({ ...p, phone: e.target.value }))}
-                                        placeholder="+1 (555) 000-0000"
-                                    />
-                                    <InputField
-                                        label="Years of Experience"
-                                        type="number"
-                                        min="0"
-                                        value={profile.years_experience}
-                                        onChange={e => setProfile(p => ({ ...p, years_experience: e.target.value }))}
-                                        placeholder="e.g. 10"
-                                    />
-                                    <div className="md:col-span-2">
-                                        <label className="block">
-                                            <span className="mb-2 block text-sm font-medium text-slate-900 dark:text-slate-200">Professional Bio</span>
-                                            <textarea
-                                                rows={4}
-                                                value={profile.bio}
-                                                onChange={e => setProfile(p => ({ ...p, bio: e.target.value }))}
-                                                placeholder="Tell clients about your expertise and experience..."
-                                                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-2.5 text-slate-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none text-sm resize-none"
-                                            />
-                                        </label>
-                                    </div>
-                                    <InputField
-                                        label="Languages (comma-separated)"
-                                        value={profile.languages}
-                                        onChange={e => setProfile(p => ({ ...p, languages: e.target.value }))}
-                                        placeholder="English, French, Spanish"
-                                    />
-                                    <InputField
-                                        label="Specializations (comma-separated)"
-                                        value={profile.specializations}
-                                        onChange={e => setProfile(p => ({ ...p, specializations: e.target.value }))}
-                                        placeholder="Express Entry, Study Permit, PR"
-                                    />
-                                </div>
-                                <div className="flex justify-end">
-                                    <Button onClick={handleSaveProfile} disabled={saving}>
-                                        {saving ? 'Saving...' : 'Save Profile'}
-                                    </Button>
-                                </div>
-                            </div>
+                    {/* Notifications */}
+                    <Card title="Notifications" description="What you want to be notified about">
+                        <Toggle value={notifications.case_updates_email} onChange={v => setNotifications(p => ({ ...p, case_updates_email: v }))}
+                            label="Case updates via email" description="Status changes, new documents" />
+                        <Toggle value={notifications.case_updates_push} onChange={v => setNotifications(p => ({ ...p, case_updates_push: v }))}
+                            label="Case updates (push)" description="Browser push notifications" />
+                        <Toggle value={notifications.messages_email} onChange={v => setNotifications(p => ({ ...p, messages_email: v }))}
+                            label="New messages (email)" />
+                        <Toggle value={notifications.messages_push} onChange={v => setNotifications(p => ({ ...p, messages_push: v }))}
+                            label="New messages (push)" />
+                        <Toggle value={notifications.marketing_email} onChange={v => setNotifications(p => ({ ...p, marketing_email: v }))}
+                            label="Product updates & tips" description="Occasional emails from Immizy" />
+                        <div className="pt-4">
+                            <button onClick={saveNotifications} disabled={savingNotifs}
+                                className="w-full flex items-center justify-center gap-2 py-2 bg-slate-900 dark:bg-white hover:opacity-90 disabled:opacity-60 text-white dark:text-slate-900 text-sm font-bold rounded-xl transition-all">
+                                <span className={`material-symbols-outlined text-[15px] ${savingNotifs ? 'animate-spin' : ''}`}>
+                                    {savingNotifs ? 'progress_activity' : 'notifications'}
+                                </span>
+                                {savingNotifs ? 'Saving…' : 'Save Preferences'}
+                            </button>
                         </div>
-                    )}
+                    </Card>
 
-                    {/* Notifications Tab */}
-                    {activeTab === 'notifications' && (
-                        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
-                            <div className="border-b border-slate-200 dark:border-slate-800 px-6 py-4">
-                                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Notification Preferences</h2>
-                                <p className="text-sm text-slate-500">Choose what you want to be notified about.</p>
-                            </div>
-                            <div className="p-6 divide-y divide-slate-100 dark:divide-slate-800">
-                                <Toggle value={notifications.case_updates_email} onChange={v => setNotifications(p => ({ ...p, case_updates_email: v }))} label="Case Updates (Email)" description="Get notified about case status changes via email" />
-                                <Toggle value={notifications.case_updates_push} onChange={v => setNotifications(p => ({ ...p, case_updates_push: v }))} label="Case Updates (Push)" description="Browser push notifications for case changes" />
-                                <Toggle value={notifications.messages_email} onChange={v => setNotifications(p => ({ ...p, messages_email: v }))} label="New Messages (Email)" description="Email when you receive a new message" />
-                                <Toggle value={notifications.messages_push} onChange={v => setNotifications(p => ({ ...p, messages_push: v }))} label="New Messages (Push)" description="Push notification for new messages" />
-                                <Toggle value={notifications.marketing_email} onChange={v => setNotifications(p => ({ ...p, marketing_email: v }))} label="Marketing Emails" description="Product updates, tips, and promotional content" />
-                                <div className="pt-4 flex justify-end">
-                                    <Button onClick={handleSaveNotifications} disabled={saving}>
-                                        {saving ? 'Saving...' : 'Save Preferences'}
-                                    </Button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                    {/* Security */}
+                    <Card title="Password" description="Update your login password">
+                        <form onSubmit={savePassword} className="space-y-3">
+                            <Field label="New Password" hint="Minimum 8 characters">
+                                <Input icon="lock" type="password" placeholder="••••••••"
+                                    value={passwords.new}
+                                    onChange={e => setPasswords(p => ({ ...p, new: e.target.value }))} />
+                            </Field>
+                            <Field label="Confirm Password">
+                                <Input icon="lock_reset" type="password" placeholder="••••••••"
+                                    value={passwords.confirm}
+                                    onChange={e => setPasswords(p => ({ ...p, confirm: e.target.value }))} />
+                            </Field>
+                            <button type="submit" disabled={savingPassword || !passwords.new}
+                                className="w-full flex items-center justify-center gap-2 py-2 bg-slate-900 dark:bg-white hover:opacity-90 disabled:opacity-60 text-white dark:text-slate-900 text-sm font-bold rounded-xl transition-all mt-1">
+                                <span className={`material-symbols-outlined text-[15px] ${savingPassword ? 'animate-spin' : ''}`}>
+                                    {savingPassword ? 'progress_activity' : 'key'}
+                                </span>
+                                {savingPassword ? 'Updating…' : 'Update Password'}
+                            </button>
+                        </form>
+                    </Card>
 
-                    {/* Security Tab */}
-                    {activeTab === 'security' && (
-                        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
-                            <div className="border-b border-slate-200 dark:border-slate-800 px-6 py-4">
-                                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Security & Privacy</h2>
-                                <p className="text-sm text-slate-500">Manage your password and account security.</p>
-                            </div>
-                            <div className="p-6 space-y-5">
-                                <InputField label="New Password" type="password" value={passwords.new} onChange={e => setPasswords(p => ({ ...p, new: e.target.value }))} placeholder="••••••••" />
-                                <InputField label="Confirm New Password" type="password" value={passwords.confirm} onChange={e => setPasswords(p => ({ ...p, confirm: e.target.value }))} placeholder="••••••••" />
-                                <div className="flex justify-end">
-                                    <Button onClick={handleChangePassword} disabled={changingPw || !passwords.new}>
-                                        {changingPw ? 'Updating...' : 'Update Password'}
-                                    </Button>
-                                </div>
-                                <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                                    <h3 className="text-sm font-bold text-red-600 mb-2">Danger Zone</h3>
-                                    <p className="text-sm text-slate-500 mb-3">These actions are irreversible. Please proceed with caution.</p>
-                                    <button
-                                        onClick={signOut}
-                                        className="px-4 py-2 text-sm font-bold text-red-600 border border-red-200 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                                    >
-                                        Sign Out of All Devices
-                                    </button>
-                                </div>
-                            </div>
+                    {/* Language */}
+                    <Card title="Language & Region">
+                        <div className="space-y-3">
+                            <Field label="Language">
+                                <select value={language} onChange={e => setLanguage(e.target.value)}
+                                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all">
+                                    <option value="en-IN">English (India)</option>
+                                    <option value="en-US">English (US)</option>
+                                    <option value="hi-IN">Hindi</option>
+                                    <option value="gu-IN">Gujarati</option>
+                                    <option value="mr-IN">Marathi</option>
+                                    <option value="ta-IN">Tamil</option>
+                                </select>
+                            </Field>
+                            <Field label="Timezone">
+                                <select value={timezone} onChange={e => setTimezone(e.target.value)}
+                                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 px-3.5 py-2 text-sm text-slate-900 dark:text-white focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none transition-all">
+                                    <option value="Asia/Kolkata">India Standard Time (IST)</option>
+                                    <option value="Asia/Dubai">Gulf Standard Time (GST)</option>
+                                    <option value="Europe/London">British Time (GMT/BST)</option>
+                                    <option value="America/New_York">Eastern Time (ET)</option>
+                                    <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                                    <option value="Australia/Sydney">Australian Eastern (AET)</option>
+                                </select>
+                            </Field>
+                            <button onClick={saveLocale} disabled={savingLocale}
+                                className="w-full flex items-center justify-center gap-2 py-2 bg-slate-900 dark:bg-white hover:opacity-90 disabled:opacity-60 text-white dark:text-slate-900 text-sm font-bold rounded-xl transition-all">
+                                <span className={`material-symbols-outlined text-[15px] ${savingLocale ? 'animate-spin' : ''}`}>
+                                    {savingLocale ? 'progress_activity' : 'language'}
+                                </span>
+                                {savingLocale ? 'Saving…' : 'Save Preferences'}
+                            </button>
                         </div>
-                    )}
+                    </Card>
 
-                    {/* Language Tab */}
-                    {activeTab === 'language' && (
-                        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
-                            <div className="border-b border-slate-200 dark:border-slate-800 px-6 py-4">
-                                <h2 className="text-lg font-bold text-slate-900 dark:text-white">Language & Region</h2>
-                                <p className="text-sm text-slate-500">Set your preferred language and timezone.</p>
+                    {/* Account */}
+                    <Card title="Account">
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Sign out</p>
+                                <p className="text-[11px] text-slate-400 mt-0.5">You'll be redirected to the login page</p>
                             </div>
-                            <div className="p-6 space-y-5">
-                                <div>
-                                    <label className="mb-2 block text-sm font-medium text-slate-900 dark:text-slate-200">Language</label>
-                                    <select value={language} onChange={e => setLanguage(e.target.value)} className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-primary">
-                                        <option value="en-US">English (US)</option>
-                                        <option value="en-GB">English (UK)</option>
-                                        <option value="fr-FR">French</option>
-                                        <option value="es-ES">Spanish</option>
-                                        <option value="ar">Arabic</option>
-                                        <option value="zh-CN">Chinese (Simplified)</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="mb-2 block text-sm font-medium text-slate-900 dark:text-slate-200">Timezone</label>
-                                    <select value={timezone} onChange={e => setTimezone(e.target.value)} className="w-full border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-1 focus:ring-primary">
-                                        <option value="America/New_York">Eastern Time (ET)</option>
-                                        <option value="America/Chicago">Central Time (CT)</option>
-                                        <option value="America/Denver">Mountain Time (MT)</option>
-                                        <option value="America/Los_Angeles">Pacific Time (PT)</option>
-                                        <option value="Europe/London">GMT / UTC</option>
-                                        <option value="Europe/Paris">Central European Time (CET)</option>
-                                        <option value="Asia/Dubai">Gulf Standard Time (GST)</option>
-                                        <option value="Asia/Kolkata">India Standard Time (IST)</option>
-                                        <option value="Australia/Sydney">Australian Eastern Time (AET)</option>
-                                    </select>
-                                </div>
-                                <div className="flex justify-end">
-                                    <Button onClick={() => setToast('Language preferences saved!')}>Save Preferences</Button>
-                                </div>
-                            </div>
+                            <button onClick={signOut}
+                                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 text-sm font-semibold hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0">
+                                <span className="material-symbols-outlined text-[15px]">logout</span>
+                                Sign Out
+                            </button>
                         </div>
-                    )}
+                    </Card>
+
                 </div>
-            </main>
+            </div>
         </div>
     )
 }

@@ -57,7 +57,6 @@ const NotificationsPage = lazy(() => import('./pages/consultant/NotificationsPag
 const AdminDashboard = lazy(() => import('./pages/admin/DashboardPage'))
 const AdminAuditLog = lazy(() => import('./pages/admin/AuditLogPage'))
 const AdminCommunicationSettings = lazy(() => import('./pages/admin/CommunicationSettingsPage'))
-const AdminContentManagement = lazy(() => import('./pages/admin/ContentManagementPage'))
 const AdminInternalAnnouncements = lazy(() => import('./pages/admin/InternalAnnouncementsPage'))
 const AdminLocalizationManagement = lazy(() => import('./pages/admin/LocalizationManagementPage'))
 const AdminApplicationReview = lazy(() => import('./pages/admin/ApplicationReviewPage'))
@@ -91,6 +90,7 @@ const UnclaimedProfilePage = lazy(() => import('./pages/landing/UnclaimedProfile
 
 // Auth pages (additional)
 const ClaimProfilePage = lazy(() => import('./pages/auth/ClaimProfilePage'))
+const AcceptInvitePage = lazy(() => import('./pages/auth/AcceptInvitePage'))
 
 // Admin pages (additional)
 const AdminUnclaimedProfiles = lazy(() => import('./pages/admin/UnclaimedProfilesPage'))
@@ -177,6 +177,7 @@ export default function App() {
                     <Route path="/consultant/:id" element={<ConsultantProfilePage />} />
                     <Route path="/consultant/unclaimed/:id" element={<UnclaimedProfilePage />} />
                     <Route path="/claim-profile" element={<ClaimProfilePage />} />
+                    <Route path="/accept-invite" element={<AcceptInvitePage />} />
                     <Route path="/agency/:id" element={<AgencyProfilePage />} />
                     <Route path="/help" element={<Navigate to="/support" replace />} />
                     <Route path="/support" element={<SupportPage />} />
@@ -314,7 +315,6 @@ export default function App() {
                         <Route path="unclaimed-profiles" element={<AdminUnclaimedProfiles />} />
                         <Route path="audit-log" element={<AdminAuditLog />} />
                         <Route path="communication-settings" element={<AdminCommunicationSettings />} />
-                        <Route path="content-management" element={<AdminContentManagement />} />
                         <Route path="announcements" element={<AdminInternalAnnouncements />} />
                         <Route path="localization" element={<AdminLocalizationManagement />} />
                         <Route path="payment-settings" element={<AdminPaymentGatewaySettings />} />

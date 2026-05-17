@@ -63,7 +63,6 @@ export const navItems = {
             { label: 'Audit Log',    icon: 'verified_user',    path: '/admin/audit-log' },
         ]},
         { group: 'Content & Comms', items: [
-            { label: 'Content',      icon: 'article',          path: '/admin/content-management' },
             { label: 'Announcements',icon: 'campaign',         path: '/admin/announcements' },
             { label: 'Resources',    icon: 'library_books',    path: '/admin/resources' },
         ]},

@@ -163,13 +163,13 @@ export default function TeamAvailabilityPage() {
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {[
-                    { icon: 'groups', color: 'blue', label: 'Team Members', value: members.length, unit: 'total' },
-                    { icon: 'check_circle', color: 'emerald', label: 'With Availability', value: members.filter(m => (availability[m.profile_id] || []).length > 0).length, unit: 'set' },
-                    { icon: 'schedule', color: 'purple', label: 'Total Weekly Hours', value: Math.round(totalWeeklySlots), unit: 'hrs' },
-                    { icon: 'event_available', color: 'orange', label: 'Avg Hours/Member', value: avgHours, unit: 'hrs' },
+                    { icon: 'groups', color: 'blue', label: 'Team Members', value: members.length, unit: 'total', iconCls: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600' },
+                    { icon: 'check_circle', color: 'emerald', label: 'With Availability', value: members.filter(m => (availability[m.profile_id] || []).length > 0).length, unit: 'set', iconCls: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' },
+                    { icon: 'schedule', color: 'purple', label: 'Total Weekly Hours', value: Math.round(totalWeeklySlots), unit: 'hrs', iconCls: 'bg-purple-50 dark:bg-purple-900/20 text-purple-600' },
+                    { icon: 'event_available', color: 'orange', label: 'Avg Hours/Member', value: avgHours, unit: 'hrs', iconCls: 'bg-orange-50 dark:bg-orange-900/20 text-orange-600' },
                 ].map(stat => (
                     <div key={stat.label} className="bg-white dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-4">
-                        <div className={`size-12 rounded-full bg-${stat.color}-50 dark:bg-${stat.color}-900/20 flex items-center justify-center text-${stat.color}-600`}>
+                        <div className={`size-12 rounded-full flex items-center justify-center ${stat.iconCls}`}>
                             <span className="material-symbols-outlined">{stat.icon}</span>
                         </div>
                         <div>

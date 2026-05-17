@@ -26,15 +26,23 @@ export function useCases() {
         const from = pageNum * PAGE_SIZE
         const to = from + PAGE_SIZE - 1
 
-        const { data, error, count } = await supabase
+        const query = supabase
             .from('cases')
             .select(`
-                id, case_number, title, status, visa_type, destination_country, created_at, updated_at,
+                id, case_number, title, status, progress, visa_type, destination_country, created_at, updated_at,
                 client:profiles!cases_client_id_fkey(id, full_name, avatar_url, email),
                 consultant:profiles!cases_consultant_id_fkey(id, full_name, avatar_url)
             `, { count: pageNum === 0 ? 'exact' : undefined })
             .order('created_at', { ascending: false })
             .range(from, to)
+
+        if (profile?.user_type === 'individual' || profile?.user_type === 'agency_member') {
+            query.eq('consultant_id', user.id)
+        } else if (profile?.user_type === 'client') {
+            query.eq('client_id', user.id)
+        }
+
+        const { data, error, count } = await query
 
         if (error) {
             setError(error.message)

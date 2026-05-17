@@ -3,15 +3,24 @@ import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import { supabase } from '../../lib/supabase'
 
+const DEFAULT_CONFIG = {
+    referrer_reward: 50,
+    referee_discount: 20,
+    min_subscription: 'None (all users can refer)',
+    fraud_protection: 'moderate',
+}
+
 export default function ReferralProgramPage() {
     const [activeTab, setActiveTab] = useState('configuration')
     const [promotions, setPromotions] = useState([])
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
+    const [savingConfig, setSavingConfig] = useState(false)
     const [showAddModal, setShowAddModal] = useState(false)
     const [toast, setToast] = useState(null)
     const [stats, setStats] = useState({ total: 0, active: 0, totalRedemptions: 0, conversionRate: 0 })
     const [form, setForm] = useState({ code: '', discount_percent: 10, description: '', valid_months: 1, max_redemptions: '', expires_at: '' })
+    const [config, setConfig] = useState(DEFAULT_CONFIG)
 
     const showToast = (msg, type = 'success') => {
         setToast({ msg, type })
@@ -32,7 +41,23 @@ export default function ReferralProgramPage() {
         setLoading(false)
     }, [])
 
-    useEffect(() => { fetchPromotions() }, [fetchPromotions])
+    const fetchConfig = useCallback(async () => {
+        const { data } = await supabase.from('platform_settings').select('value').eq('key', 'referral_config').single()
+        if (data?.value) setConfig(c => ({ ...c, ...data.value }))
+    }, [])
+
+    const handleSaveConfig = async () => {
+        setSavingConfig(true)
+        const { error } = await supabase.from('platform_settings').upsert(
+            { key: 'referral_config', value: config, updated_at: new Date().toISOString() },
+            { onConflict: 'key' }
+        )
+        if (error) showToast('Failed: ' + error.message, 'error')
+        else showToast('Settings saved!')
+        setSavingConfig(false)
+    }
+
+    useEffect(() => { fetchPromotions(); fetchConfig() }, [fetchPromotions, fetchConfig])
 
     const handleCreate = async () => {
         if (!form.code.trim()) { showToast('Promo code is required', 'error'); return }
@@ -135,31 +160,39 @@ export default function ReferralProgramPage() {
                         <label className="block">
                             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Referrer Reward</span>
                             <div className="relative mt-2">
-                                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">$</span>
-                                <input defaultValue="50" className="w-full pl-7 pr-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-1 focus:ring-primary" />
+                                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">₹</span>
+                                <input type="number" value={config.referrer_reward}
+                                    onChange={e => setConfig(c => ({ ...c, referrer_reward: Number(e.target.value) }))}
+                                    className="w-full pl-7 pr-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-1 focus:ring-primary" />
                             </div>
                             <p className="text-xs text-slate-500 mt-1">Credited when referee converts</p>
                         </label>
                         <label className="block">
                             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Referee Discount</span>
                             <div className="relative mt-2">
-                                <input defaultValue="20" className="w-full pr-8 py-2.5 px-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-1 focus:ring-primary" />
+                                <input type="number" value={config.referee_discount}
+                                    onChange={e => setConfig(c => ({ ...c, referee_discount: Number(e.target.value) }))}
+                                    className="w-full pr-8 py-2.5 px-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-1 focus:ring-primary" />
                                 <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400">%</span>
                             </div>
                             <p className="text-xs text-slate-500 mt-1">Applied to referee's first payment</p>
                         </label>
                         <label className="block">
                             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Minimum Subscription Required</span>
-                            <select defaultValue="Basic" className="mt-2 w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-1 focus:ring-primary">
+                            <select value={config.min_subscription}
+                                onChange={e => setConfig(c => ({ ...c, min_subscription: e.target.value }))}
+                                className="mt-2 w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-1 focus:ring-primary">
                                 <option>None (all users can refer)</option>
-                                <option>Basic</option>
-                                <option>Pro</option>
+                                <option>Starter</option>
+                                <option>Professional</option>
                                 <option>Enterprise</option>
                             </select>
                         </label>
                         <label className="block">
                             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Fraud Protection</span>
-                            <select defaultValue="moderate" className="mt-2 w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-1 focus:ring-primary">
+                            <select value={config.fraud_protection}
+                                onChange={e => setConfig(c => ({ ...c, fraud_protection: e.target.value }))}
+                                className="mt-2 w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-1 focus:ring-primary">
                                 <option value="low">Low — Flag obvious fraud only</option>
                                 <option value="moderate">Moderate — Balanced protection</option>
                                 <option value="strict">Strict — Manual review of all</option>
@@ -167,7 +200,7 @@ export default function ReferralProgramPage() {
                         </label>
                     </div>
                     <div className="mt-6 flex justify-end">
-                        <Button onClick={() => showToast('Settings saved!')}>Save Settings</Button>
+                        <Button onClick={handleSaveConfig} disabled={savingConfig}>{savingConfig ? 'Saving...' : 'Save Settings'}</Button>
                     </div>
                 </Card>
             )}
