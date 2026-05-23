@@ -32,7 +32,23 @@ export default defineConfig({
           if (id.includes('node_modules')) {
             // react-router-dom v7 re-exports from `react-router`; match both.
             if (/[\\/]react-router(-dom)?[\\/]/.test(id)) return 'react-router'
-            if (id.includes('react-dom') || id.includes('/react/')) return 'react-core'
+
+            // ── react-core ──
+            // Anything that touches React.Component / hooks at module init
+            // time MUST share a chunk with React itself — otherwise the
+            // chunk loads before react-core executes and we get
+            //   "Cannot read properties of undefined (reading 'Component')"
+            // Add new React-dependent vendors to this list when they show
+            // up here (look at vendor-*.js after build).
+            if (
+              /[\\/]react-dom[\\/]/.test(id) ||
+              /[\\/]react[\\/]/.test(id) ||
+              /[\\/]scheduler[\\/]/.test(id) ||
+              /[\\/]@vercel[\\/]speed-insights[\\/]/.test(id) ||
+              /[\\/]@vercel[\\/]analytics[\\/]/.test(id) ||
+              /[\\/]react-easy-crop[\\/]/.test(id)
+            ) return 'react-core'
+
             // supabase-js pulls in @supabase/{auth,realtime,postgrest,storage,functions}-js
             // — keep them in one chunk so the catch-all `vendor` stays small.
             if (/[\\/]@supabase[\\/]/.test(id)) return 'supabase'
