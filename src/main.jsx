@@ -7,6 +7,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import OfflineBanner from './components/OfflineBanner'
 import { Toaster } from 'react-hot-toast'
 import { initErrorReporter } from './lib/errorReporter'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 
 initErrorReporter()
 
@@ -16,6 +17,7 @@ createRoot(document.getElementById('root')).render(
             <AuthProvider>
                 <OfflineBanner />
                 <App />
+                <SpeedInsights />
                 <Toaster
                     position="top-right"
                     toastOptions={{
