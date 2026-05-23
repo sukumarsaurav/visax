@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
+import { useDebounce } from '../../hooks/useDebounce'
+import * as unclaimedProfilesRepo from '../../data/unclaimedProfilesRepo'
 
 const EMPTY_FORM = {
     full_name: '', email: '', phone: '', bio: '',
@@ -49,20 +51,16 @@ export default function UnclaimedProfilesPage() {
     const [sendingEmail, setSendingEmail] = useState(null)
     const fileRef = useRef()
 
-    useEffect(() => { fetchProfiles() }, [filterStatus, search])
+    const debouncedSearch = useDebounce(search, 300)
+
+    useEffect(() => { fetchProfiles() }, [filterStatus, debouncedSearch])
 
     async function fetchProfiles() {
         setLoading(true)
-        let q = supabase
-            .from('unclaimed_profiles')
-            .select('id, full_name, email, city, role, is_claimed, claim_token, claim_token_expires_at, created_at, claimed_at')
-            .order('created_at', { ascending: false })
-
-        if (filterStatus === 'unclaimed') q = q.eq('is_claimed', false)
-        if (filterStatus === 'claimed') q = q.eq('is_claimed', true)
-        if (search) q = q.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,city.ilike.%${search}%`)
-
-        const { data, error } = await q
+        const { data, error } = await unclaimedProfilesRepo.list({
+            filterStatus,
+            search: debouncedSearch,
+        })
         if (error) toast.error('Failed to load profiles')
         else setProfiles(data || [])
         setLoading(false)
@@ -77,7 +75,7 @@ export default function UnclaimedProfilesPage() {
             specializations: form.specializations ? form.specializations.split(',').map(s => s.trim()).filter(Boolean) : [],
             languages: form.languages ? form.languages.split(',').map(s => s.trim()).filter(Boolean) : [],
         }
-        const { error } = await supabase.from('unclaimed_profiles').insert(payload)
+        const { error } = await unclaimedProfilesRepo.create(payload)
         if (error) { toast.error(error.message); setCreating(false); return }
         toast.success(`Profile created for ${form.full_name}`)
         setForm(EMPTY_FORM)
@@ -112,7 +110,7 @@ export default function UnclaimedProfilesPage() {
             languages: r.languages ? r.languages.split(';').map(s => s.trim()).filter(Boolean) : [],
         }))
 
-        const { error } = await supabase.from('unclaimed_profiles').insert(rows)
+        const { error } = await unclaimedProfilesRepo.createMany(rows)
         if (error) { toast.error('Import failed: ' + error.message); setCsvImporting(false); return }
         toast.success(`Imported ${rows.length} profiles`)
         setCsvPreview([])
@@ -143,7 +141,7 @@ export default function UnclaimedProfilesPage() {
 
     async function deleteProfile(id) {
         if (!window.confirm('Delete this unclaimed profile?')) return
-        const { error } = await supabase.from('unclaimed_profiles').delete().eq('id', id)
+        const { error } = await unclaimedProfilesRepo.remove(id)
         if (error) { toast.error(error.message); return }
         toast.success('Deleted')
         fetchProfiles()

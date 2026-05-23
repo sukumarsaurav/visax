@@ -4,6 +4,8 @@ import Button from '../../components/ui/Button'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { formatDate } from '../../utils/date'
+import * as clientInvitationsRepo from '../../data/clientInvitationsRepo'
+import * as profilesRepo from '../../data/profilesRepo'
 
 const STATUS_CONFIG = {
     pending: { color: 'amber', label: 'Pending', icon: 'schedule' },
@@ -47,11 +49,7 @@ export default function InviteClientPage() {
 
     async function fetchInvitations() {
         setLoading(true)
-        const { data } = await supabase
-            .from('client_invitations')
-            .select('*, client:profiles!client_invitations_client_id_fkey(id, full_name, avatar_url)')
-            .eq('consultant_id', user.id)
-            .order('created_at', { ascending: false })
+        const { data } = await clientInvitationsRepo.listByConsultant(user.id)
         setInvitations(data || [])
         setLoading(false)
     }
@@ -65,23 +63,18 @@ export default function InviteClientPage() {
         const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
         const clientEmail = email.toLowerCase().trim()
 
-        const { data: inv, error } = await supabase.from('client_invitations').insert({
-            consultant_id: user.id,
-            client_email: clientEmail,
-            status: 'pending',
+        const { data: inv, error } = await clientInvitationsRepo.create({
+            consultantId: user.id,
+            clientEmail,
             permissions,
             message,
             token,
-            expires_at: expiresAt,
-        }).select().single()
+            expiresAt,
+        })
 
         if (!error && inv) {
             // Send the invitation email via edge function
-            const { data: consultantProfile } = await supabase
-                .from('profiles')
-                .select('full_name')
-                .eq('id', user.id)
-                .single()
+            const { data: consultantProfile } = await profilesRepo.getFullProfile(user.id)
 
             await supabase.functions.invoke('send-client-invitation', {
                 body: {
@@ -102,15 +95,13 @@ export default function InviteClientPage() {
     }
 
     const handleCancel = async (id) => {
-        await supabase.from('client_invitations').update({ status: 'cancelled' }).eq('id', id)
+        await clientInvitationsRepo.cancel(id)
         setInvitations(prev => prev.map(inv => inv.id === id ? { ...inv, status: 'cancelled' } : inv))
     }
 
     const handleResend = async (inv) => {
-        await supabase.from('client_invitations').update({
-            expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-            status: 'pending',
-        }).eq('id', inv.id)
+        const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        await clientInvitationsRepo.resend(inv.id, expiresAt)
         setInvitations(prev => prev.map(i => i.id === inv.id ? { ...i, status: 'pending' } : i))
         setToast('Invitation resent!')
     }

@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
-import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
+import { useDebounce } from '../../hooks/useDebounce'
+import * as resourcesRepo from '../../data/resourcesRepo'
 
 const TYPE_COLORS = {
     PDF: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400',
@@ -35,12 +36,11 @@ export default function ResourceManagementPage() {
         setTimeout(() => setToast(null), 3000)
     }
 
+    const debouncedSearch = useDebounce(search, 300)
+
     const fetchResources = useCallback(async () => {
         setLoading(true)
-        let query = supabase.from('resources').select('*, profiles(full_name)').order('created_at', { ascending: false })
-        if (search.trim()) query = query.ilike('title', `%${search}%`)
-        if (categoryFilter !== 'All') query = query.eq('category', categoryFilter)
-        const { data } = await query
+        const { data } = await resourcesRepo.list({ search: debouncedSearch, category: categoryFilter })
         const list = data || []
         setResources(list)
         setStats({
@@ -51,14 +51,14 @@ export default function ResourceManagementPage() {
         })
         if (list.length > 0 && !selectedResource) setSelectedResource(list[0])
         setLoading(false)
-    }, [search, categoryFilter])
+    }, [debouncedSearch, categoryFilter])
 
     useEffect(() => { fetchResources() }, [fetchResources])
 
     const handleAdd = async () => {
         if (!form.title.trim()) { showToast('Title is required', 'error'); return }
         setSaving(true)
-        const { error } = await supabase.from('resources').insert({
+        const { error } = await resourcesRepo.create({
             title: form.title,
             description: form.description,
             category: form.category,
@@ -76,7 +76,7 @@ export default function ResourceManagementPage() {
     const handleEdit = async () => {
         if (!selectedResource) return
         setSaving(true)
-        const { error } = await supabase.from('resources').update({
+        const { error } = await resourcesRepo.update(selectedResource.id, {
             title: form.title,
             description: form.description,
             category: form.category,
@@ -84,7 +84,7 @@ export default function ResourceManagementPage() {
             file_type: form.file_type,
             status: form.status,
             is_public: form.status === 'published',
-        }).eq('id', selectedResource.id)
+        })
         if (error) { showToast('Failed: ' + error.message, 'error') }
         else { showToast('Updated!'); setShowEditDrawer(false); fetchResources() }
         setSaving(false)
@@ -92,7 +92,7 @@ export default function ResourceManagementPage() {
 
     const handleDelete = async (id) => {
         if (!confirm('Delete this resource?')) return
-        await supabase.from('resources').delete().eq('id', id)
+        await resourcesRepo.remove(id)
         showToast('Deleted')
         setSelectedResource(null)
         fetchResources()

@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import AvatarUpload from '../../components/ui/AvatarUpload'
 import { uploadAvatar } from '../../lib/storage'
 import toast from 'react-hot-toast'
+import * as profilesRepo from '../../data/profilesRepo'
 
 /* ─── Primitives ─────────────────────────────────────────── */
 
@@ -95,7 +97,7 @@ export default function SettingsPage() {
 
     async function fetchProfile() {
         setLoading(true)
-        const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+        const { data } = await profilesRepo.getFullProfile(user.id)
         if (data) {
             setProfile({
                 full_name: data.full_name || '',
@@ -121,8 +123,8 @@ export default function SettingsPage() {
     }
 
     async function handleAvatarUpload(file) {
+        // uploadAvatar() already persists profile.avatar_url; we just sync local state.
         const url = await uploadAvatar(file, user.id)
-        await supabase.from('profiles').update({ avatar_url: url }).eq('id', user.id)
         setProfile(p => ({ ...p, avatar_url: url }))
         toast.success('Profile photo updated!')
         return url
@@ -131,7 +133,7 @@ export default function SettingsPage() {
     async function saveProfile(e) {
         e.preventDefault()
         setSavingProfile(true)
-        const { error } = await supabase.from('profiles').update({
+        const { error } = await profilesRepo.updateBare(user.id, {
             full_name: profile.full_name,
             phone: profile.phone || null,
             bio: profile.bio || null,
@@ -143,7 +145,7 @@ export default function SettingsPage() {
             linkedin_url: profile.linkedin_url || null,
             languages: profile.languages.split(',').map(s => s.trim()).filter(Boolean),
             specializations: profile.specializations.split(',').map(s => s.trim()).filter(Boolean),
-        }).eq('id', user.id)
+        })
         setSavingProfile(false)
         if (error) toast.error(error.message)
         else toast.success('Profile saved!')
@@ -151,7 +153,7 @@ export default function SettingsPage() {
 
     async function saveNotifications() {
         setSavingNotifs(true)
-        await supabase.from('profiles').update({ notification_preferences: notifications }).eq('id', user.id)
+        await profilesRepo.updateBare(user.id, { notification_preferences: notifications })
         setSavingNotifs(false)
         toast.success('Notification preferences saved!')
     }
@@ -169,7 +171,7 @@ export default function SettingsPage() {
 
     async function saveLocale() {
         setSavingLocale(true)
-        await supabase.from('profiles').update({ locale: language, timezone }).eq('id', user.id)
+        await profilesRepo.updateBare(user.id, { locale: language, timezone })
         setSavingLocale(false)
         toast.success('Preferences saved!')
     }
@@ -453,16 +455,30 @@ export default function SettingsPage() {
 
                     {/* Account */}
                     <Card title="Account">
-                        <div className="flex items-center justify-between gap-3">
-                            <div>
-                                <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Sign out</p>
-                                <p className="text-[11px] text-slate-400 mt-0.5">You'll be redirected to the login page</p>
+                        <div className="flex flex-col gap-4">
+                            <div className="flex items-center justify-between gap-3">
+                                <div>
+                                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Sign out</p>
+                                    <p className="text-[11px] text-slate-400 mt-0.5">You'll be redirected to the login page</p>
+                                </div>
+                                <button onClick={signOut}
+                                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 text-sm font-semibold hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0">
+                                    <span className="material-symbols-outlined text-[15px]">logout</span>
+                                    Sign Out
+                                </button>
                             </div>
-                            <button onClick={signOut}
-                                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 text-sm font-semibold hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors shrink-0">
-                                <span className="material-symbols-outlined text-[15px]">logout</span>
-                                Sign Out
-                            </button>
+                            <hr className="border-slate-100 dark:border-slate-800" />
+                            <div className="flex items-center justify-between gap-3">
+                                <div>
+                                    <p className="text-sm font-medium text-slate-800 dark:text-slate-200">Data &amp; Privacy</p>
+                                    <p className="text-[11px] text-slate-400 mt-0.5">Export your data or request account deletion</p>
+                                </div>
+                                <Link to="/account/data"
+                                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shrink-0">
+                                    <span className="material-symbols-outlined text-[15px]">shield_person</span>
+                                    Manage
+                                </Link>
+                            </div>
                         </div>
                     </Card>
 

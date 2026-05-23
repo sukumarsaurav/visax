@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import PublicHeader from '../../components/layout/PublicHeader'
 import Footer from '../../components/layout/Footer'
-import { supabase } from '../../lib/supabase'
+import * as supportTicketsRepo from '../../data/supportTicketsRepo'
 import { useSEO } from '../../hooks/useSEO'
 import { SEO } from '../../lib/seo'
 
@@ -55,7 +55,7 @@ export default function SupportPage() {
         setError('')
         setSubmitting(true)
 
-        const { error: dbError } = await supabase.from('support_tickets').insert({
+        const { error: dbError } = await supportTicketsRepo.create({
             name: name.trim() || null,
             email: email.trim(),
             category,

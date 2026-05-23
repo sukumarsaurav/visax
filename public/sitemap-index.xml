@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Sitemap index — tells crawlers about every sitemap we publish.
+  • /sitemap.xml                       — static SEO pages (destinations, cities,
+                                          occupations, comparisons, blog)
+  • /functions/v1/sitemap-consultants  — dynamic consultant + agency profiles,
+                                          generated on every request by an
+                                          edge function (see supabase/functions
+                                          /sitemap-consultants/index.ts)
+
+  Submit THIS file (sitemap-index.xml) to Google Search Console + Bing
+  Webmaster Tools, not the individual sitemaps. The crawlers will pull
+  both child sitemaps automatically.
+
+  Optional: register the same URL with a rewrite in vercel.json so
+  /sitemap-consultants.xml proxies the function — easier for tools that
+  expect a .xml extension. See SEO_SUBMISSION.md.
+-->
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>https://immizy.in/sitemap.xml</loc>
+    <lastmod>2026-05-23</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://ylraewihqxurhwexnanr.supabase.co/functions/v1/sitemap-consultants</loc>
+    <lastmod>2026-05-23</lastmod>
+  </sitemap>
+</sitemapindex>

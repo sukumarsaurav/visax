@@ -5,50 +5,54 @@ import { Link } from 'react-router-dom'
 import PublicHeader from '../../components/layout/PublicHeader'
 import Footer from '../../components/layout/Footer'
 
+// Plan prices are quoted in INR. These MUST match:
+//   • src/pages/auth/ProfessionalRegisterPage.jsx → agencyPlans[].price
+//   • supabase/functions/create-razorpay-order/index.ts → PLANS[].price_inr
+// Yearly = monthly × 10 (i.e. 2 months free), the standard SaaS discount.
 const plans = [
     {
         id: 'starter',
         name: 'Starter',
-        description: 'Perfect for solo consultants just starting out.',
-        monthlyPrice: 0,
-        yearlyPrice: 0,
+        description: 'Perfect for small firms just getting started.',
+        monthlyPrice: 4999,
+        yearlyPrice: 49990,        // ~₹4,166/mo equivalent
         features: [
-            { text: '1 Consultant Seat', highlighted: false },
-            { text: '10 Active Cases/mo', highlighted: false },
-            { text: 'Basic Document Storage', highlighted: false },
-            { text: 'Community Support', highlighted: false }
+            { text: 'Up to 3 Consultant Seats', highlighted: false },
+            { text: '50 Cases / month', highlighted: false },
+            { text: 'Basic Analytics', highlighted: false },
+            { text: 'Email Support', highlighted: false }
         ],
-        buttonText: 'Get Started Free',
+        buttonText: 'Get Started',
         buttonStyle: 'secondary',
-        cta: '/register',
+        cta: '/professional-register',
         popular: false
     },
     {
         id: 'growth',
         name: 'Growth',
-        description: 'Best for growing firms needing more power.',
-        monthlyPrice: 49,
-        yearlyPrice: 39,
+        description: 'For expanding agencies with active caseloads.',
+        monthlyPrice: 8999,
+        yearlyPrice: 89990,        // ~₹7,499/mo equivalent
         features: [
-            { text: 'Up to 5 Consultant Seats', highlighted: true },
-            { text: '50 Active Cases/mo', highlighted: true },
-            { text: 'Advanced Analytics', highlighted: false },
-            { text: 'Priority Email Support', highlighted: false },
+            { text: 'Up to 15 Consultant Seats', highlighted: true },
+            { text: '250 Cases / month', highlighted: true },
+            { text: 'Advanced Reporting', highlighted: false },
+            { text: 'Priority Support', highlighted: false },
             { text: 'Custom Branding', highlighted: false }
         ],
-        buttonText: 'Start Free Trial',
+        buttonText: 'Start with Growth',
         buttonStyle: 'primary',
-        cta: '/register',
+        cta: '/professional-register',
         popular: true
     },
     {
         id: 'enterprise',
         name: 'Enterprise',
-        description: 'For large agencies with custom needs.',
-        monthlyPrice: 199,
-        yearlyPrice: 159,
+        description: 'Full-scale for large multinational firms.',
+        monthlyPrice: 14999,
+        yearlyPrice: 149990,       // ~₹12,499/mo equivalent
         features: [
-            { text: 'Unlimited Seats', highlighted: false },
+            { text: 'Unlimited Consultant Seats', highlighted: false },
             { text: 'Unlimited Cases', highlighted: false },
             { text: 'Dedicated Account Manager', highlighted: false },
             { text: 'API Access', highlighted: false },
@@ -62,8 +66,8 @@ const plans = [
 ]
 
 const comparisonFeatures = [
-    { name: 'Team Members', starter: '1 User', growth: '5 Users', enterprise: 'Unlimited' },
-    { name: 'Active Cases', starter: '10 / mo', growth: '50 / mo', enterprise: 'Unlimited' },
+    { name: 'Team Members', starter: '3 Users', growth: '15 Users', enterprise: 'Unlimited' },
+    { name: 'Active Cases', starter: '50 / mo', growth: '250 / mo', enterprise: 'Unlimited' },
     { name: 'Document Storage', starter: 'check', growth: 'check_circle', enterprise: 'check_circle' },
     { name: 'API Access', starter: 'remove', growth: 'remove', enterprise: 'check_circle' },
     { name: 'Priority Support', starter: 'remove', growth: 'check_circle', enterprise: 'check_circle' },
@@ -72,18 +76,35 @@ const comparisonFeatures = [
 
 const faqs = [
     { question: 'Can I change plans later?', answer: 'Yes, you can upgrade or downgrade your plan at any time. Changes will be applied to your next billing cycle.' },
-    { question: 'Is there a free trial?', answer: 'We offer a 14-day free trial for the Growth plan. No credit card required to start.' },
-    { question: 'What payment methods do you accept?', answer: 'We accept all major credit cards, PayPal, and bank transfers for Enterprise plans.' },
-    { question: 'Do you offer discounts for non-profits?', answer: 'Yes! Contact our sales team with proof of status for a 20% discount on all plans.' }
+    { question: 'What payment methods do you accept?', answer: 'Payments are processed securely via Razorpay. We accept all major Indian credit & debit cards (Visa, Mastercard, RuPay), UPI (Google Pay, PhonePe, Paytm), Netbanking from 50+ banks, and EMI options on select cards. International cards are supported for Enterprise plans.' },
+    { question: 'Are prices inclusive of GST?', answer: 'Listed prices are exclusive of 18% GST. GST will be added at checkout and a tax invoice will be issued.' },
+    { question: 'Do you offer a refund policy?', answer: 'Yes — we offer a 7-day money-back guarantee on the Starter and Growth plans, no questions asked. Enterprise refunds are handled per the contractual terms.' },
+    { question: 'Do you offer discounts for non-profits or educational institutions?', answer: 'Yes! Contact our sales team with proof of status for a 20% discount on all plans.' },
+    { question: 'Can I pay annually instead of monthly?', answer: 'Yes — choosing annual billing gives you 2 months free (effectively ~16% discount) on Starter and Growth plans.' }
 ]
 
 export default function PricingPage() {
     useSEO(SEO.pricing)
     const [billingPeriod, setBillingPeriod] = useState('monthly')
 
+    // Yearly displays the per-month equivalent (yearlyPrice / 12) so users can
+    // compare like-for-like vs the monthly column. The full yearly amount is
+    // shown below in small text via getPeriodLabel().
     const getPrice = (plan) => {
-        return billingPeriod === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice
+        if (plan.monthlyPrice === 0) return 0
+        return billingPeriod === 'yearly'
+            ? Math.round(plan.yearlyPrice / 12)
+            : plan.monthlyPrice
     }
+
+    const getPeriodLabel = (plan) => {
+        if (plan.monthlyPrice === 0) return 'forever'
+        return billingPeriod === 'yearly'
+            ? `/mo · billed ₹${plan.yearlyPrice.toLocaleString('en-IN')}/yr`
+            : '/mo'
+    }
+
+    const formatINR = (n) => n.toLocaleString('en-IN')
 
     return (
         <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950">
@@ -121,7 +142,7 @@ export default function PricingPage() {
                                     : 'text-slate-500 dark:text-slate-400'
                                 }`}
                         >
-                            Yearly <span className="text-primary text-xs ml-1 font-extrabold">-20%</span>
+                            Yearly <span className="text-primary text-xs ml-1 font-extrabold">2 months free</span>
                         </button>
                     </div>
                 </div>
@@ -145,11 +166,14 @@ export default function PricingPage() {
                                 <div className="flex flex-col gap-2">
                                     <h3 className="text-slate-900 dark:text-white text-xl font-bold">{plan.name}</h3>
                                     <p className="text-slate-500 dark:text-slate-400 text-sm">{plan.description}</p>
-                                    <div className="flex items-baseline gap-1 mt-2">
-                                        <span className="text-slate-900 dark:text-white text-4xl font-black tracking-tight">
-                                            ${getPrice(plan)}
-                                        </span>
-                                        <span className="text-slate-500 dark:text-slate-400 font-medium">/mo</span>
+                                    <div className="flex flex-col gap-1 mt-2">
+                                        <div className="flex items-baseline gap-1">
+                                            <span className="text-slate-900 dark:text-white text-4xl font-black tracking-tight">
+                                                ₹{formatINR(getPrice(plan))}
+                                            </span>
+                                            <span className="text-slate-500 dark:text-slate-400 font-medium text-sm">{getPeriodLabel(plan)}</span>
+                                        </div>
+                                        <span className="text-xs text-slate-400 dark:text-slate-500">Exclusive of 18% GST</span>
                                     </div>
                                 </div>
                                 <Link to={plan.cta} className={`w-full py-3 rounded-xl font-bold text-sm transition-colors text-center block ${plan.buttonStyle === 'primary'

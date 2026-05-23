@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { friendlyError } from '../../lib/errors'
 import { useSEO } from '../../hooks/useSEO'
 import toast from 'react-hot-toast'
+import * as unclaimedProfilesRepo from '../../data/unclaimedProfilesRepo'
 
 // Steps: 'lookup' → 'preview' → 'signup' → 'set_password' → 'done'
 
@@ -50,7 +51,7 @@ export default function ClaimProfilePage() {
         if (!t.trim()) { setError('Please enter a claim token.'); return }
         setLoading(true)
         setError('')
-        const { data, error: rpcErr } = await supabase.rpc('get_unclaimed_profile_by_token', { p_token: t.trim() })
+        const { data, error: rpcErr } = await unclaimedProfilesRepo.getByToken(t.trim())
         setLoading(false)
         if (rpcErr || data?.error) {
             setError(data?.error || 'Invalid or expired claim link. Please ask for a new one.')
@@ -96,7 +97,7 @@ export default function ClaimProfilePage() {
 
     async function runClaim() {
         setLoading(true)
-        const { data, error: claimErr } = await supabase.rpc('claim_profile', { p_token: token || tokenFromUrl })
+        const { data, error: claimErr } = await unclaimedProfilesRepo.claim(token || tokenFromUrl)
         if (claimErr || data?.error) {
             setError(data?.error || 'Claim failed. Please try again or contact support.')
             setLoading(false)

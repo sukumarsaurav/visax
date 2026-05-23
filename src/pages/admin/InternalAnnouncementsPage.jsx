@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
-import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { slackNotify, trackEvent } from '../../lib/integrations'
+import { useDebounce } from '../../hooks/useDebounce'
+import * as announcementsRepo from '../../data/announcementsRepo'
 
 const priorityColors = {
     high: 'bg-red-50 text-red-700 border-red-100 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800',
@@ -37,15 +38,11 @@ export default function InternalAnnouncementsPage() {
         setTimeout(() => setToast(null), 3000)
     }
 
+    const debouncedSearch = useDebounce(search, 300)
+
     const fetchAnnouncements = useCallback(async () => {
         setLoading(true)
-        let query = supabase.from('announcements').select('*, profiles(full_name)').order('created_at', { ascending: false })
-
-        if (search.trim()) query = query.ilike('title', `%${search}%`)
-        if (filterStatus === 'Global') query = query.eq('is_global', true)
-        else if (filterStatus === 'Agency-specific') query = query.eq('is_global', false)
-
-        const { data } = await query
+        const { data } = await announcementsRepo.list({ search: debouncedSearch, scope: filterStatus })
         const list = data || []
         setAnnouncements(list)
         setStats({
@@ -53,7 +50,7 @@ export default function InternalAnnouncementsPage() {
             drafts: list.filter(a => !a.is_global).length,
         })
         setLoading(false)
-    }, [search, filterStatus])
+    }, [debouncedSearch, filterStatus])
 
     useEffect(() => { fetchAnnouncements() }, [fetchAnnouncements])
 
@@ -63,7 +60,7 @@ export default function InternalAnnouncementsPage() {
             return
         }
         setSaving(true)
-        const { error } = await supabase.from('announcements').insert({
+        const { error } = await announcementsRepo.create({
             title: form.title,
             content: form.content,
             priority: form.priority,
@@ -86,13 +83,13 @@ export default function InternalAnnouncementsPage() {
     }
 
     const handleToggleGlobal = async (ann) => {
-        await supabase.from('announcements').update({ is_global: !ann.is_global }).eq('id', ann.id)
+        await announcementsRepo.update(ann.id, { is_global: !ann.is_global })
         fetchAnnouncements()
     }
 
     const handleDelete = async (id) => {
         if (!confirm('Delete this announcement?')) return
-        await supabase.from('announcements').delete().eq('id', id)
+        await announcementsRepo.remove(id)
         showToast('Deleted')
         fetchAnnouncements()
     }

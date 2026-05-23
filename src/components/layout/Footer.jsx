@@ -1,6 +1,33 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { supabase } from '../../lib/supabase'
+import * as platformSettingsRepo from '../../data/platformSettingsRepo'
+import { DESTINATIONS, CITIES, OCCUPATIONS, COMPARISONS } from '../../lib/seo'
+
+// SEO internal-link blocks rendered in the footer.
+// These give every page a high-frequency link to top SEO surfaces — which is
+// the single biggest lever for evenly distributing PageRank across the site
+// and accelerating Google's discovery of new destinations / cities / pages.
+const TOP_DESTINATIONS = [
+    'canada-pr', 'australia-pr', 'usa-visa', 'uk-skilled-worker',
+    'germany-job-seeker', 'japan-work-visa', 'new-zealand-skilled',
+    'singapore-employment-pass', 'uae-golden-visa', 'ireland-critical-skills',
+]
+const TOP_CITIES = [
+    'delhi', 'mumbai', 'bangalore', 'chandigarh', 'jalandhar',
+    'kochi', 'gurgaon', 'pune', 'hyderabad', 'chennai',
+]
+const TOP_OCCUPATIONS = [
+    'canada-pr-for-software-engineer',
+    'uk-skilled-worker-for-nurse',
+    'uk-skilled-worker-for-doctor',
+    'germany-blue-card-for-software-engineer',
+    'canada-pr-for-accountant',
+    'canada-pr-for-truck-driver',
+    'australia-pr-for-civil-engineer',
+]
+const TOP_COMPARISONS = [
+    'canada-vs-australia', 'canada-vs-usa', 'germany-vs-canada', 'h1b-vs-canada-pr',
+]
 
 const SOCIAL_ICONS = {
     twitter:   { label: 'Twitter / X', path: 'M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.737-8.835L1.254 2.25H8.08l4.259 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z' },
@@ -19,12 +46,16 @@ export default function Footer() {
     const [legal, setLegal] = useState(_legalCache || {})
 
     useEffect(() => {
-        const toFetch = []
-        if (!_socialLinksCache) toFetch.push(supabase.from('platform_settings').select('value').eq('key', 'social_links').single()
-            .then(({ data }) => { if (data?.value) { _socialLinksCache = data.value; setSocialLinks(data.value) } }))
-        if (!_legalCache) toFetch.push(supabase.from('platform_settings').select('value').eq('key', 'legal').single()
-            .then(({ data }) => { if (data?.value) { _legalCache = data.value; setLegal(data.value) } }))
-        if (toFetch.length) Promise.all(toFetch)
+        // Coalesce both fetches into one round-trip via the multi-key helper.
+        const missing = []
+        if (!_socialLinksCache) missing.push('social_links')
+        if (!_legalCache) missing.push('legal')
+        if (missing.length === 0) return
+
+        platformSettingsRepo.getValues(missing).then(({ values }) => {
+            if (values.social_links) { _socialLinksCache = values.social_links; setSocialLinks(values.social_links) }
+            if (values.legal)        { _legalCache = values.legal;             setLegal(values.legal) }
+        })
     }, [])
 
     const activeSocials = Object.entries(SOCIAL_ICONS).filter(([key]) => socialLinks[key])
@@ -75,6 +106,9 @@ export default function Footer() {
                     {/* Resources Links */}
                     <div className="flex flex-col gap-3">
                         <h4 className="font-bold text-slate-900 dark:text-white text-sm">Resources</h4>
+                        <Link to="/blog" className="text-sm text-slate-500 dark:text-slate-400 hover:text-primary transition-colors">
+                            Immigration Blog
+                        </Link>
                         <Link to="/professional-register" className="text-sm text-slate-500 dark:text-slate-400 hover:text-primary transition-colors">
                             For Professionals
                         </Link>
@@ -98,8 +132,72 @@ export default function Footer() {
                     </div>
                 </div>
 
+                {/* ── SEO internal linking blocks ───────────────────────────────────
+                    Top destinations, cities, occupations, and comparisons appear in
+                    the footer of every page. Search engines crawl footer links
+                    aggressively → this is the highest-leverage place to distribute
+                    link equity across the long tail of SEO pages. */}
+                <div className="border-t border-slate-100 dark:border-slate-800 pt-8 grid grid-cols-2 md:grid-cols-4 gap-8 text-xs">
+                    <div>
+                        <h4 className="font-bold text-slate-700 dark:text-slate-300 mb-3 uppercase tracking-wider text-[11px]">
+                            Top Destinations
+                        </h4>
+                        <ul className="flex flex-col gap-2 text-slate-500 dark:text-slate-400">
+                            {TOP_DESTINATIONS.map(slug => DESTINATIONS[slug] && (
+                                <li key={slug}>
+                                    <Link to={`/immigration/${slug}`} className="hover:text-primary transition-colors">
+                                        {DESTINATIONS[slug].flag} {DESTINATIONS[slug].country}
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 className="font-bold text-slate-700 dark:text-slate-300 mb-3 uppercase tracking-wider text-[11px]">
+                            Top Indian Cities
+                        </h4>
+                        <ul className="flex flex-col gap-2 text-slate-500 dark:text-slate-400">
+                            {TOP_CITIES.map(slug => CITIES[slug] && (
+                                <li key={slug}>
+                                    <Link to={`/immigration-consultant-${slug}`} className="hover:text-primary transition-colors">
+                                        {CITIES[slug].name}
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 className="font-bold text-slate-700 dark:text-slate-300 mb-3 uppercase tracking-wider text-[11px]">
+                            For Professionals
+                        </h4>
+                        <ul className="flex flex-col gap-2 text-slate-500 dark:text-slate-400">
+                            {TOP_OCCUPATIONS.map(slug => OCCUPATIONS[slug] && (
+                                <li key={slug}>
+                                    <Link to={`/immigration/${slug}`} className="hover:text-primary transition-colors">
+                                        {OCCUPATIONS[slug].occupation} → {DESTINATIONS[OCCUPATIONS[slug].destination]?.country}
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 className="font-bold text-slate-700 dark:text-slate-300 mb-3 uppercase tracking-wider text-[11px]">
+                            Compare Countries
+                        </h4>
+                        <ul className="flex flex-col gap-2 text-slate-500 dark:text-slate-400">
+                            {TOP_COMPARISONS.map(slug => COMPARISONS[slug] && (
+                                <li key={slug}>
+                                    <Link to={`/compare/${slug}`} className="hover:text-primary transition-colors">
+                                        {COMPARISONS[slug].h1.replace(/ for Indians?$/i, '').replace('?', '')}
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+
                 {/* Bottom Bar */}
-                <div className="border-t border-slate-100 dark:border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="border-t border-slate-100 dark:border-slate-800 pt-8 mt-8 flex flex-col md:flex-row justify-between items-center gap-4">
                     <p className="text-xs text-slate-400">
                         © {new Date().getFullYear()} Immizy Inc. All rights reserved.
                     </p>

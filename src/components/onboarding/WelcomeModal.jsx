@@ -23,7 +23,7 @@ export default function WelcomeModal({ userName = 'there', onClose }) {
                         <div
                             className="absolute inset-0 bg-cover bg-center"
                             style={{
-                                backgroundImage: `url('https://images.unsplash.com/photo-1521737711867-e3b97375f902?q=80&w=1974&auto=format&fit=crop')`
+                                backgroundImage: `url('https://images.unsplash.com/photo-1521737711867-e3b97375f902?q=70&w=640&auto=format&fit=crop')`
                             }}
                         />
                         <div className="absolute inset-0 bg-primary/20 mix-blend-multiply" />

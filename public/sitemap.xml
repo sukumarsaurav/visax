@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
 
-  <!-- Core pages -->
+  <!-- ═══ Core pages ═══ -->
   <url><loc>https://immizy.in/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
   <url><loc>https://immizy.in/find-professionals</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
   <url><loc>https://immizy.in/services</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
@@ -9,16 +10,20 @@
   <url><loc>https://immizy.in/about</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://immizy.in/support</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
 
-  <!-- Auth pages -->
+  <!-- ═══ Auth pages ═══ -->
   <url><loc>https://immizy.in/login</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
   <url><loc>https://immizy.in/register</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
   <url><loc>https://immizy.in/professional-register</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
 
-  <!-- Legal -->
+  <!-- ═══ Legal ═══ -->
   <url><loc>https://immizy.in/privacy</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
   <url><loc>https://immizy.in/terms</loc><changefreq>yearly</changefreq><priority>0.3</priority></url>
 
-  <!-- City SEO pages -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- City SEO pages — `immigration consultant in {city}` searches        -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+  <!-- Tier 1 metros -->
   <url><loc>https://immizy.in/immigration-consultant-delhi</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
   <url><loc>https://immizy.in/immigration-consultant-mumbai</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
   <url><loc>https://immizy.in/immigration-consultant-bangalore</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
@@ -27,11 +32,120 @@
   <url><loc>https://immizy.in/immigration-consultant-pune</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://immizy.in/immigration-consultant-ahmedabad</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
 
-  <!-- Destination country pages -->
+  <!-- Tier 1.5 — Punjab / Kerala / Gujarat / NCR (highest emigration density) -->
+  <url><loc>https://immizy.in/immigration-consultant-chandigarh</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://immizy.in/immigration-consultant-jalandhar</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://immizy.in/immigration-consultant-ludhiana</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://immizy.in/immigration-consultant-amritsar</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://immizy.in/immigration-consultant-kochi</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://immizy.in/immigration-consultant-trivandrum</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://immizy.in/immigration-consultant-surat</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://immizy.in/immigration-consultant-vadodara</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://immizy.in/immigration-consultant-gurgaon</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://immizy.in/immigration-consultant-noida</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+
+  <!-- Tier 2 -->
+  <url><loc>https://immizy.in/immigration-consultant-kolkata</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://immizy.in/immigration-consultant-jaipur</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://immizy.in/immigration-consultant-lucknow</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://immizy.in/immigration-consultant-coimbatore</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://immizy.in/immigration-consultant-indore</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://immizy.in/immigration-consultant-bhopal</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://immizy.in/immigration-consultant-visakhapatnam</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- Destination country pages — `{country} pr from india` searches      -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+
   <url><loc>https://immizy.in/immigration/canada-pr</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
   <url><loc>https://immizy.in/immigration/australia-pr</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://immizy.in/immigration/germany-job-seeker</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://immizy.in/immigration/usa-visa</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
   <url><loc>https://immizy.in/immigration/uk-skilled-worker</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://immizy.in/immigration/germany-job-seeker</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://immizy.in/immigration/japan-work-visa</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://immizy.in/immigration/new-zealand-skilled</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://immizy.in/immigration/singapore-employment-pass</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://immizy.in/immigration/ireland-critical-skills</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://immizy.in/immigration/uae-golden-visa</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://immizy.in/immigration/netherlands-highly-skilled</loc><changefreq>weekly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://immizy.in/immigration/france-talent-passport</loc><changefreq>weekly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://immizy.in/immigration/china-z-visa</loc><changefreq>weekly</changefreq><priority>0.4</priority></url>
   <url><loc>https://immizy.in/immigration/portugal-d7</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- Occupation × destination — long-tail high-intent                    -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+  <url><loc>https://immizy.in/immigration/canada-pr-for-software-engineer</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://immizy.in/immigration/australia-pr-for-software-engineer</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://immizy.in/immigration/germany-blue-card-for-software-engineer</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://immizy.in/immigration/uk-skilled-worker-for-nurse</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://immizy.in/immigration/canada-pr-for-nurse</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://immizy.in/immigration/australia-pr-for-nurse</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://immizy.in/immigration/us-eb5-for-investors</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+
+  <!-- Doctors / MBBS -->
+  <url><loc>https://immizy.in/immigration/uk-skilled-worker-for-doctor</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://immizy.in/immigration/germany-blue-card-for-doctor</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://immizy.in/immigration/australia-pr-for-doctor</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+
+  <!-- Accountant / CA / CPA -->
+  <url><loc>https://immizy.in/immigration/canada-pr-for-accountant</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://immizy.in/immigration/australia-pr-for-accountant</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+
+  <!-- Teacher -->
+  <url><loc>https://immizy.in/immigration/uk-skilled-worker-for-teacher</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://immizy.in/immigration/uae-work-visa-for-teacher</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+
+  <!-- Civil Engineer -->
+  <url><loc>https://immizy.in/immigration/canada-pr-for-civil-engineer</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://immizy.in/immigration/australia-pr-for-civil-engineer</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+
+  <!-- Mechanical Engineer -->
+  <url><loc>https://immizy.in/immigration/canada-pr-for-mechanical-engineer</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://immizy.in/immigration/germany-blue-card-for-mechanical-engineer</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+
+  <!-- Chef -->
+  <url><loc>https://immizy.in/immigration/canada-pr-for-chef</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+
+  <!-- Truck Driver -->
+  <url><loc>https://immizy.in/immigration/canada-pr-for-truck-driver</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://immizy.in/immigration/australia-pr-for-truck-driver</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- Comparison pages — top-of-funnel mid-intent                         -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+  <url><loc>https://immizy.in/compare/canada-vs-australia</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://immizy.in/compare/canada-vs-usa</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://immizy.in/compare/germany-vs-canada</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://immizy.in/compare/uk-vs-canada</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://immizy.in/compare/h1b-vs-canada-pr</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+  <!-- Blog content hub — long-form informational posts                    -->
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
+
+  <url><loc>https://immizy.in/blog</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://immizy.in/blog/canada-pr-from-india-complete-guide-2026</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://immizy.in/blog/australia-189-vs-190-vs-491-which-should-indians-apply</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://immizy.in/blog/germany-chancenkarte-for-indians-points-calculator</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://immizy.in/blog/uk-skilled-worker-salary-threshold-2026-changes</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://immizy.in/blog/best-country-to-migrate-from-india-2026</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://immizy.in/blog/canada-pr-without-ielts-is-it-possible</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://immizy.in/blog/h1b-2026-lottery-what-indians-should-plan</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://immizy.in/blog/top-10-mistakes-canada-pr-rejection</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://immizy.in/blog/cheapest-country-to-migrate-from-india-for-pr</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://immizy.in/blog/family-sponsorship-canada-bringing-spouse-parents</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+
+  <!--
+    ═══════════════════════════════════════════════════════════════════════
+    Per-consultant + per-agency profile URLs are served by the dynamic
+    edge function sitemap-consultants and referenced from sitemap-index.xml.
+    Submit /sitemap-index.xml to Google Search Console + Bing — it covers
+    both this static file AND the dynamic profile sitemap.
+    See docs/SEO_SUBMISSION.md for the step-by-step.
+    ═══════════════════════════════════════════════════════════════════════
+  -->
 
 </urlset>

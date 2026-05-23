@@ -1,11 +1,12 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
 import { useEffect, useState, lazy, Suspense } from 'react'
-import { supabase } from './lib/supabase'
 import { trackEvent } from './lib/integrations'
 import { loadPlatformConfig, getMaintenanceMode, getMaintenanceMessage } from './lib/platformConfig'
 import { CLIENT, AGENCY_ADMIN, ADMIN } from './constants/roles'
 import { useDocumentLang } from './hooks/useDocumentLang'
+import { UserChannelProvider } from './contexts/UserChannelContext'
+import * as platformSettingsRepo from './data/platformSettingsRepo'
 
 // Layouts — kept eager since they're needed immediately
 import DashboardLayout from './components/layout/DashboardLayout'
@@ -87,6 +88,10 @@ const PrivacyPage = lazy(() => import('./pages/landing/PrivacyPage'))
 const TermsPage = lazy(() => import('./pages/landing/TermsPage'))
 const CityLandingPage = lazy(() => import('./pages/landing/CityLandingPage'))
 const DestinationPage = lazy(() => import('./pages/landing/DestinationPage'))
+const ImmigrationRouter = lazy(() => import('./pages/landing/ImmigrationRouter'))
+const ComparisonPage = lazy(() => import('./pages/landing/ComparisonPage'))
+const BlogIndexPage = lazy(() => import('./pages/landing/BlogIndexPage'))
+const BlogPostPage = lazy(() => import('./pages/landing/BlogPostPage'))
 const UnclaimedProfilePage = lazy(() => import('./pages/landing/UnclaimedProfilePage'))
 
 // Auth pages (additional)
@@ -95,6 +100,9 @@ const AcceptInvitePage = lazy(() => import('./pages/auth/AcceptInvitePage'))
 
 // Admin pages (additional)
 const AdminUnclaimedProfiles = lazy(() => import('./pages/admin/UnclaimedProfilesPage'))
+
+// Account / GDPR
+const AccountDataPage = lazy(() => import('./pages/account/AccountDataPage'))
 
 // Misc
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
@@ -122,9 +130,9 @@ function PageLoader() {
 // GA4 auto-inject: loads gtag.js when Google Analytics is connected
 function useGoogleAnalytics() {
     useEffect(() => {
-        supabase.from('platform_settings').select('value').eq('key', 'integrations').single()
-            .then(({ data }) => {
-                const ga = data?.value?.analytics
+        platformSettingsRepo.getValue('integrations')
+            .then(({ value }) => {
+                const ga = value?.analytics
                 if (!ga?.enabled || !ga?.measurement_id) return
                 const id = ga.measurement_id
                 // Validate GA4 ID format before any DOM injection to prevent script injection
@@ -164,22 +172,20 @@ function RootRedirect() {
     )
 }
 
-// Blocks non-admin access when maintenance_mode is enabled.
-// Allows /login through so admins can still authenticate.
+// Renders the maintenance page when maintenance_mode is enabled, except for
+// admins and the /login route. Optimistically renders children first and
+// swaps in MaintenancePage if the config call says we're down — this avoids
+// a blank screen while we wait for the platform_settings round-trip.
 function MaintenanceGate({ children }) {
-    const { profile, loading: authLoading } = useAuth()
+    const { profile } = useAuth()
     const location = useLocation()
     const [maintenance, setMaintenance] = useState(false)
-    const [configReady, setConfigReady] = useState(false)
 
     useEffect(() => {
         loadPlatformConfig().then(() => {
             setMaintenance(getMaintenanceMode())
-            setConfigReady(true)
         })
     }, [])
-
-    if (!configReady || authLoading) return null
 
     const isAdmin = profile?.role === 'admin'
     const isLoginPage = location.pathname === '/login'
@@ -201,6 +207,7 @@ export default function App() {
     return (
         <Router>
             <PageViewTracker />
+            <UserChannelProvider>
             <MaintenanceGate>
             <Suspense fallback={<PageLoader />}>
                 <Routes>
@@ -218,13 +225,22 @@ export default function App() {
                     <Route path="/about" element={<AboutPage />} />
                     <Route path="/privacy" element={<PrivacyPage />} />
                     <Route path="/terms" element={<TermsPage />} />
+                    {/* GDPR — requires auth so the page self-protects via useAuth */}
+                    <Route path="/account/data" element={<AccountDataPage />} />
                     <Route path="/pricing" element={<PricingPage />} />
                     <Route path="/services" element={<ServicesDirectoryPage />} />
                     <Route path="/services/:serviceId" element={<ServiceDetailsPage />} />
                     {/* City SEO pages — /immigration-consultant-delhi, -mumbai, etc. */}
                     <Route path="/immigration-consultant-:city" element={<CityLandingPage />} />
-                    {/* Destination SEO pages — /immigration/canada-pr, /immigration/australia-pr, etc. */}
-                    <Route path="/immigration/:destination" element={<DestinationPage />} />
+                    {/* Destination + Occupation pages share /immigration/:destination via dispatcher */}
+                    {/* — destination: /immigration/canada-pr */}
+                    {/* — occupation:  /immigration/canada-pr-for-software-engineer */}
+                    <Route path="/immigration/:destination" element={<ImmigrationRouter />} />
+                    {/* Country-vs-country comparison pages (high mid-funnel intent) */}
+                    <Route path="/compare/:slug" element={<ComparisonPage />} />
+                    {/* Blog content hub — long-form informational posts */}
+                    <Route path="/blog" element={<BlogIndexPage />} />
+                    <Route path="/blog/:slug" element={<BlogPostPage />} />
 
                     {/* Auth — redirect to dashboard if already logged in */}
                     <Route element={<AuthLayout />}>
@@ -367,6 +383,7 @@ export default function App() {
                 </Routes>
             </Suspense>
             </MaintenanceGate>
+            </UserChannelProvider>
         </Router>
     )
 }

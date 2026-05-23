@@ -3,9 +3,9 @@ import { toast } from 'react-hot-toast'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import Avatar from '../../components/ui/Avatar'
-import { supabase } from '../../lib/supabase'
 import { useDebounce } from '../../hooks/useDebounce'
 import { escField } from '../../lib/csvEscape'
+import * as auditLogsRepo from '../../data/auditLogsRepo'
 
 const ACTION_COLORS = {
     'User Approved': 'blue',
@@ -43,18 +43,14 @@ export default function AdminAuditLog() {
 
     const fetchLogs = useCallback(async () => {
         setLoading(true)
-        let query = supabase
-            .from('audit_logs')
-            .select('*, profiles(full_name, email, role)', { count: 'exact' })
-            .order('created_at', { ascending: false })
-            .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
-
-        if (debouncedAction.trim()) query = query.ilike('action', `%${debouncedAction}%`)
-        if (entityType) query = query.eq('entity_type', entityType)
-        if (dateFrom) query = query.gte('created_at', `${dateFrom}T00:00:00.000Z`)
-        if (dateTo) query = query.lte('created_at', `${dateTo}T23:59:59.999Z`)
-
-        const { data, count, error } = await query
+        const { data, count, error } = await auditLogsRepo.list({
+            action: debouncedAction,
+            entityType,
+            dateFrom,
+            dateTo,
+            page,
+            pageSize: PAGE_SIZE,
+        })
         if (error) toast.error('Failed to load audit logs')
         else {
             // Client-side user filter (PostgREST doesn't support filtering on joined columns easily)

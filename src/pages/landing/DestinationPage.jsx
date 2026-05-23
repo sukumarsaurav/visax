@@ -2,12 +2,12 @@ import { Link, useParams, Navigate } from 'react-router-dom'
 import PublicHeader from '../../components/layout/PublicHeader'
 import Footer from '../../components/layout/Footer'
 import { useSEO } from '../../hooks/useSEO'
-import { DESTINATIONS } from '../../lib/seo'
+import { DESTINATIONS, buildBreadcrumb, buildFAQ } from '../../lib/seo'
 
-const destSchema = (dest) => ({
-    '@context': 'https://schema.org',
-    '@graph': [
+function destSchema(dest) {
+    return [
         {
+            '@context': 'https://schema.org',
             '@type': 'Service',
             name: `${dest.country} Immigration Consulting — Immizy`,
             description: dest.description,
@@ -16,37 +16,29 @@ const destSchema = (dest) => ({
             areaServed: { '@type': 'Country', name: 'India' },
             serviceType: `${dest.country} Immigration Consulting`,
         },
-        {
-            '@type': 'FAQPage',
-            mainEntity: dest.faqs.map(({ q, a }) => ({
-                '@type': 'Question',
-                name: q,
-                acceptedAnswer: { '@type': 'Answer', text: a },
-            })),
-        },
-    ],
-})
-
-const countryFlag = {
-    Canada: '🇨🇦',
-    Australia: '🇦🇺',
-    Germany: '🇩🇪',
-    'United Kingdom': '🇬🇧',
-    Portugal: '🇵🇹',
+        buildFAQ(dest.faqs),
+        buildBreadcrumb([
+            { name: 'Home', url: '/' },
+            { name: 'Immigration', url: '/find-professionals' },
+            { name: dest.country, url: `/immigration/${dest.slug}` },
+        ]),
+    ].filter(Boolean)
 }
 
 export default function DestinationPage() {
     const { destination } = useParams()
     const dest = DESTINATIONS[destination]
 
-    if (!dest) return <Navigate to="/find-professionals" replace />
-
+    // Hooks must run unconditionally — see CityLandingPage for the same fix.
     useSEO({
-        title: dest.title,
-        description: dest.description,
-        canonical: `https://immizy.in/immigration/${dest.slug}`,
-        schema: destSchema(dest),
+        title: dest?.title || 'Immigration Destinations',
+        description: dest?.description || 'Explore visa pathways with Immizy.',
+        keywords: dest ? `${dest.country.toLowerCase()} pr from india, ${dest.country.toLowerCase()} immigration consultant india, ${dest.country.toLowerCase()} visa from india, ${(dest.programs || []).slice(0,3).join(', ').toLowerCase()}` : undefined,
+        canonical: dest ? `https://immizy.in/immigration/${dest.slug}` : 'https://immizy.in/find-professionals',
+        schema: dest ? destSchema(dest) : null,
     })
+
+    if (!dest) return <Navigate to="/find-professionals" replace />
 
     return (
         <div className="flex min-h-screen flex-col bg-white dark:bg-[#101822]">
@@ -56,7 +48,7 @@ export default function DestinationPage() {
                 {/* Hero */}
                 <section className="bg-gradient-to-br from-[#0d1b2e] via-[#0f2748] to-[#0d1b2e] text-white py-20 px-6">
                     <div className="max-w-5xl mx-auto text-center">
-                        <span className="text-5xl mb-4 block">{countryFlag[dest.country] || '🌍'}</span>
+                        <span className="text-5xl mb-4 block">{dest.flag || '🌍'}</span>
                         <span className="inline-flex items-center gap-1.5 text-blue-300 text-xs font-bold tracking-widest uppercase mb-3">
                             <span className="material-symbols-outlined text-[14px]">flight_takeoff</span>
                             {dest.subtitle}
@@ -193,7 +185,7 @@ export default function DestinationPage() {
                                     to={`/immigration/${d.slug}`}
                                     className="text-sm px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-primary hover:text-primary transition-colors"
                                 >
-                                    {countryFlag[d.country] || ''} {d.country}
+                                    {d.flag || ''} {d.country}
                                 </Link>
                             ))}
                         </div>

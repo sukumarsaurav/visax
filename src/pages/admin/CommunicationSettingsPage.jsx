@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
-import { supabase } from '../../lib/supabase'
+import * as platformSettingsRepo from '../../data/platformSettingsRepo'
 
 const DEFAULT_TEMPLATES = [
     { id: 1, name: 'Welcome Email', subject: 'Welcome to Immizy!', body: 'Hi {{client_name}},\n\nWelcome to Immizy! We are thrilled to have you on board.\n\nBest regards,\nThe Immizy Team', status: 'active' },
@@ -36,13 +36,9 @@ export default function CommunicationSettingsPage() {
 
     useEffect(() => {
         async function loadTemplates() {
-            const { data } = await supabase
-                .from('platform_settings')
-                .select('value')
-                .eq('key', 'email_templates')
-                .single()
-            if (data?.value?.templates?.length) {
-                const loaded = data.value.templates
+            const { value } = await platformSettingsRepo.getValue('email_templates')
+            if (value?.templates?.length) {
+                const loaded = value.templates
                 setTemplates(loaded)
                 setSelectedTemplate(loaded[0])
                 setEditBody(loaded[0].body)
@@ -59,11 +55,9 @@ export default function CommunicationSettingsPage() {
     }
 
     const saveTemplates = async (updatedTemplates) => {
-        const { error } = await supabase.from('platform_settings').upsert({
-            key: 'email_templates',
-            value: { templates: updatedTemplates },
-            updated_at: new Date().toISOString(),
-        }, { onConflict: 'key' })
+        const { error } = await platformSettingsRepo.setValue('email_templates', {
+            templates: updatedTemplates,
+        })
         return error
     }
 

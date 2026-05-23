@@ -1,11 +1,19 @@
 User-agent: *
 Allow: /
 
-# Disallow authenticated/internal routes
+# Disallow authenticated/internal routes (no public content + no SEO value)
 Disallow: /dashboard
 Disallow: /admin
 Disallow: /settings
 Disallow: /onboarding
 Disallow: /profile-setup
+Disallow: /account/data
+Disallow: /client/
+Disallow: /consultant/onboarding
+Disallow: /agency/onboarding
+Disallow: /team-member/
 
+# Sitemaps — index references both static + dynamic (consultant profiles)
+Sitemap: https://immizy.in/sitemap-index.xml
 Sitemap: https://immizy.in/sitemap.xml
+Sitemap: https://ylraewihqxurhwexnanr.supabase.co/functions/v1/sitemap-consultants

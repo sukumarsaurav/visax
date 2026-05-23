@@ -8,7 +8,7 @@ import Button from '../../components/ui/Button'
 import { useAuth } from '../../contexts/AuthContext'
 import { useCases } from '../../hooks/useCases'
 import { useAppointments } from '../../hooks/useAppointments'
-import { useMessages } from '../../hooks/useMessages'
+import { useConversations } from '../../hooks/useConversations'
 import { formatShortDate as formatDate, formatTime } from '../../utils/date'
 
 const statusColor = {
@@ -28,7 +28,7 @@ export default function ConsultantDashboard() {
 
     const { cases, loading: casesLoading } = useCases()
     const { upcoming, loading: apptLoading } = useAppointments()
-    const { conversations, unreadCount, loading: msgLoading } = useMessages()
+    const { conversations, unreadCount, loading: msgLoading } = useConversations()
 
     const activeCases = cases.filter(c => ['in_progress', 'under_review', 'docs_pending', 'action_required'].includes(c.status))
     const todayAppts = upcoming.filter(a => {

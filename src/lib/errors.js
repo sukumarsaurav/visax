@@ -1,6 +1,8 @@
 // Maps Postgres/PostgREST error codes to user-safe messages.
 // Raw error.message from Supabase must never reach the UI — it exposes
 // constraint names, column names, and internal DB structure.
+import { report } from './errorReporter'
+
 const CODE_MAP = {
     '23505': 'An account with this email already exists.',
     '23503': 'This action references data that no longer exists.',
@@ -29,4 +31,33 @@ export function friendlyError(error, fallback = 'Something went wrong. Please tr
         CODE_MAP[error.error_code] ||
         fallback
     )
+}
+
+/**
+ * Handle an *unexpected* Supabase error:
+ *  - Returns a user-safe message (same as friendlyError).
+ *  - Reports the raw error to the observability layer so engineers see real details.
+ *
+ * Use this for errors that should never happen in normal flow (RLS violations,
+ * schema mismatches, network timeouts), not for expected validation failures.
+ *
+ * @param {object|null} error   Supabase error object
+ * @param {string}      context Short label for the call site, e.g. 'fetchProfile'
+ * @param {string}      [fallback]
+ * @returns {string}  User-safe message
+ */
+export function handleUnexpected(error, context, fallback = 'Something went wrong. Please try again.') {
+    if (!error) return fallback
+    const known = CODE_MAP[error.code] || CODE_MAP[error.message] || CODE_MAP[error.error_code]
+    if (!known) {
+        // Only forward truly unexpected errors to the reporter — known codes are
+        // user errors and should not clutter the error dashboard.
+        report(new Error(`[${context}] ${error.message ?? String(error)}`), {
+            code: error.code,
+            details: error.details,
+            hint: error.hint,
+            context,
+        })
+    }
+    return known ?? fallback
 }

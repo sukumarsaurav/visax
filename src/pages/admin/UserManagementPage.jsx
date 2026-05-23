@@ -9,6 +9,8 @@ import { slackNotify, mailchimpSync, trackEvent } from '../../lib/integrations'
 import { friendlyError } from '../../lib/errors'
 import { writeAuditLog } from '../../lib/auditLog'
 import { useDebounce } from '../../hooks/useDebounce'
+import * as profilesRepo from '../../data/profilesRepo'
+import * as adminStatsRepo from '../../data/adminStatsRepo'
 
 const ROLE_LABELS = { client: 'Client', individual: 'Consultant', agency_admin: 'Agency', agency_member: 'Team Member', admin: 'Admin' }
 const ROLE_COLORS = { client: 'blue', individual: 'purple', agency_admin: 'emerald', agency_member: 'indigo', admin: 'red' }
@@ -38,7 +40,7 @@ export default function UserManagementPage() {
     useEffect(() => {
         async function loadKpi() {
             setKpiLoading(true)
-            const { data } = await supabase.rpc('get_admin_dashboard_stats')
+            const { data } = await adminStatsRepo.getDashboardStats()
             if (data) {
                 setKpi({
                     pending_verification: Number(data.pending_verification || 0),
@@ -53,15 +55,12 @@ export default function UserManagementPage() {
 
     const fetchUsers = useCallback(async () => {
         setLoading(true)
-        let query = supabase.from('profiles').select('*', { count: 'exact' })
-        const role = ROLE_FILTER[activeFilter]
-        if (role) query = query.eq('role', role)
-        if (debouncedSearch.trim()) {
-            query = query.or(`full_name.ilike.%${debouncedSearch}%,email.ilike.%${debouncedSearch}%`)
-        }
-        const { data, count, error } = await query
-            .order('created_at', { ascending: false })
-            .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
+        const { data, count, error } = await profilesRepo.adminList({
+            roleFilter: ROLE_FILTER[activeFilter],
+            search: debouncedSearch,
+            page,
+            pageSize: PAGE_SIZE,
+        })
 
         if (error) toast.error(friendlyError(error, 'Failed to load users'))
         setUsers(data || [])
@@ -86,12 +85,12 @@ export default function UserManagementPage() {
     const handleSave = async () => {
         if (!selectedUser) return
         setSaving(true)
-        const { error } = await supabase.from('profiles').update({
+        const { error } = await profilesRepo.updateBare(selectedUser.id, {
             full_name: editForm.full_name,
             role: editForm.role,
             application_status: editForm.application_status,
             is_verified: editForm.is_verified,
-        }).eq('id', selectedUser.id)
+        })
 
         if (error) {
             toast.error(friendlyError(error, 'Failed to save changes'))
@@ -117,9 +116,7 @@ export default function UserManagementPage() {
         if (!selectedUser) return
         setSaving(true)
         const newStatus = selectedUser.application_status === 'suspended' ? 'active' : 'suspended'
-        const { error } = await supabase.from('profiles')
-            .update({ application_status: newStatus })
-            .eq('id', selectedUser.id)
+        const { error } = await profilesRepo.updateBare(selectedUser.id, { application_status: newStatus })
 
         if (error) {
             toast.error(friendlyError(error, 'Action failed'))

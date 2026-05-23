@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
-import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
+import * as clientInvitationsRepo from '../../data/clientInvitationsRepo'
 
 function Spinner() {
     return (
@@ -52,11 +52,7 @@ export default function AcceptInvitePage() {
     }, [user, authLoading, invitation, step])
 
     async function fetchInvitation() {
-        const { data: inv, error } = await supabase
-            .from('client_invitations')
-            .select('*, consultant:profiles!client_invitations_consultant_id_fkey(id, full_name, avatar_url)')
-            .eq('token', token)
-            .single()
+        const { data: inv, error } = await clientInvitationsRepo.getByToken(token)
 
         if (error || !inv) { setStep('invalid'); return }
         if (inv.status === 'accepted') { setStep('already_accepted'); return }
@@ -79,10 +75,7 @@ export default function AcceptInvitePage() {
 
     async function acceptAndRedirect(userId) {
         setStep('accepting')
-        await supabase
-            .from('client_invitations')
-            .update({ status: 'accepted', client_id: userId })
-            .eq('token', token)
+        await clientInvitationsRepo.accept(token, userId)
         navigate('/client', { replace: true })
     }
 

@@ -28,6 +28,20 @@
     <meta name="geo.region" content="IN" />
     <meta name="geo.country" content="India" />
     <meta name="language" content="English" />
+
+    <!--
+      Search engine verification tokens.
+      Replace the empty content="" with your token from each console:
+        • Google Search Console → https://search.google.com/search-console
+          (HTML tag verification method)
+        • Bing Webmaster        → https://www.bing.com/webmasters
+        • Yandex Webmaster      → https://webmaster.yandex.com (optional)
+      Leaving content="" is harmless — crawlers ignore empty tokens.
+      See docs/SEO_SUBMISSION.md for step-by-step submission instructions.
+    -->
+    <meta name="google-site-verification" content="" />
+    <meta name="msvalidate.01"            content="" />
+    <meta name="yandex-verification"      content="" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <!-- Manrope: Latin primary font + Noto Sans Devanagari for Hindi support -->
@@ -35,17 +49,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
     <!-- Material Symbols: loaded non-blocking; icons appear after font arrives -->
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" rel="stylesheet" media="print" onload="this.media='all'">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" rel="stylesheet" media="print" data-defer-icons>
     <noscript><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block" rel="stylesheet"></noscript>
-    <script>
-      // Restore theme preference before first paint to prevent flash
-      (function() {
-        var t = localStorage.getItem('immizy-theme');
-        if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        document.documentElement.classList.remove('light', 'dark');
-        document.documentElement.classList.add(t);
-      })();
-    </script>
+    <!-- Render-blocking by design: prevents theme-flash. External so CSP can drop 'unsafe-inline'. -->
+    <script src="/theme-init.js"></script>
   </head>
   <body>
     <a href="#main-content" class="skip-link">Skip to main content</a>

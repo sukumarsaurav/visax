@@ -2,37 +2,36 @@ import { Link, useParams, Navigate } from 'react-router-dom'
 import PublicHeader from '../../components/layout/PublicHeader'
 import Footer from '../../components/layout/Footer'
 import { useSEO } from '../../hooks/useSEO'
-import { CITIES } from '../../lib/seo'
+import { CITIES, buildBreadcrumb, buildFAQ } from '../../lib/seo'
 
-const citySchema = (city) => ({
-    '@context': 'https://schema.org',
-    '@graph': [
+function citySchema(city) {
+    return [
         {
+            '@context': 'https://schema.org',
             '@type': 'LocalBusiness',
             name: `Immizy — Immigration Consultants in ${city.fullName}`,
             description: city.description,
             url: `https://immizy.in/immigration-consultant-${city.slug}`,
             areaServed: { '@type': 'City', name: city.fullName },
+            address: { '@type': 'PostalAddress', addressLocality: city.fullName, addressCountry: 'IN' },
             serviceType: 'Immigration Consulting',
             priceRange: '₹₹',
         },
-        {
-            '@type': 'FAQPage',
-            mainEntity: [
-                {
-                    '@type': 'Question',
-                    name: `How do I find a verified immigration consultant in ${city.fullName}?`,
-                    acceptedAnswer: { '@type': 'Answer', text: `Use Immizy to browse verified immigration consultants in ${city.fullName}. All listed professionals are credential-checked. Filter by visa type, language, and rating.` },
-                },
-                {
-                    '@type': 'Question',
-                    name: `What is the best immigration consultant in ${city.fullName}?`,
-                    acceptedAnswer: { '@type': 'Answer', text: `Immizy lists top-rated verified immigration consultants in ${city.fullName}. Compare profiles, read real client reviews, and check credentials before booking.` },
-                },
-            ],
-        },
-    ],
-})
+        buildFAQ([
+            { q: `How do I find a verified immigration consultant in ${city.fullName}?`,
+              a: `Use Immizy to browse verified immigration consultants in ${city.fullName}. All listed professionals are credential-checked. Filter by visa type, language, and rating.` },
+            { q: `What is the best immigration consultant in ${city.fullName}?`,
+              a: `Immizy lists top-rated verified immigration consultants in ${city.fullName}. Compare profiles, read real client reviews, and check credentials before booking.` },
+            { q: `Which immigration consultants in ${city.fullName} handle Canada PR?`,
+              a: `Most consultants in ${city.fullName} on Immizy specialize in Canada Express Entry, PNP, and family sponsorship. Filter by "Canada PR" to see only those who handle this destination.` },
+        ]),
+        buildBreadcrumb([
+            { name: 'Home', url: '/' },
+            { name: 'Find Professionals', url: '/find-professionals' },
+            { name: city.fullName, url: `/immigration-consultant-${city.slug}` },
+        ]),
+    ]
+}
 
 const visaIconMap = {
     'Canada PR': 'travel_explore',
@@ -50,14 +49,17 @@ export default function CityLandingPage() {
     const { city: citySlug } = useParams()
     const city = CITIES[citySlug]
 
-    if (!city) return <Navigate to="/find-professionals" replace />
-
+    // Hooks must run unconditionally — fall back to safe defaults if no city,
+    // then redirect below. Prevents the early-return rules-of-hooks violation.
     useSEO({
-        title: city.title,
-        description: city.description,
-        canonical: `https://immizy.in/immigration-consultant-${city.slug}`,
-        schema: citySchema(city),
+        title: city?.title || 'Immigration Consultants',
+        description: city?.description || 'Find verified immigration consultants on Immizy.',
+        keywords: city ? `immigration consultant in ${city.name}, visa consultant ${city.name}, ${(city.topVisas || []).slice(0,3).join(' consultant ').toLowerCase()} ${city.name}, best immigration consultant ${city.name.toLowerCase()}` : undefined,
+        canonical: city ? `https://immizy.in/immigration-consultant-${city.slug}` : 'https://immizy.in/find-professionals',
+        schema: city ? citySchema(city) : null,
     })
+
+    if (!city) return <Navigate to="/find-professionals" replace />
 
     return (
         <div className="flex min-h-screen flex-col bg-white dark:bg-[#101822]">

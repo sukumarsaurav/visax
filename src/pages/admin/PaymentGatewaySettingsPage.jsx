@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
-import { supabase } from '../../lib/supabase'
+import * as platformSettingsRepo from '../../data/platformSettingsRepo'
 
 const GATEWAY_META = [
     { id: 'stripe', name: 'Stripe', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/stripe/stripe-original.svg', fields: ['api_key', 'publishable_key', 'webhook'] },
@@ -30,20 +30,17 @@ export default function PaymentGatewaySettingsPage() {
     }
 
     const loadSettings = useCallback(async () => {
-        const { data } = await supabase.from('platform_settings').select('value').eq('key', 'payment').single()
-        if (data?.value) {
-            setSettings(data.value.gateways || {})
-            setGlobalConfig(data.value.global || DEFAULT_GLOBAL)
+        const { value } = await platformSettingsRepo.getValue('payment')
+        if (value) {
+            setSettings(value.gateways || {})
+            setGlobalConfig(value.global || DEFAULT_GLOBAL)
         }
     }, [])
 
     useEffect(() => { loadSettings() }, [loadSettings])
 
     const persistAll = async (newSettings, newGlobal) => {
-        await supabase.from('platform_settings').upsert(
-            { key: 'payment', value: { gateways: newSettings, global: newGlobal } },
-            { onConflict: 'key' }
-        )
+        await platformSettingsRepo.setValue('payment', { gateways: newSettings, global: newGlobal })
     }
 
     const handleToggle = async (id) => {
@@ -154,7 +151,7 @@ export default function PaymentGatewaySettingsPage() {
                             <div className={`px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between ${isEnabled ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-800/50'}`}>
                                 <div className="flex items-center gap-4">
                                     <div className="size-12 bg-white border border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center p-2">
-                                        {gw.icon ? <img src={gw.icon} alt={gw.name} className="w-full h-full object-contain" /> : <span className="material-symbols-outlined text-2xl text-slate-400">credit_card</span>}
+                                        {gw.icon ? <img src={gw.icon} alt={gw.name} className="w-full h-full object-contain" loading="lazy" /> : <span className="material-symbols-outlined text-2xl text-slate-400">credit_card</span>}
                                     </div>
                                     <div>
                                         <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">

@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { toast } from 'react-hot-toast'
 import Button from '../../components/ui/Button'
 import ToggleSwitch from '../../components/ui/ToggleSwitch'
-import { supabase } from '../../lib/supabase'
+import * as platformSettingsRepo from '../../data/platformSettingsRepo'
+import { uploadLegalDoc } from '../../lib/storage'
 import { useAuth } from '../../contexts/AuthContext'
 import { writeAuditLog } from '../../lib/auditLog'
 import { invalidatePlatformConfig } from '../../lib/platformConfig'
@@ -55,7 +56,7 @@ export default function PlatformSettingsPage() {
 
     const loadSettings = useCallback(async () => {
         setLoading(true)
-        const { data } = await supabase.from('platform_settings').select('key, value, updated_at')
+        const { data } = await platformSettingsRepo.listAll()
         if (data) {
             const snap = {
                 general: DEFAULT_GENERAL,
@@ -98,10 +99,7 @@ export default function PlatformSettingsPage() {
     }
 
     const saveSetting = async (key, value) => {
-        const { error } = await supabase.from('platform_settings').upsert(
-            { key, value, updated_by: user?.id, updated_at: new Date().toISOString() },
-            { onConflict: 'key' }
-        )
+        const { error } = await platformSettingsRepo.setValue(key, value, { updated_by: user?.id })
         return error
     }
 
@@ -270,15 +268,12 @@ export default function PlatformSettingsPage() {
                                         const file = e.target.files?.[0]
                                         if (!file) return
                                         setUploadingLegal(u => ({ ...u, [doc.key]: true }))
-                                        const path = `legal/${doc.key}-${Date.now()}.pdf`
-                                        const { error } = await supabase.storage.from('documents').upload(path, file, { upsert: true })
-                                        if (error) {
-                                            toast.error('Upload failed')
-                                        } else {
-                                            const { data: urlData } = supabase.storage.from('documents').getPublicUrl(path)
-                                            const urlKey = `${doc.key}_url`
-                                            patchLegal(l => ({ ...l, [urlKey]: urlData.publicUrl }))
+                                        try {
+                                            const url = await uploadLegalDoc(file, doc.key)
+                                            patchLegal(l => ({ ...l, [`${doc.key}_url`]: url }))
                                             toast.success(`${doc.label} uploaded — save to apply`)
+                                        } catch {
+                                            toast.error('Upload failed')
                                         }
                                         setUploadingLegal(u => ({ ...u, [doc.key]: false }))
                                     }

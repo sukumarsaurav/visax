@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link, useParams, useNavigate, useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import PublicHeader from '../../components/layout/PublicHeader'
@@ -7,8 +7,14 @@ import Button from '../../components/ui/Button'
 import Avatar from '../../components/ui/Avatar'
 import Modal from '../../components/ui/Modal'
 import StarRating from '../../components/ui/StarRating'
-import { supabase } from '../../lib/supabase'
 import { formatDate } from '../../utils/date'
+import { useSEO } from '../../hooks/useSEO'
+import { buildConsultantSchema, buildBreadcrumb } from '../../lib/seo'
+import * as profilesRepo from '../../data/profilesRepo'
+import * as servicesRepo from '../../data/servicesRepo'
+import * as reviewsRepo from '../../data/reviewsRepo'
+import * as availabilityRepo from '../../data/availabilityRepo'
+import * as agenciesRepo from '../../data/agenciesRepo'
 
 const COLOR_MAP = {
     blue: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
@@ -64,23 +70,91 @@ export default function ConsultantProfilePage() {
     const [showConfirmation, setShowConfirmation] = useState(false)
 
     useEffect(() => {
-        if (!id) return
+        // UUID format guard — avoids hitting the DB with garbage params
+        // (e.g. someone testing /consultant/foo or a stale link). Saves a
+        // round-trip and surfaces a clean 404 quickly.
+        if (!id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+            setNotFound(true)
+            setLoading(false)
+            return
+        }
         fetchAll()
     }, [id])
+
+    // ── SEO ─────────────────────────────────────────────────────────────────
+    // Compute aggregate stats + structured data once the profile loads. This
+    // turns each consultant profile into a first-class SEO surface:
+    //   • <title>      — "{Name} | Immigration Consultant in {City} | Immizy"
+    //   • description  — bio + specializations + city for keyword density
+    //   • OG image     — uses the consultant's avatar so social previews are personal
+    //   • Schema       — ProfessionalService + AggregateRating + Review(s) + Breadcrumb
+    //                    which makes the page eligible for Google's star + review rich
+    //                    results (huge CTR uplift for "consultant near me" searches).
+    const seoAvgRating = useMemo(() => {
+        if (!reviews?.length) return null
+        return reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length
+    }, [reviews])
+
+    const seoMinPrice = useMemo(() => {
+        const prices = (services || []).map(s => Number(s.price)).filter(p => p > 0)
+        return prices.length ? Math.min(...prices) : null
+    }, [services])
+
+    const seoSchemas = useMemo(() => {
+        if (!profile) return null
+        return [
+            buildBreadcrumb([
+                { name: 'Home', url: '/' },
+                { name: 'Find Professionals', url: '/find-professionals' },
+                { name: profile.full_name || 'Consultant', url: `/consultant/${id}` },
+            ]),
+            buildConsultantSchema({
+                id,
+                name: profile.full_name,
+                image: profile.avatar_url,
+                bio: profile.bio,
+                city: profile.city,
+                country: profile.country,
+                languages: profile.languages,
+                specializations: profile.specializations,
+                yearsExperience: profile.years_experience,
+                avgRating: seoAvgRating,
+                reviewCount: reviews?.length || 0,
+                priceMin: seoMinPrice,
+                reviews: (reviews || []).slice(0, 5).map(r => ({
+                    author: r.reviewer?.full_name,
+                    rating: r.rating,
+                    text: r.comment,
+                    date: r.created_at,
+                })),
+            }),
+        ]
+    }, [profile, reviews, id, seoAvgRating, seoMinPrice])
+
+    useSEO(profile ? {
+        title: `${profile.full_name} — Immigration Consultant${profile.city ? ` in ${profile.city}` : ''}`,
+        description: profile.bio
+            ? `${profile.full_name} is a verified immigration consultant${profile.city ? ` in ${profile.city}, India` : ''} specializing in ${(profile.specializations || []).slice(0, 3).join(', ') || 'immigration services'}. ${profile.years_experience ? `${profile.years_experience}+ years experience. ` : ''}Book a consultation on Immizy.`
+            : `Book a consultation with ${profile.full_name}, a verified immigration consultant on Immizy${profile.city ? `, ${profile.city}` : ''}.`,
+        keywords: [
+            'immigration consultant',
+            profile.city && `immigration consultant in ${profile.city}`,
+            ...(profile.specializations || []),
+            profile.full_name,
+        ].filter(Boolean).join(', '),
+        ogImage: profile.avatar_url,
+        schema: seoSchemas,
+    } : {})
 
     async function fetchAll() {
         setLoading(true)
         // If profile was passed via router state, skip re-fetching it and run 3 queries instead of 4
-        const queries = [
-            profile ? Promise.resolve({ data: profile }) : supabase.from('profiles').select('*').eq('id', id).single(),
-            supabase.from('services').select('*').eq('provider_id', id).eq('is_active', true).order('price'),
-            supabase.from('reviews').select(`
-                id, rating, comment, created_at, is_anonymous,
-                reviewer:profiles!reviews_reviewer_id_fkey(id, full_name, avatar_url)
-            `).eq('consultant_id', id).order('created_at', { ascending: false }).limit(5),
-            supabase.from('consultant_availability').select('*').eq('consultant_id', id).eq('is_active', true),
-        ]
-        const [profileRes, servicesRes, reviewsRes, availRes] = await Promise.all(queries)
+        const [profileRes, servicesRes, reviewsRes, availRes] = await Promise.all([
+            profile ? Promise.resolve({ data: profile }) : profilesRepo.getById(id),
+            servicesRepo.listActiveByProvider(id),
+            reviewsRepo.listForConsultant(id, { limit: 5 }),
+            availabilityRepo.listActive(id),
+        ])
 
         if (!profileRes.data) {
             setNotFound(true)
@@ -95,12 +169,7 @@ export default function ConsultantProfilePage() {
 
         // If this person is an agency member, find their agency
         if (profileRes.data.role === 'agency_member') {
-            const { data: memberRow } = await supabase
-                .from('agency_members')
-                .select('agency:agencies(id, name, owner_id)')
-                .eq('profile_id', id)
-                .eq('status', 'active')
-                .maybeSingle()
+            const { data: memberRow } = await agenciesRepo.getMemberAgency(id)
             if (memberRow?.agency) setAgencyInfo(memberRow.agency)
         }
 

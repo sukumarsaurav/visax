@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import Button from '../../components/ui/Button'
-import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
+import * as availabilityRepo from '../../data/availabilityRepo'
+import * as profilesRepo from '../../data/profilesRepo'
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -43,11 +44,7 @@ export default function AvailabilityPage() {
 
     async function fetchAvailability() {
         setLoading(true)
-        const { data } = await supabase
-            .from('consultant_availability')
-            .select('*')
-            .eq('consultant_id', user.id)
-            .order('weekday', { ascending: true })
+        const { data } = await availabilityRepo.listByConsultant(user.id)
 
         if (data && data.length > 0) {
             // Merge DB data into slots (one entry per weekday)
@@ -66,11 +63,7 @@ export default function AvailabilityPage() {
         }
 
         // Also load session settings from profile
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('notification_preferences')
-            .eq('id', user.id)
-            .single()
+        const { data: profile } = await profilesRepo.getNotificationPreferences(user.id)
         const prefs = profile?.notification_preferences || {}
         if (prefs.meeting_link) setMeetingLink(prefs.meeting_link)
         if (prefs.office_location) setOfficeLocation(prefs.office_location)
@@ -95,16 +88,10 @@ export default function AvailabilityPage() {
             consultation_type: s.consultation_type,
         }))
 
-        const { error } = await supabase
-            .from('consultant_availability')
-            .upsert(upsertData, { onConflict: 'consultant_id,weekday' })
+        const { error } = await availabilityRepo.upsertSlots(upsertData)
 
-        // Save session settings to profile
-        const { data: existingProfile } = await supabase
-            .from('profiles')
-            .select('notification_preferences')
-            .eq('id', user.id)
-            .single()
+        // Save session settings to profile (merged into notification_preferences blob)
+        const { data: existingProfile } = await profilesRepo.getNotificationPreferences(user.id)
         const merged = {
             ...(existingProfile?.notification_preferences || {}),
             session_length: sessionLength,
@@ -112,9 +99,7 @@ export default function AvailabilityPage() {
             meeting_link: meetingLink,
             office_location: officeLocation,
         }
-        await supabase.from('profiles')
-            .update({ notification_preferences: merged })
-            .eq('id', user.id)
+        await profilesRepo.updateBare(user.id, { notification_preferences: merged })
 
         if (!error) {
             setToast('Availability saved!')

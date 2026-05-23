@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Button from '../../components/ui/Button'
-import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
+import * as servicesRepo from '../../data/servicesRepo'
 
 const CATEGORIES = ['Visa Application', 'Consultation', 'Document Review', 'Appeal', 'Settlement', 'Citizenship', 'Other']
 const ICON_MAP = { 'Visa Application': 'badge', 'Consultation': 'forum', 'Document Review': 'history_edu', 'Appeal': 'gavel', 'Settlement': 'home_work', 'Citizenship': 'public', 'Other': 'handyman' }
@@ -38,11 +38,7 @@ export default function ServicesPage() {
 
     async function fetchServices() {
         setLoading(true)
-        const { data } = await supabase
-            .from('services')
-            .select('*')
-            .eq('provider_id', user.id)
-            .order('created_at', { ascending: false })
+        const { data } = await servicesRepo.listByProvider(user.id)
         setServices(data || [])
         setLoading(false)
     }
@@ -61,14 +57,10 @@ export default function ServicesPage() {
             target_countries: form.target_countries.split(',').map(s => s.trim()).filter(Boolean),
             provider_id: user.id,
         }
-        let error
-        if (editService) {
-            const res = await supabase.from('services').update(payload).eq('id', editService.id)
-            error = res.error
-        } else {
-            const res = await supabase.from('services').insert(payload)
-            error = res.error
-        }
+        const res = editService
+            ? await servicesRepo.update(editService.id, payload)
+            : await servicesRepo.create(payload)
+        const error = res.error
         if (!error) {
             setToast(editService ? 'Service updated!' : 'Service created!')
             setShowForm(false)
@@ -78,13 +70,13 @@ export default function ServicesPage() {
     }
 
     const handleToggle = async (svc) => {
-        await supabase.from('services').update({ is_active: !svc.is_active }).eq('id', svc.id)
+        await servicesRepo.setActive(svc.id, !svc.is_active)
         setServices(prev => prev.map(s => s.id === svc.id ? { ...s, is_active: !s.is_active } : s))
     }
 
     const handleDelete = async (id) => {
         setDeleting(id)
-        await supabase.from('services').delete().eq('id', id)
+        await servicesRepo.remove(id)
         setServices(prev => prev.filter(s => s.id !== id))
         setDeleting(null)
     }

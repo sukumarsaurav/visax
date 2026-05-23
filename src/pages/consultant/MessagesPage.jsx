@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Avatar from '../../components/ui/Avatar'
-import { useMessages } from '../../hooks/useMessages'
+import { useConversations } from '../../hooks/useConversations'
+import { useThread } from '../../hooks/useThread'
+import { useSendMessage } from '../../hooks/useSendMessage'
 import { useAuth } from '../../contexts/AuthContext'
-import { supabase } from '../../lib/supabase'
 
 function formatMsgTime(d) {
     if (!d) return ''
@@ -18,10 +19,14 @@ function formatMsgTime(d) {
 
 export default function MessagesPage() {
     const { user } = useAuth()
-    const { conversations, messages, loading, sendMessage, unreadCount } = useMessages()
+    const { conversations, loading, unreadCount } = useConversations()
     const [activeConv, setActiveConv] = useState(null)
-    const [threadMessages, setThreadMessages] = useState([])
-    const [threadLoading, setThreadLoading] = useState(false)
+    const {
+        messages: threadMessages,
+        loading: threadLoading,
+        append: appendToThread,
+    } = useThread(activeConv?.otherId)
+    const sendMessage = useSendMessage()
     const [newMessage, setNewMessage] = useState('')
     const [sending, setSending] = useState(false)
     const [search, setSearch] = useState('')
@@ -31,61 +36,16 @@ export default function MessagesPage() {
         c.other?.full_name?.toLowerCase().includes(search.toLowerCase())
     )
 
-    const fetchThread = useCallback(async (otherId) => {
-        setThreadLoading(true)
-        const { data } = await supabase
-            .from('messages')
-            .select('*, sender:profiles!messages_sender_id_fkey(id, full_name, avatar_url)')
-            .or(`and(sender_id.eq.${user.id},recipient_id.eq.${otherId}),and(sender_id.eq.${otherId},recipient_id.eq.${user.id})`)
-            .order('created_at', { ascending: true })
-        setThreadMessages(data || [])
-        // Mark as read
-        await supabase.from('messages')
-            .update({ is_read: true, read_at: new Date().toISOString() })
-            .eq('recipient_id', user.id)
-            .eq('sender_id', otherId)
-            .eq('is_read', false)
-        setThreadLoading(false)
-    }, [user?.id])
-
-    useEffect(() => {
-        if (activeConv) fetchThread(activeConv.otherId)
-    }, [activeConv, fetchThread])
-
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [threadMessages])
-
-    // Real-time: append new messages to thread
-    useEffect(() => {
-        if (!user) return
-        const channel = supabase
-            .channel(`messages-thread-${user.id}`)
-            .on('postgres_changes', {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'messages',
-                filter: `recipient_id=eq.${user.id}`,
-            }, async (payload) => {
-                if (activeConv && payload.new.sender_id === activeConv.otherId) {
-                    const { data } = await supabase
-                        .from('profiles')
-                        .select('id, full_name, avatar_url')
-                        .eq('id', payload.new.sender_id)
-                        .single()
-                    setThreadMessages(prev => [...prev, { ...payload.new, sender: data }])
-                }
-            })
-            .subscribe()
-        return () => supabase.removeChannel(channel)
-    }, [user, activeConv])
 
     const handleSend = async () => {
         if (!newMessage.trim() || !activeConv) return
         setSending(true)
         const { data } = await sendMessage({ recipientId: activeConv.otherId, content: newMessage })
         if (data) {
-            setThreadMessages(prev => [...prev, { ...data, sender: { id: user.id } }])
+            appendToThread({ ...data, sender: { id: user.id } })
         }
         setNewMessage('')
         setSending(false)

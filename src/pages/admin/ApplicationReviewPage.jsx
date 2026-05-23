@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
-import { supabase } from '../../lib/supabase'
 import { slackNotify, trackEvent } from '../../lib/integrations'
 import { friendlyError } from '../../lib/errors'
 import { writeAuditLog } from '../../lib/auditLog'
 import { useDebounce } from '../../hooks/useDebounce'
 import ConfirmModal from '../../components/ui/ConfirmModal'
+import * as profilesRepo from '../../data/profilesRepo'
+import * as documentsRepo from '../../data/documentsRepo'
 
 const STATUS_COLORS = {
     pending_review: 'yellow',
@@ -36,22 +37,12 @@ export default function ApplicationReviewPage() {
 
     const fetchApplications = useCallback(async () => {
         setLoading(true)
-        let query = supabase
-            .from('profiles')
-            .select('id,full_name,email,role,application_status,is_verified,avatar_url,country,phone,bio,created_at,notification_preferences', { count: 'exact' })
-            .in('role', ['individual', 'agency_admin'])
-            .order('created_at', { ascending: false })
-            .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
-
-        if (activeFilter === 'pending') query = query.eq('application_status', 'pending_review')
-        else if (activeFilter === 'approved') query = query.eq('application_status', 'approved')
-        else if (activeFilter === 'rejected') query = query.eq('application_status', 'rejected')
-
-        if (debouncedSearch.trim()) {
-            query = query.or(`full_name.ilike.%${debouncedSearch}%,email.ilike.%${debouncedSearch}%`)
-        }
-
-        const { data, count, error } = await query
+        const { data, count, error } = await profilesRepo.applicationList({
+            filter: activeFilter,
+            search: debouncedSearch,
+            page,
+            pageSize: PAGE_SIZE,
+        })
         if (error) toast.error(friendlyError(error, 'Failed to load applications'))
 
         const apps = (data || []).map(u => ({
@@ -74,11 +65,7 @@ export default function ApplicationReviewPage() {
     const fetchDocuments = useCallback(async (userId) => {
         if (!userId) return
         setDocsLoading(true)
-        const { data, error } = await supabase
-            .from('documents')
-            .select('*')
-            .eq('uploaded_by', userId)
-            .order('created_at', { ascending: false })
+        const { data, error } = await documentsRepo.listByUploader(userId)
         if (error) toast.error(friendlyError(error, 'Failed to load documents'))
         setDocuments(data || [])
         setDocsLoading(false)
@@ -108,15 +95,11 @@ export default function ApplicationReviewPage() {
 
     const saveNote = async (profileId) => {
         if (!note.trim()) return
-        const { data: existing } = await supabase
-            .from('profiles')
-            .select('notification_preferences')
-            .eq('id', profileId)
-            .single()
+        const { data: existing } = await profilesRepo.getNotificationPreferences(profileId)
         const prefs = existing?.notification_preferences || {}
-        await supabase.from('profiles').update({
+        await profilesRepo.updateBare(profileId, {
             notification_preferences: { ...prefs, application_notes: note.trim() },
-        }).eq('id', profileId)
+        })
     }
 
     const executeApprove = async () => {
@@ -124,10 +107,10 @@ export default function ApplicationReviewPage() {
         setSaving(true)
         setConfirm(null)
         await saveNote(selectedApp.id)
-        const { error } = await supabase.from('profiles').update({
+        const { error } = await profilesRepo.updateBare(selectedApp.id, {
             application_status: 'approved',
             is_verified: true,
-        }).eq('id', selectedApp.id)
+        })
 
         if (error) {
             toast.error(friendlyError(error, 'Failed to approve application'))
@@ -151,10 +134,10 @@ export default function ApplicationReviewPage() {
         setSaving(true)
         setConfirm(null)
         await saveNote(selectedApp.id)
-        const { error } = await supabase.from('profiles').update({
+        const { error } = await profilesRepo.updateBare(selectedApp.id, {
             application_status: 'rejected',
             is_verified: false,
-        }).eq('id', selectedApp.id)
+        })
 
         if (error) {
             toast.error(friendlyError(error, 'Failed to reject application'))
@@ -299,7 +282,7 @@ export default function ApplicationReviewPage() {
                         <div className="flex gap-5">
                             <div className="h-16 w-16 rounded-xl bg-gray-200 dark:bg-slate-700 overflow-hidden shadow-sm shrink-0 flex items-center justify-center">
                                 {selectedApp.avatar_url
-                                    ? <img className="h-full w-full object-cover" src={selectedApp.avatar_url} alt="" />
+                                    ? <img className="h-full w-full object-cover" src={selectedApp.avatar_url} alt="" loading="lazy" />
                                     : <span className="material-symbols-outlined text-4xl text-slate-400">person</span>}
                             </div>
                             <div>

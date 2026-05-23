@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../../lib/supabase'
+import * as announcementsRepo from '../../data/announcementsRepo'
 import { useAuth } from '../../contexts/AuthContext'
 import { formatDate } from '../../utils/date'
 
@@ -26,10 +26,7 @@ export default function AnnouncementsPage() {
 
     async function fetchAnnouncements() {
         setLoading(true)
-        const { data } = await supabase
-            .from('announcements')
-            .select('*')
-            .order('created_at', { ascending: false })
+        const { data } = await announcementsRepo.listAll()
         setAnnouncements(data || [])
         if (data?.length > 0) setSelected(data[0])
         setLoading(false)
@@ -107,7 +104,7 @@ export default function AnnouncementsPage() {
                         <p className="text-sm text-slate-400 mb-6">{formatDate(selected.created_at)}</p>
 
                         {selected.image_url && (
-                            <img src={selected.image_url} alt={selected.title} className="w-full rounded-xl mb-6 object-cover max-h-48" />
+                            <img src={selected.image_url} alt={selected.title} className="w-full rounded-xl mb-6 object-cover max-h-48" loading="lazy" />
                         )}
 
                         <div className="prose prose-slate dark:prose-invert max-w-none text-sm leading-relaxed">

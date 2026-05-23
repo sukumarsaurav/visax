@@ -4,7 +4,8 @@ import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import Avatar from '../../components/ui/Avatar'
 import { useAuth } from '../../contexts/AuthContext'
-import { supabase } from '../../lib/supabase'
+import * as appointmentsRepo from '../../data/appointmentsRepo'
+import * as reviewsRepo from '../../data/reviewsRepo'
 
 const TAGS = [
     'Professional', 'Knowledgeable', 'Helpful', 'Patient',
@@ -38,39 +39,21 @@ export default function FeedbackPage() {
     async function fetchAppointment() {
         setLoading(true)
         if (appointmentId) {
-            const { data } = await supabase
-                .from('appointments')
-                .select(`
-                    id, title, scheduled_at, duration_minutes,
-                    consultant:profiles!appointments_consultant_id_fkey(id, full_name, avatar_url)
-                `)
-                .eq('id', appointmentId)
-                .eq('client_id', user.id)
-                .single()
+            const { data } = await appointmentsRepo.getForFeedback({
+                appointmentId,
+                clientId: user.id,
+            })
             setAppointment(data)
 
-            // Check if already reviewed
             if (data?.consultant?.id) {
-                const { data: existing } = await supabase
-                    .from('reviews')
-                    .select('id')
-                    .eq('reviewer_id', user.id)
-                    .eq('appointment_id', appointmentId)
-                    .maybeSingle()
+                const { data: existing } = await reviewsRepo.findForAppointment({
+                    reviewerId: user.id,
+                    appointmentId,
+                })
                 if (existing) setAlreadyReviewed(true)
             }
         } else {
-            // No appointmentId — find latest completed appointment without a review
-            const { data: appts } = await supabase
-                .from('appointments')
-                .select(`
-                    id, title, scheduled_at,
-                    consultant:profiles!appointments_consultant_id_fkey(id, full_name, avatar_url)
-                `)
-                .eq('client_id', user.id)
-                .eq('status', 'completed')
-                .order('scheduled_at', { ascending: false })
-                .limit(1)
+            const { data: appts } = await appointmentsRepo.getLatestCompleted(user.id)
             setAppointment(appts?.[0] || null)
         }
         setLoading(false)
@@ -92,7 +75,7 @@ export default function FeedbackPage() {
             rating,
             comment: review.trim() || null,
         }
-        const { error } = await supabase.from('reviews').insert(payload)
+        const { error } = await reviewsRepo.create(payload)
         if (!error) {
             setIsSubmitted(true)
         }

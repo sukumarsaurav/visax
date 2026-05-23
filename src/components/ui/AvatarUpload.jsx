@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback } from 'react'
 import Cropper from 'react-easy-crop'
-import { validateImageFile } from '../../lib/storage'
+import { validateUpload } from '../../lib/fileValidation'
 import toast from 'react-hot-toast'
 
 // Convert crop area pixels to a cropped Blob
@@ -60,15 +60,16 @@ export default function AvatarUpload({ currentUrl, name, onUpload, size = 'md', 
 
     function openPicker() { inputRef.current?.click() }
 
-    function handleFileChange(e) {
+    async function handleFileChange(e) {
         const file = e.target.files?.[0]
         if (!file) return
-        const err = validateImageFile(file)
-        if (err) { toast.error(err); return }
+        // Magic-byte validation — catches MIME spoofing.
+        const v = await validateUpload(file, 'image')
+        if (!v.ok) { toast.error(v.error); return }
 
         const url = URL.createObjectURL(file)
         setCropSrc(url)
-        setCropFileName(file.name)
+        setCropFileName(v.sanitizedName)
         setCrop({ x: 0, y: 0 })
         setZoom(1)
         if (inputRef.current) inputRef.current.value = ''

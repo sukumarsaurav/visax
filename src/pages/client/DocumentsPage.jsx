@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
-import { supabase } from '../../lib/supabase'
 import Card from '../../components/ui/Card'
 import Badge from '../../components/ui/Badge'
 import toast from 'react-hot-toast'
 import { formatDate } from '../../utils/date'
+import * as documentsRepo from '../../data/documentsRepo'
+import { uploadDocument, removeDocumentFile, getSignedUrl } from '../../lib/storage'
 
 function formatSize(bytes) {
     if (!bytes) return '—'
@@ -26,6 +27,7 @@ export default function DocumentsPage() {
     const [docs, setDocs] = useState([])
     const [loading, setLoading] = useState(true)
     const [uploading, setUploading] = useState(false)
+    const [downloadingId, setDownloadingId] = useState(null)
     const fileRef = useRef()
 
     useEffect(() => {
@@ -35,12 +37,7 @@ export default function DocumentsPage() {
 
     async function fetchDocs() {
         setLoading(true)
-        const { data, error } = await supabase
-            .from('documents')
-            .select('*')
-            .or(`uploaded_by.eq.${user.id},client_id.eq.${user.id}`)
-            .order('created_at', { ascending: false })
-
+        const { data, error } = await documentsRepo.listForClient(user.id)
         if (!error) setDocs(data || [])
         setLoading(false)
     }
@@ -50,33 +47,63 @@ export default function DocumentsPage() {
         if (!file) return
 
         setUploading(true)
-        const path = `${user.id}/${Date.now()}-${file.name}`
+        // uploadDocument validates (magic bytes + size + sanitised name)
+        // and returns { path, mime, name, size } — trustworthy metadata
+        // from the content, not the (spoofable) browser-claimed type.
+        let meta
+        try {
+            meta = await uploadDocument(file, user.id)
+        } catch (err) {
+            toast.error('Upload failed: ' + (err.message || 'Unknown error'))
+            setUploading(false)
+            if (fileRef.current) fileRef.current.value = ''
+            return
+        }
 
-        const { error: uploadErr } = await supabase.storage.from('documents').upload(path, file)
-        if (uploadErr) { toast.error('Upload failed: ' + uploadErr.message); setUploading(false); return }
-
-        const { error: dbErr } = await supabase.from('documents').insert({
-            name: file.name,
-            file_path: path,
-            file_size: file.size,
-            mime_type: file.type,
+        const { error: dbErr } = await documentsRepo.create({
+            name: meta.name,
+            file_path: meta.path,
+            file_size: meta.size,
+            mime_type: meta.mime,
             uploaded_by: user.id,
             client_id: user.id,
         })
 
         if (dbErr) {
-            // Roll back the storage upload to avoid orphaned files
-            await supabase.storage.from('documents').remove([path])
-            toast.error('Failed to save document record')
-        } else { toast.success('Document uploaded!'); fetchDocs() }
+            // Roll back the storage upload so we don't leak orphan files.
+            await removeDocumentFile(meta.path).catch(() => {})
+            toast.error('Failed to save document record. Please try again.')
+        } else {
+            toast.success('Document uploaded!')
+            fetchDocs()
+        }
         setUploading(false)
-        fileRef.current.value = ''
+        if (fileRef.current) fileRef.current.value = ''
+    }
+
+    async function handleDownload(doc) {
+        if (!doc.file_path) return
+        setDownloadingId(doc.id)
+        try {
+            const url = await getSignedUrl(doc.file_path, 300) // 5-minute link
+            const a = document.createElement('a')
+            a.href = url
+            a.download = doc.name || 'document'
+            a.click()
+        } catch {
+            toast.error('Could not generate download link. Please try again.')
+        }
+        setDownloadingId(null)
     }
 
     async function handleDelete(doc) {
-        const { error: storageErr } = await supabase.storage.from('documents').remove([doc.file_path])
-        if (storageErr) { toast.error('Failed to delete file'); return }
-        const { error: dbErr } = await supabase.from('documents').delete().eq('id', doc.id)
+        try {
+            await removeDocumentFile(doc.file_path)
+        } catch {
+            toast.error('Failed to delete file')
+            return
+        }
+        const { error: dbErr } = await documentsRepo.remove(doc.id)
         if (dbErr) { toast.error('Failed to remove document record'); return }
         setDocs(prev => prev.filter(d => d.id !== doc.id))
         toast.success('Document deleted')
@@ -129,9 +156,21 @@ export default function DocumentsPage() {
                                     <p className="text-xs text-slate-500">{formatSize(doc.file_size)} · {formatDate(doc.created_at)}</p>
                                 </div>
                                 {doc.is_shared && <Badge variant="blue">Shared</Badge>}
+                                {doc.file_path && (
+                                    <button
+                                        onClick={() => handleDownload(doc)}
+                                        disabled={downloadingId === doc.id}
+                                        className="flex size-8 items-center justify-center rounded-lg text-slate-400 hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-50"
+                                        title="Download"
+                                    >
+                                        <span className={`material-symbols-outlined text-[18px] ${downloadingId === doc.id ? 'animate-pulse' : ''}`}>
+                                            {downloadingId === doc.id ? 'hourglass_empty' : 'download'}
+                                        </span>
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => handleDelete(doc)}
-                                    className="ml-2 flex size-8 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                                    className="flex size-8 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"
                                     title="Delete"
                                 >
                                     <span className="material-symbols-outlined text-[18px]">delete</span>

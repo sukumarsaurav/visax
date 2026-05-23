@@ -53,7 +53,7 @@ export default function ProfessionalWelcomePage() {
                             <div
                                 className="w-full bg-center bg-no-repeat bg-cover rounded-2xl shadow-2xl shadow-slate-200 dark:shadow-slate-900/50 overflow-hidden relative aspect-[4/3] lg:aspect-auto lg:h-[560px]"
                                 style={{
-                                    backgroundImage: `url('https://images.unsplash.com/photo-1600880292203-757bb62b4baf?q=80&w=1470&auto=format&fit=crop')`
+                                    backgroundImage: `url('https://images.unsplash.com/photo-1600880292203-757bb62b4baf?q=70&w=900&auto=format&fit=crop')`
                                 }}
                             >
                                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent" />

@@ -3,9 +3,13 @@ import { toast } from 'react-hot-toast'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import Avatar from '../../components/ui/Avatar'
-import { supabase } from '../../lib/supabase'
 import { createStripePaymentLink, slackNotify, trackEvent } from '../../lib/integrations'
 import { escField } from '../../lib/csvEscape'
+import * as invoicesRepo from '../../data/invoicesRepo'
+import * as promotionsRepo from '../../data/promotionsRepo'
+import * as adminStatsRepo from '../../data/adminStatsRepo'
+import * as paymentsRepo from '../../data/paymentsRepo'
+import { useAuth } from '../../contexts/AuthContext'
 
 const STATUS_COLORS = {
     paid: 'bg-green-50 text-green-700 border-green-100 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800',
@@ -18,6 +22,7 @@ const STATUS_COLORS = {
 const PAGE_SIZE = 10
 
 export default function SalesSubscriptionsPage() {
+    const { user } = useAuth()
     const [activeTab, setActiveTab] = useState('invoices')
     const [invoices, setInvoices] = useState([])
     const [promotions, setPromotions] = useState([])
@@ -32,27 +37,16 @@ export default function SalesSubscriptionsPage() {
 
     const fetchInvoices = useCallback(async () => {
         setLoading(true)
-        let query = supabase
-            .from('invoices')
-            .select('*, profiles!invoices_client_id_fkey(full_name, email, avatar_url)', { count: 'exact' })
-            .order('created_at', { ascending: false })
-            .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
-
-        if (statusFilter !== 'all') query = query.eq('status', statusFilter)
-
-        const { data, count } = await query
-        const list = data || []
-        setInvoices(list)
+        const { data, count } = await invoicesRepo.adminList({ status: statusFilter, page, pageSize: PAGE_SIZE })
+        setInvoices(data || [])
         setTotal(count || 0)
-
-        // Stats
         setLoading(false)
     }, [page, statusFilter])
 
     // Stats from server-side aggregate RPC — no full-table scan
     const fetchStats = useCallback(async () => {
         setStatsLoading(true)
-        const { data } = await supabase.rpc('get_invoice_stats')
+        const { data } = await adminStatsRepo.getInvoiceStats()
         if (data) {
             setStats({
                 totalRevenue: Number(data.total_revenue || 0),
@@ -65,7 +59,7 @@ export default function SalesSubscriptionsPage() {
     }, [])
 
     const fetchPromotions = useCallback(async () => {
-        const { data } = await supabase.from('promotions').select('*').order('created_at', { ascending: false })
+        const { data } = await promotionsRepo.listAll()
         setPromotions(data || [])
     }, [])
 
@@ -78,12 +72,27 @@ export default function SalesSubscriptionsPage() {
 
     const handleGeneratePaymentLink = async (inv) => {
         setGeneratingLink(inv.id)
+        // Record the intent before calling Stripe — prevents duplicate charges if the
+        // admin double-clicks or the network drops mid-flight.
+        const idempotencyKey = paymentsRepo.newIdempotencyKey()
+        const userId = inv.profiles?.id || user?.id
+        if (userId) {
+            await paymentsRepo.ensureIntent({
+                userId,
+                idempotencyKey,
+                provider: 'stripe',
+                amount: Number(inv.amount),
+                currency: (inv.currency || 'USD').toLowerCase(),
+                metadata: { invoice_id: inv.id },
+            })
+        }
         const result = await createStripePaymentLink({
             invoice_id: inv.id,
             amount: Number(inv.amount),
             currency: (inv.currency || 'USD').toLowerCase(),
             description: inv.invoice_number || `Invoice ${inv.id.slice(0, 8).toUpperCase()}`,
             customer_email: inv.profiles?.email,
+            idempotency_key: idempotencyKey,
         })
         if (result.success) {
             toast.success('Payment link created — opening in new tab')

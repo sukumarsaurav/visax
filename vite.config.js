@@ -25,12 +25,24 @@ export default defineConfig({
     sourcemap: false,
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Separate vendor chunks so the browser can cache them independently
-          'react-core': ['react', 'react-dom'],
-          'react-router': ['react-router-dom'],
-          supabase: ['@supabase/supabase-js'],
-          toast: ['react-hot-toast'],
+        // Vendor chunks are pinned by name. Per-portal chunking happens in
+        // the function below so admin users don't ship landing-page code
+        // (and vice-versa) on first visit.
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            // react-router-dom v7 re-exports from `react-router`; match both.
+            if (/[\\/]react-router(-dom)?[\\/]/.test(id)) return 'react-router'
+            if (id.includes('react-dom') || id.includes('/react/')) return 'react-core'
+            // supabase-js pulls in @supabase/{auth,realtime,postgrest,storage,functions}-js
+            // — keep them in one chunk so the catch-all `vendor` stays small.
+            if (/[\\/]@supabase[\\/]/.test(id)) return 'supabase'
+            if (id.includes('react-hot-toast')) return 'toast'
+            return 'vendor'
+          }
+          // Per-page chunks happen automatically via the lazy() imports in
+          // App.jsx — Rollup splits each dynamic import into its own chunk.
+          // No per-portal grouping here: a client visiting /client never
+          // downloads the unused pages in the same portal until navigated to.
         },
       },
     },

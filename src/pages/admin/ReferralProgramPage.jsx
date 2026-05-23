@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
-import { supabase } from '../../lib/supabase'
+import * as platformSettingsRepo from '../../data/platformSettingsRepo'
+import * as promotionsRepo from '../../data/promotionsRepo'
 
 const DEFAULT_CONFIG = {
     referrer_reward: 50,
@@ -29,7 +30,7 @@ export default function ReferralProgramPage() {
 
     const fetchPromotions = useCallback(async () => {
         setLoading(true)
-        const { data } = await supabase.from('promotions').select('*').order('created_at', { ascending: false })
+        const { data } = await promotionsRepo.listAll()
         const list = data || []
         setPromotions(list)
         setStats({
@@ -42,16 +43,13 @@ export default function ReferralProgramPage() {
     }, [])
 
     const fetchConfig = useCallback(async () => {
-        const { data } = await supabase.from('platform_settings').select('value').eq('key', 'referral_config').single()
-        if (data?.value) setConfig(c => ({ ...c, ...data.value }))
+        const { value } = await platformSettingsRepo.getValue('referral_config')
+        if (value) setConfig(c => ({ ...c, ...value }))
     }, [])
 
     const handleSaveConfig = async () => {
         setSavingConfig(true)
-        const { error } = await supabase.from('platform_settings').upsert(
-            { key: 'referral_config', value: config, updated_at: new Date().toISOString() },
-            { onConflict: 'key' }
-        )
+        const { error } = await platformSettingsRepo.setValue('referral_config', config)
         if (error) showToast('Failed: ' + error.message, 'error')
         else showToast('Settings saved!')
         setSavingConfig(false)
@@ -71,7 +69,7 @@ export default function ReferralProgramPage() {
             expires_at: form.expires_at || null,
             status: 'active',
         }
-        const { error } = await supabase.from('promotions').insert(payload)
+        const { error } = await promotionsRepo.create(payload)
         if (error) { showToast('Failed: ' + error.message, 'error') }
         else {
             showToast('Promotion created!')
@@ -84,14 +82,14 @@ export default function ReferralProgramPage() {
 
     const handleToggleStatus = async (promo) => {
         const newStatus = promo.status === 'active' ? 'paused' : 'active'
-        await supabase.from('promotions').update({ status: newStatus }).eq('id', promo.id)
+        await promotionsRepo.setStatus(promo.id, newStatus)
         showToast(`Promotion ${newStatus}`)
         fetchPromotions()
     }
 
     const handleDelete = async (id) => {
         if (!confirm('Delete this promotion?')) return
-        await supabase.from('promotions').delete().eq('id', id)
+        await promotionsRepo.remove(id)
         showToast('Deleted')
         fetchPromotions()
     }

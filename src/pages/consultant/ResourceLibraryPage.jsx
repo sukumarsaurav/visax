@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import Button from '../../components/ui/Button'
-import { supabase } from '../../lib/supabase'
+import * as resourcesRepo from '../../data/resourcesRepo'
 import { formatDate } from '../../utils/date'
 
 const TYPE_ICON = {
@@ -32,11 +32,7 @@ export default function ResourceLibraryPage() {
 
     async function fetchResources() {
         setLoading(true)
-        const { data } = await supabase
-            .from('resources')
-            .select('*')
-            .eq('is_published', true)
-            .order('created_at', { ascending: false })
+        const { data } = await resourcesRepo.listPublished()
         setResources(data || [])
         setLoading(false)
     }

@@ -5,6 +5,7 @@ import toast from 'react-hot-toast'
 import { friendlyError } from '../../lib/errors'
 import { useSEO } from '../../hooks/useSEO'
 import { SEO } from '../../lib/seo'
+import { isEmail, checkPassword, passwordStrength } from '../../lib/validators'
 
 export default function RegisterPage() {
     useSEO(SEO.register)
@@ -18,13 +19,19 @@ export default function RegisterPage() {
     function validate() {
         const errs = {}
         if (!form.fullName.trim()) errs.fullName = 'Full name is required'
+        if (form.fullName.trim().length > 100) errs.fullName = 'Name is too long'
         if (!form.email.trim()) errs.email = 'Email is required'
-        else if (!/\S+@\S+\.\S+/.test(form.email)) errs.email = 'Enter a valid email'
+        else if (!isEmail(form.email.trim())) errs.email = 'Enter a valid email'
         if (!form.password) errs.password = 'Password is required'
-        else if (form.password.length < 8) errs.password = 'Password must be at least 8 characters'
+        else {
+            const pw = checkPassword(form.password, { email: form.email })
+            if (!pw.ok) errs.password = pw.error
+        }
         if (form.password !== form.confirm) errs.confirm = 'Passwords do not match'
         return errs
     }
+
+    const pwStrength = passwordStrength(form.password)
 
     async function handleSubmit(e) {
         e.preventDefault()
@@ -86,7 +93,27 @@ export default function RegisterPage() {
                                 </button>
                             </div>
                         ) : (
-                            <input type={type} value={form[field]} onChange={set(field)} placeholder={placeholder} className={inputClass(field)} />
+                            <input type={type} value={form[field]} onChange={set(field)} placeholder={placeholder} className={inputClass(field)}
+                                autoComplete={field === 'email' ? 'email' : field === 'fullName' ? 'name' : undefined}
+                                maxLength={field === 'fullName' ? 100 : field === 'email' ? 254 : undefined} />
+                        )}
+                        {/* Inline password strength meter */}
+                        {field === 'password' && form.password && (
+                            <div className="flex items-center gap-1.5 mt-1">
+                                {[0, 1, 2, 3].map(i => (
+                                    <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${
+                                        i < pwStrength
+                                            ? pwStrength <= 1 ? 'bg-red-400'
+                                            : pwStrength === 2 ? 'bg-amber-400'
+                                            : pwStrength === 3 ? 'bg-blue-400'
+                                            : 'bg-green-500'
+                                            : 'bg-slate-200 dark:bg-slate-700'
+                                    }`} />
+                                ))}
+                                <span className="text-[10px] font-semibold text-slate-500 ml-1 w-12 text-right">
+                                    {pwStrength <= 1 ? 'Weak' : pwStrength === 2 ? 'Fair' : pwStrength === 3 ? 'Good' : 'Strong'}
+                                </span>
+                            </div>
                         )}
                         {errors[field] && <p className="text-xs text-red-500">{errors[field]}</p>}
                     </div>

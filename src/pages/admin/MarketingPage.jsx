@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import Avatar from '../../components/ui/Avatar'
-import { supabase } from '../../lib/supabase'
+import * as platformSettingsRepo from '../../data/platformSettingsRepo'
+import * as promotionsRepo from '../../data/promotionsRepo'
 
 export default function MarketingPage() {
     const [selectedProgram, setSelectedProgram] = useState(null)
@@ -25,17 +26,18 @@ export default function MarketingPage() {
     }
 
     const loadData = useCallback(async () => {
-        const { data: promos } = await supabase.from('promotions').select('*').order('created_at', { ascending: false })
-        const list = promos || []
+        const [promosRes, cfgRes] = await Promise.all([
+            promotionsRepo.listAll(),
+            platformSettingsRepo.getValue('referral_program'),
+        ])
+        const list = promosRes.data || []
         setPromotions(list)
         setStats({
             totalPromos: list.length,
             activePromos: list.filter(p => p.status === 'active').length,
             totalRedemptions: list.reduce((s, p) => s + (p.redemption_count || 0), 0),
         })
-
-        const { data: cfg } = await supabase.from('platform_settings').select('value').eq('key', 'referral_program').single()
-        if (cfg?.value) setReferralConfig(c => ({ ...c, ...cfg.value }))
+        if (cfgRes.value) setReferralConfig(c => ({ ...c, ...cfgRes.value }))
     }, [])
 
     useEffect(() => { loadData() }, [loadData])
@@ -49,7 +51,7 @@ export default function MarketingPage() {
 
     const handleSaveReferralConfig = async () => {
         setSavingConfig(true)
-        await supabase.from('platform_settings').upsert({ key: 'referral_program', value: referralConfig }, { onConflict: 'key' })
+        await platformSettingsRepo.setValue('referral_program', referralConfig)
         showToast('Referral configuration saved')
         setSavingConfig(false)
     }

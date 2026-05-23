@@ -1,4 +1,5 @@
 import { Component } from 'react'
+import { report } from '../lib/errorReporter'
 
 export default class ErrorBoundary extends Component {
     constructor(props) {
@@ -11,7 +12,9 @@ export default class ErrorBoundary extends Component {
     }
 
     componentDidCatch(error, info) {
+        // eslint-disable-next-line no-console
         console.error('Immizy ErrorBoundary caught:', error, info)
+        report(error, { boundary: 'root', componentStack: info?.componentStack })
     }
 
     render() {

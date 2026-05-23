@@ -4,7 +4,12 @@ import { useAuth } from '../../contexts/AuthContext'
 import toast from 'react-hot-toast'
 import { friendlyError } from '../../lib/errors'
 import { supabase } from '../../lib/supabase'
-import { uploadAvatar, uploadDocument, validateDocFile } from '../../lib/storage'
+import * as profilesRepo from '../../data/profilesRepo'
+import * as documentsRepo from '../../data/documentsRepo'
+import * as paymentsRepo from '../../data/paymentsRepo'
+import { uploadAvatar, uploadDocument } from '../../lib/storage'
+import { validateUpload } from '../../lib/fileValidation'
+import { useUnsavedChangesGuard } from '../../hooks/useUnsavedChangesGuard'
 
 const expertiseAreas = [
     'Skilled Worker Visa',
@@ -204,6 +209,13 @@ export default function ProfessionalRegisterPage() {
     const [postalCode, setPostalCode] = useState('')
     const [selectedPlan, setSelectedPlan] = useState('growth')
 
+    // Beforeunload guard — warn before tab close / refresh once they've
+    // entered anything beyond the first identity step. Cleared on successful
+    // submit (form unmounts → effect cleanup runs).
+    useUnsavedChangesGuard(
+        !submitting && (firstName || lastName || email || bio || expertise.length > 0)
+    )
+
     const totalSteps = accountType === 'agency' ? 3 : 2
 
     // Auto-select minimum viable plan when team size changes
@@ -281,16 +293,18 @@ export default function ProfessionalRegisterPage() {
                 }
             }
 
-            // Upload credential documents
+            // Upload credential documents — uploadDocument now returns
+            // a {path, mime, name, size} bundle with the magic-byte-verified
+            // mime type, so we never persist the (spoofable) browser claim.
             const docPaths = []
             if (uploadedFiles.length > 0) {
                 setSubmitStatus(`Uploading ${uploadedFiles.length} document${uploadedFiles.length > 1 ? 's' : ''}…`)
                 for (const file of uploadedFiles) {
                     try {
-                        const path = await uploadDocument(file, userId)
-                        docPaths.push({ name: file.name, path, size: file.size, mime_type: file.type })
+                        const meta = await uploadDocument(file, userId)
+                        docPaths.push({ name: meta.name, path: meta.path, size: meta.size, mime_type: meta.mime })
                     } catch (e) {
-                        toast.error(`Failed to upload ${file.name}`)
+                        toast.error(`Failed to upload ${file.name}: ${e.message || 'unknown error'}`)
                     }
                 }
             }
@@ -318,11 +332,11 @@ export default function ProfessionalRegisterPage() {
                 profileUpdate.selected_plan = selectedPlan || null
             }
 
-            await supabase.from('profiles').update(profileUpdate).eq('id', userId)
+            await profilesRepo.updateBare(userId, profileUpdate)
 
             // Store credential document records
             if (docPaths.length > 0) {
-                await supabase.from('documents').insert(
+                await documentsRepo.createMany(
                     docPaths.map(d => ({
                         name: d.name,
                         file_path: d.path,
@@ -335,6 +349,16 @@ export default function ProfessionalRegisterPage() {
             }
 
             // ── Razorpay payment (agencies only) ──────────────────────────
+            // Critical invariants:
+            //  1. Navigation to /professional-submitted ONLY happens after
+            //     successful verification. A cancelled/failed payment must
+            //     leave the user on the form so they can retry.
+            //  2. The payment_intent row is moved out of 'pending' on every
+            //     terminal outcome (succeeded / failed / cancelled) — no
+            //     stale pending rows accumulate.
+            //  3. If the verify call succeeds, no later error path may
+            //     overwrite the intent (the .eq('status','pending') guard
+            //     in setIntentStatus protects against this).
             if (accountType === 'agency') {
                 setSubmitStatus('Opening payment…')
 
@@ -343,67 +367,141 @@ export default function ProfessionalRegisterPage() {
                     toast.error('Could not load payment gateway. Please check your connection.')
                     setSubmitting(false)
                     setSubmitStatus('')
-                    return
+                    return  // Stay on form — user can retry.
                 }
 
+                // Idempotency: the edge function dedupes on (user_id, idempotency_key).
+                // A double-submit or network retry hits the same intent row instead
+                // of opening a second Razorpay order — no double charges.
+                const idempotencyKey = paymentsRepo.newIdempotencyKey()
+                const planAmount = agencyPlans.find(p => p.id === selectedPlan)?.price || 0
+                const { data: intent } = await paymentsRepo.ensureIntent({
+                    userId,
+                    idempotencyKey,
+                    provider: 'razorpay',
+                    amount:   planAmount,
+                    currency: 'INR',
+                    metadata: { planId: selectedPlan, source: 'professional-register' },
+                })
+                const intentId = intent?.id
+
                 const { data: orderData, error: orderErr } = await supabase.functions.invoke('create-razorpay-order', {
-                    body: { planId: selectedPlan, userId },
+                    body: { planId: selectedPlan, userId, idempotencyKey },
                 })
                 if (orderErr || orderData?.error) {
+                    // Mark intent as failed so the row doesn't sit pending.
+                    if (intentId) {
+                        await paymentsRepo.setIntentStatus(intentId, 'failed', {
+                            error_message: orderErr?.message || orderData?.error || 'order_creation_failed',
+                        })
+                    }
                     toast.error('Payment setup failed. Please contact support.')
+                    setSubmitting(false)
+                    setSubmitStatus('')
+                    return  // Stay on form.
+                }
+
+                // The promise resolves with `true` on confirmed success,
+                // and rejects with a descriptive Error on any failure path.
+                let paymentSucceeded = false
+                try {
+                    await new Promise((resolve, reject) => {
+                        const plan = agencyPlans.find(p => p.id === selectedPlan)
+                        const options = {
+                            key: orderData.key_id,
+                            amount: orderData.amount,
+                            currency: 'INR',
+                            name: 'Immizy',
+                            description: `${plan?.name || selectedPlan} — Monthly Subscription`,
+                            image: 'https://immizy.in/logo.png',
+                            order_id: orderData.order_id,
+                            handler: async (response) => {
+                                try {
+                                    setSubmitStatus('Verifying payment…')
+                                    const { error: verifyErr } = await supabase.functions.invoke('verify-razorpay-payment', {
+                                        body: {
+                                            razorpay_payment_id: response.razorpay_payment_id,
+                                            razorpay_order_id:   response.razorpay_order_id,
+                                            razorpay_signature:  response.razorpay_signature,
+                                            userId,
+                                            planId: selectedPlan,
+                                            idempotencyKey,
+                                        },
+                                    })
+                                    if (verifyErr) throw new Error(verifyErr.message)
+                                    // The edge function may already have updated the intent via
+                                    // webhook — setIntentStatus's pending-only guard makes this safe.
+                                    if (intentId) {
+                                        await paymentsRepo.setIntentStatus(intentId, 'succeeded', {
+                                            provider_payment_id: response.razorpay_payment_id,
+                                        })
+                                    }
+                                    resolve()
+                                } catch (e) {
+                                    // CRITICAL: payment may have been captured but verify failed.
+                                    // The webhook on the server side is the source of truth — we
+                                    // flag this as 'failed_verification' for ops to reconcile.
+                                    if (intentId) {
+                                        await paymentsRepo.setIntentStatus(intentId, 'failed', {
+                                            error_message: `verify_failed:${e.message}`,
+                                            provider_payment_id: response.razorpay_payment_id,
+                                        })
+                                    }
+                                    reject(e)
+                                }
+                            },
+                            modal: {
+                                ondismiss: () => {
+                                    // User closed the modal without paying.
+                                    if (intentId) {
+                                        paymentsRepo.setIntentStatus(intentId, 'cancelled')
+                                    }
+                                    reject(new Error('cancelled'))
+                                },
+                            },
+                            prefill: {
+                                name:    `${firstName} ${lastName}`.trim(),
+                                email:   email,
+                                contact: phone ? `${phoneCode}${phone}` : '',
+                            },
+                            theme: { color: '#4F46E5' },
+                        }
+                        const rzp = new window.Razorpay(options)
+                        rzp.on('payment.failed', (r) => {
+                            if (intentId) {
+                                paymentsRepo.setIntentStatus(intentId, 'failed', {
+                                    error_message: r.error?.description || r.error?.reason || 'payment_failed',
+                                    provider_payment_id: r.error?.metadata?.payment_id,
+                                })
+                            }
+                            reject(new Error(r.error?.description || 'Payment failed'))
+                        })
+                        rzp.open()
+                    })
+                    paymentSucceeded = true
+                } catch (err) {
+                    if (err.message === 'cancelled') {
+                        toast('Payment cancelled. You can complete it later by signing in.', { icon: '⚠️' })
+                    } else {
+                        toast.error(`Payment failed: ${err.message}. Please try again or contact support.`)
+                    }
+                    // Do NOT navigate — leave user on the form so they can retry.
                     setSubmitting(false)
                     setSubmitStatus('')
                     return
                 }
 
-                await new Promise((resolve, reject) => {
-                    const plan = agencyPlans.find(p => p.id === selectedPlan)
-                    const options = {
-                        key: orderData.key_id,
-                        amount: orderData.amount,
-                        currency: 'INR',
-                        name: 'Immizy',
-                        description: `${plan?.name || selectedPlan} — Monthly Subscription`,
-                        image: 'https://immizy.in/logo.png',
-                        order_id: orderData.order_id,
-                        handler: async (response) => {
-                            try {
-                                setSubmitStatus('Verifying payment…')
-                                const { error: verifyErr } = await supabase.functions.invoke('verify-razorpay-payment', {
-                                    body: {
-                                        razorpay_payment_id: response.razorpay_payment_id,
-                                        razorpay_order_id:   response.razorpay_order_id,
-                                        razorpay_signature:  response.razorpay_signature,
-                                        userId,
-                                        planId: selectedPlan,
-                                    },
-                                })
-                                if (verifyErr) throw new Error(verifyErr.message)
-                                resolve()
-                            } catch (e) {
-                                reject(e)
-                            }
-                        },
-                        modal: { ondismiss: () => reject(new Error('cancelled')) },
-                        prefill: {
-                            name:    `${firstName} ${lastName}`.trim(),
-                            email:   email,
-                            contact: phone ? `${phoneCode}${phone}` : '',
-                        },
-                        theme: { color: '#4F46E5' },
-                    }
-                    const rzp = new window.Razorpay(options)
-                    rzp.on('payment.failed', (r) => reject(new Error(r.error?.description || 'Payment failed')))
-                    rzp.open()
-                }).catch((err) => {
-                    if (err.message === 'cancelled') {
-                        toast('Payment cancelled. You can complete it later from your dashboard.', { icon: '⚠️' })
-                    } else {
-                        toast.error(`Payment failed: ${err.message}`)
-                    }
-                })
+                if (!paymentSucceeded) {
+                    // Defensive: should be unreachable given the catch above.
+                    setSubmitting(false)
+                    setSubmitStatus('')
+                    return
+                }
             }
 
+            // Reached only when:
+            //   • non-agency signup, OR
+            //   • agency payment was VERIFIED successfully.
             navigate('/professional-submitted')
         } catch (err) {
             toast.error('Something went wrong. Please try again.')
@@ -413,22 +511,29 @@ export default function ProfessionalRegisterPage() {
         }
     }
 
-    function handlePhotoSelect(e) {
+    async function handlePhotoSelect(e) {
         const file = e.target.files?.[0]
         if (!file) return
-        if (!file.type.startsWith('image/')) { toast.error('Please select an image file'); return }
-        if (file.size > 5 * 1024 * 1024) { toast.error('Photo must be under 5 MB'); return }
+        const v = await validateUpload(file, 'image')
+        if (!v.ok) { toast.error(v.error); return }
         setAvatarFile(file)
         setAvatarPreview(URL.createObjectURL(file))
     }
 
-    function handleDocSelect(e) {
+    async function handleDocSelect(e) {
         const files = Array.from(e.target.files)
-        const invalid = files.filter(f => validateDocFile(f))
-        if (invalid.length) { toast.error(`${invalid[0].name}: ${validateDocFile(invalid[0])}`); return }
+        // Validate each file's CONTENT (magic bytes), not just extension.
+        const checked = await Promise.all(files.map(async f => ({ file: f, v: await validateUpload(f, 'document') })))
+        const invalid = checked.find(({ v }) => !v.ok)
+        if (invalid) { toast.error(`${invalid.file.name}: ${invalid.v.error}`); return }
         setUploadedFiles(prev => {
-            const existing = prev.map(f => f.name)
-            return [...prev, ...files.filter(f => !existing.includes(f.name))]
+            const existingNames = new Set(prev.map(f => f.name))
+            // Dedup by sanitised name to prevent the user adding two copies under
+            // visually different names that resolve to the same storage path.
+            const incoming = checked
+                .map(({ file, v }) => Object.assign(file, { _sanitizedName: v.sanitizedName }))
+                .filter(f => !existingNames.has(f.name))
+            return [...prev, ...incoming]
         })
     }
 
@@ -771,14 +876,16 @@ export default function ProfessionalRegisterPage() {
                                 <div
                                     onClick={() => fileInputRef.current?.click()}
                                     onDragOver={(e) => e.preventDefault()}
-                                    onDrop={(e) => {
+                                    onDrop={async (e) => {
                                         e.preventDefault()
                                         const files = Array.from(e.dataTransfer.files)
-                                        const invalid = files.find(f => validateDocFile(f))
-                                        if (invalid) { toast.error(`${invalid.name}: ${validateDocFile(invalid)}`); return }
+                                        // Same magic-byte check as the file picker path.
+                                        const checked = await Promise.all(files.map(async f => ({ file: f, v: await validateUpload(f, 'document') })))
+                                        const invalid = checked.find(({ v }) => !v.ok)
+                                        if (invalid) { toast.error(`${invalid.file.name}: ${invalid.v.error}`); return }
                                         setUploadedFiles(prev => {
-                                            const existing = prev.map(f => f.name)
-                                            return [...prev, ...files.filter(f => !existing.includes(f.name))]
+                                            const existing = new Set(prev.map(f => f.name))
+                                            return [...prev, ...checked.map(c => c.file).filter(f => !existing.has(f.name))]
                                         })
                                     }}
                                     className="w-full rounded-lg border-2 border-dashed border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/30 p-6 flex flex-col items-center justify-center gap-2 text-center hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:border-primary/40 transition-colors cursor-pointer group"

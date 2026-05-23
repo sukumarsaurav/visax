@@ -3,8 +3,8 @@ import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import Avatar from '../../components/ui/Avatar'
 import Badge from '../../components/ui/Badge'
-import { supabase } from '../../lib/supabase'
 import { Link } from 'react-router-dom'
+import * as servicesRepo from '../../data/servicesRepo'
 
 const categories = [
     { id: 'all', label: 'All Services' },
@@ -24,11 +24,7 @@ export default function ServicesPage() {
 
     async function fetchServices() {
         setLoading(true)
-        const { data } = await supabase
-            .from('services')
-            .select(`*, provider:profiles!services_provider_id_fkey(id, full_name, avatar_url, is_verified)`)
-            .eq('is_active', true)
-            .order('created_at', { ascending: false })
+        const { data } = await servicesRepo.listAllActive()
         setServices(data || [])
         setLoading(false)
     }

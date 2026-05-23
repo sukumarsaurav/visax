@@ -3,6 +3,7 @@ import { Link, useParams, Navigate } from 'react-router-dom'
 import PublicHeader from '../../components/layout/PublicHeader'
 import Footer from '../../components/layout/Footer'
 import { supabase } from '../../lib/supabase'
+import * as unclaimedProfilesRepo from '../../data/unclaimedProfilesRepo'
 import { useSEO } from '../../hooks/useSEO'
 import toast from 'react-hot-toast'
 
@@ -34,13 +35,7 @@ export default function UnclaimedProfilePage() {
     }, [id])
 
     async function fetchProfile() {
-        const { data, error } = await supabase
-            .from('unclaimed_profiles')
-            .select('id, full_name, email, phone, bio, avatar_url, specializations, languages, years_experience, city, role')
-            .eq('id', id)
-            .eq('is_claimed', false)
-            .single()
-
+        const { data, error } = await unclaimedProfilesRepo.getPublic(id)
         if (error || !data) { setNotFound(true) }
         else { setProfile(data) }
         setLoading(false)
@@ -51,16 +46,13 @@ export default function UnclaimedProfilePage() {
         if (!form.name || !form.email) return
         setSubmitting(true)
 
-        // Store enquiry
-        const { error } = await supabase
-            .from('unclaimed_enquiries')
-            .insert({
-                unclaimed_id: id,
-                enquirer_name: form.name,
-                enquirer_email: form.email,
-                visa_type: form.visaType,
-                message: form.message,
-            })
+        const { error } = await unclaimedProfilesRepo.createEnquiry({
+            unclaimedId: id,
+            enquirerName: form.name,
+            enquirerEmail: form.email,
+            visaType: form.visaType,
+            message: form.message,
+        })
 
         if (error) {
             toast.error('Failed to send. Please try again.')

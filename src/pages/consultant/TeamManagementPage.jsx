@@ -4,9 +4,10 @@ import StatCard from '../../components/ui/StatCard'
 import Badge from '../../components/ui/Badge'
 import Avatar from '../../components/ui/Avatar'
 import Button from '../../components/ui/Button'
-import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import toast from 'react-hot-toast'
+import * as agenciesRepo from '../../data/agenciesRepo'
+import * as profilesRepo from '../../data/profilesRepo'
 
 const statusColors = { active: 'green', pending: 'slate', away: 'amber', inactive: 'red' }
 
@@ -22,21 +23,10 @@ export default function TeamManagementPage() {
 
     async function fetchTeam() {
         setLoading(true)
-
-        // Get agency owned by this admin
-        const { data: agencyData } = await supabase
-            .from('agencies')
-            .select('*')
-            .eq('owner_id', profile.id)
-            .single()
-
+        const { data: agencyData } = await agenciesRepo.getByOwner(profile.id)
         if (agencyData) {
             setAgency(agencyData)
-            const { data: memberData } = await supabase
-                .from('agency_members')
-                .select(`*, profile:profiles!agency_members_profile_id_fkey(id, full_name, avatar_url, email)`)
-                .eq('agency_id', agencyData.id)
-                .order('created_at', { ascending: false })
+            const { data: memberData } = await agenciesRepo.listMembers(agencyData.id)
             setMembers(memberData || [])
         }
         setLoading(false)
@@ -47,19 +37,12 @@ export default function TeamManagementPage() {
         if (!inviteEmail.trim() || !agency) return
         setInviting(true)
 
-        // Check if profile exists
-        const { data: existingProfile } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('email', inviteEmail.trim())
-            .single()
-
+        const { data: existingProfile } = await profilesRepo.getByEmail(inviteEmail.trim())
         if (existingProfile) {
-            const { error } = await supabase.from('agency_members').insert({
-                agency_id: agency.id,
-                profile_id: existingProfile.id,
-                invited_by: profile.id,
-                status: 'pending',
+            const { error } = await agenciesRepo.addMember({
+                agencyId: agency.id,
+                profileId: existingProfile.id,
+                invitedBy: profile.id,
             })
             if (error) toast.error(error.message)
             else { toast.success('Invite sent!'); setInviteEmail(''); fetchTeam() }
@@ -70,10 +53,7 @@ export default function TeamManagementPage() {
     }
 
     async function updateMemberStatus(memberId, status) {
-        const { error } = await supabase
-            .from('agency_members')
-            .update({ status })
-            .eq('id', memberId)
+        const { error } = await agenciesRepo.setMemberStatus(memberId, status)
         if (error) toast.error(error.message)
         else { toast.success('Member updated'); fetchTeam() }
     }

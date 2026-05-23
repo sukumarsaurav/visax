@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
-import { supabase } from '../../lib/supabase'
 import { writeAuditLog } from '../../lib/auditLog'
+import * as platformSettingsRepo from '../../data/platformSettingsRepo'
+import * as integrationsRepo from '../../data/integrationsRepo'
 
 const INTEGRATION_META = [
     {
@@ -158,10 +159,10 @@ export default function SystemIntegrationsPage() {
 
     const loadSettings = useCallback(async () => {
         const [settingsRes, providersRes] = await Promise.all([
-            supabase.from('platform_settings').select('value').eq('key', 'integrations').single(),
-            supabase.rpc('get_configured_integration_providers'),
+            platformSettingsRepo.getValue('integrations'),
+            integrationsRepo.listProviders(),
         ])
-        if (settingsRes.data?.value) setIntSettings(settingsRes.data.value)
+        if (settingsRes.value) setIntSettings(settingsRes.value)
         if (providersRes.data) {
             setConfiguredProviders(new Set(providersRes.data.map(r => r.provider)))
         }
@@ -191,9 +192,7 @@ export default function SystemIntegrationsPage() {
         const current = intSettings[id]?.enabled || false
         const updated = { ...intSettings, [id]: { ...(intSettings[id] || {}), enabled: !current } }
         setIntSettings(updated)
-        const { error } = await supabase
-            .from('platform_settings')
-            .upsert({ key: 'integrations', value: updated }, { onConflict: 'key' })
+        const { error } = await platformSettingsRepo.setValue('integrations', updated)
         if (error) toast.error('Failed to update integration status')
         else toast.success(`${INTEGRATION_META.find(m => m.id === id)?.name} ${!current ? 'enabled' : 'disabled'}`)
     }
@@ -224,18 +223,11 @@ export default function SystemIntegrationsPage() {
                 ...nonSecretUpdate,
             },
         }
-        promises.push(
-            supabase.from('platform_settings').upsert({ key: 'integrations', value: updated }, { onConflict: 'key' })
-        )
+        promises.push(platformSettingsRepo.setValue('integrations', updated))
 
         // Secrets go into integration_secrets via merge RPC (never sent back to client)
         if (Object.keys(secretUpdate).length > 0) {
-            promises.push(
-                supabase.rpc('upsert_integration_secret', {
-                    p_provider: id,
-                    p_new_secrets: secretUpdate,
-                })
-            )
+            promises.push(integrationsRepo.setSecrets(id, secretUpdate))
         }
 
         const results = await Promise.all(promises)

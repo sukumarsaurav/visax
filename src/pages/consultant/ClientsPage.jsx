@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom'
 import Button from '../../components/ui/Button'
 import Avatar from '../../components/ui/Avatar'
 import Badge from '../../components/ui/Badge'
-import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
-import { useMessages } from '../../hooks/useMessages'
+import { useSendMessage } from '../../hooks/useSendMessage'
 import { formatDate } from '../../utils/date'
+import * as casesRepo from '../../data/casesRepo'
 
 const STATUS_COLORS = {
     in_progress: 'blue', under_review: 'purple', docs_pending: 'amber',
@@ -23,7 +23,7 @@ const PAGE_SIZE = 20
 
 export default function ClientsPage() {
     const { user } = useAuth()
-    const { sendMessage } = useMessages()
+    const sendMessage = useSendMessage()
     const [clients, setClients] = useState([])
     const [loading, setLoading] = useState(true)
     const [totalCount, setTotalCount] = useState(0)
@@ -41,20 +41,11 @@ export default function ClientsPage() {
 
     async function fetchClients() {
         setLoading(true)
-        // Get unique clients from cases where this consultant is assigned
-        const { data, error, count } = await supabase
-            .from('cases')
-            .select(`
-                client_id,
-                status,
-                visa_type,
-                destination_country,
-                updated_at,
-                client:profiles!cases_client_id_fkey(id, full_name, avatar_url, email, created_at)
-            `, { count: 'exact' })
-            .eq('consultant_id', user.id)
-            .order('updated_at', { ascending: false })
-            .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1)
+        const { data, error, count } = await casesRepo.listClientsForConsultant({
+            consultantId: user.id,
+            page,
+            pageSize: PAGE_SIZE,
+        })
 
         if (!error) {
             // Deduplicate by client_id, keeping most recent case info

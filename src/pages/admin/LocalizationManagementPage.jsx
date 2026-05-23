@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
-import { supabase } from '../../lib/supabase'
+import * as platformSettingsRepo from '../../data/platformSettingsRepo'
 
 const DEFAULT_LANGUAGES = [
     { id: 'en-US', name: 'English (US)', code: 'EN', locale: 'en-US', progress: 100, isDefault: true, isActive: true, color: 'blue' },
@@ -35,21 +35,22 @@ export default function LocalizationManagementPage() {
     }
 
     const loadSettings = useCallback(async () => {
-        const { data } = await supabase.from('platform_settings').select('value').eq('key', 'localization').single()
-        if (data?.value) {
-            if (data.value.languages) setLanguages(data.value.languages)
-            if (data.value.global) setGlobalSettings(data.value.global)
-            if (data.value.translations) setTranslations(data.value.translations)
+        const { value } = await platformSettingsRepo.getValue('localization')
+        if (value) {
+            if (value.languages)    setLanguages(value.languages)
+            if (value.global)       setGlobalSettings(value.global)
+            if (value.translations) setTranslations(value.translations)
         }
     }, [])
 
     useEffect(() => { loadSettings() }, [loadSettings])
 
     const persistAll = async (newLangs, newGlobal, newTranslations) => {
-        await supabase.from('platform_settings').upsert(
-            { key: 'localization', value: { languages: newLangs, global: newGlobal, translations: newTranslations } },
-            { onConflict: 'key' }
-        )
+        await platformSettingsRepo.setValue('localization', {
+            languages: newLangs,
+            global: newGlobal,
+            translations: newTranslations,
+        })
     }
 
     const handleToggleLang = async (id) => {

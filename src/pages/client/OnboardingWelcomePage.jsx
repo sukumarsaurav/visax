@@ -107,7 +107,7 @@ export default function OnboardingWelcomePage() {
                             <div
                                 className="w-full h-full bg-center bg-no-repeat bg-cover rounded-2xl shadow-2xl shadow-slate-200 dark:shadow-slate-900 overflow-hidden relative aspect-[4/3] lg:aspect-auto lg:h-[600px]"
                                 style={{
-                                    backgroundImage: `url('https://images.unsplash.com/photo-1521791136064-7986c2920216?q=80&w=1469&auto=format&fit=crop')`
+                                    backgroundImage: `url('https://images.unsplash.com/photo-1521791136064-7986c2920216?q=70&w=900&auto=format&fit=crop')`
                                 }}
                             >
                                 {/* Trust Badge Overlay */}

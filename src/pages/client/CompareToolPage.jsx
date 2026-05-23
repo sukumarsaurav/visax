@@ -3,7 +3,11 @@ import { Link } from 'react-router-dom'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import Avatar from '../../components/ui/Avatar'
-import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../contexts/AuthContext'
+import * as profilesRepo from '../../data/profilesRepo'
+import * as ratingsRepo from '../../data/ratingsRepo'
+import * as servicesRepo from '../../data/servicesRepo'
+import * as wishlistRepo from '../../data/wishlistRepo'
 
 function StarRating({ rating, reviews }) {
     const full = Math.floor(rating)
@@ -39,6 +43,7 @@ function RateBar({ value, label }) {
 }
 
 export default function CompareToolPage() {
+    const { user } = useAuth()
     const [allConsultants, setAllConsultants] = useState([])
     const [loading, setLoading] = useState(true)
     const [selectedIds, setSelectedIds] = useState([])
@@ -50,39 +55,24 @@ export default function CompareToolPage() {
 
     async function fetchConsultants() {
         setLoading(true)
-        // Fetch consultants with their services and reviews
-        const { data: profiles } = await supabase
-            .from('profiles')
-            .select(`
-                id, full_name, avatar_url, bio,
-                years_experience, languages, specializations,
-                is_verified
-            `)
-            .in('role', ['individual', 'agency_admin'])
-            .eq('application_status', 'approved')
-            .limit(20)
-
+        const { data: profiles } = await profilesRepo.listForCompare({ limit: 20 })
         if (!profiles) { setLoading(false); return }
 
         const ids = profiles.map(p => p.id)
-
-        // Use pre-aggregated materialized view instead of full reviews scan
-        const [ratingSummaries, servicesRes] = await Promise.all([
-            supabase.from('consultant_rating_summary').select('consultant_id, avg_rating, review_count').in('consultant_id', ids),
-            supabase.from('services').select('provider_id, title, price').eq('is_active', true).in('provider_id', ids),
+        const [ratingsRes, servicesRes] = await Promise.all([
+            ratingsRepo.listForConsultants(ids),
+            servicesRepo.listForCompare(ids),
         ])
 
         const ratingMap = {}
         const countMap = {}
-        for (const r of ratingSummaries.data || []) {
+        for (const r of ratingsRes.data || []) {
             ratingMap[r.consultant_id] = Number(r.avg_rating) * r.review_count
             countMap[r.consultant_id] = r.review_count
         }
 
-        const servicesData = servicesRes.data
-
         const servicesMap = {}
-        for (const s of servicesData || []) {
+        for (const s of servicesRes.data || []) {
             if (!servicesMap[s.provider_id]) servicesMap[s.provider_id] = []
             servicesMap[s.provider_id].push(s)
         }
@@ -343,7 +333,8 @@ export default function CompareToolPage() {
                                                 </Link>
                                                 <button
                                                     onClick={async () => {
-                                                        const { data } = await supabase.from('wishlist').upsert({ client_id: (await supabase.auth.getUser()).data.user?.id, consultant_id: pro.id }, { onConflict: 'client_id,consultant_id', ignoreDuplicates: true })
+                                                        if (!user) return
+                                                        await wishlistRepo.add(user.id, pro.id)
                                                     }}
                                                     className="flex items-center justify-center gap-1 w-full py-2 text-sm font-medium text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 rounded-lg hover:border-red-300 hover:text-red-500 transition-colors"
                                                 >

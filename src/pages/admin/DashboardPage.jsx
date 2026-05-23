@@ -3,8 +3,9 @@ import Card, { CardHeader, CardTitle } from '../../components/ui/Card'
 import StatCard from '../../components/ui/StatCard'
 import Avatar from '../../components/ui/Avatar'
 import Button from '../../components/ui/Button'
-import { supabase } from '../../lib/supabase'
 import { Link } from 'react-router-dom'
+import * as adminStatsRepo from '../../data/adminStatsRepo'
+import * as profilesRepo from '../../data/profilesRepo'
 
 export default function AdminDashboard() {
     const [stats, setStats] = useState(null)
@@ -17,11 +18,8 @@ export default function AdminDashboard() {
         setLoading(true)
         // Single RPC call replaces 5 separate queries + full-table invoice scan
         const [{ data: dashData }, { data: usersData }] = await Promise.all([
-            supabase.rpc('get_admin_dashboard_stats'),
-            supabase.from('profiles')
-                .select('id, full_name, role, created_at, avatar_url')
-                .order('created_at', { ascending: false })
-                .limit(5),
+            adminStatsRepo.getDashboardStats(),
+            profilesRepo.recentUsers({ limit: 5 }),
         ])
         setStats(dashData)
         setRecentUsers(usersData || [])

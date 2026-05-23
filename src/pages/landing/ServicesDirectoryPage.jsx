@@ -4,7 +4,9 @@ import { SEO } from '../../lib/seo'
 import { Link } from 'react-router-dom'
 import PublicHeader from '../../components/layout/PublicHeader'
 import Footer from '../../components/layout/Footer'
-import { supabase } from '../../lib/supabase'
+import * as servicesRepo from '../../data/servicesRepo'
+import * as ratingsRepo from '../../data/ratingsRepo'
+import { sanitizeSearch } from '../../lib/searchEscape'
 
 const PAGE_SIZE = 10
 
@@ -45,22 +47,15 @@ export default function ServicesDirectoryPage() {
     }, [appliedSearch, activeCategory, sortBy])
 
     async function fetchCategoriesAndRatings() {
-        // Get all unique categories
-        const { data: cats } = await supabase
-            .from('services')
-            .select('category')
-            .eq('is_active', true)
-
-        const uniqueCats = ['All Services', ...new Set((cats || []).map(c => c.category).filter(Boolean))]
+        const [catsRes, ratingsRes] = await Promise.all([
+            servicesRepo.listCategories(),
+            ratingsRepo.listAll(),
+        ])
+        const uniqueCats = ['All Services', ...new Set((catsRes.data || []).map(c => c.category).filter(Boolean))]
         setCategories(uniqueCats)
 
-        // Use pre-aggregated materialized view — one row per consultant vs one per review
-        const { data: ratingSummaries } = await supabase
-            .from('consultant_rating_summary')
-            .select('consultant_id, avg_rating, review_count')
-
         const ratings = {}
-        for (const r of (ratingSummaries || [])) {
+        for (const r of (ratingsRes.data || [])) {
             ratings[r.consultant_id] = { sum: Number(r.avg_rating) * r.review_count, count: r.review_count }
         }
         setRatingMap(ratings)
@@ -70,29 +65,13 @@ export default function ServicesDirectoryPage() {
         if (pageNum === 0) setLoading(true)
         else setLoadingMore(true)
 
-        let query = supabase
-            .from('services')
-            .select(`
-                id, title, description, price, duration_minutes, category, is_active, expertise_areas, created_at,
-                provider:profiles!services_provider_id_fkey(id, full_name, avatar_url, role)
-            `)
-            .eq('is_active', true)
-
-        if (appliedSearch) {
-            query = query.or(`title.ilike.%${appliedSearch}%,description.ilike.%${appliedSearch}%`)
-        }
-
-        if (activeCategory !== 'All Services') {
-            query = query.eq('category', activeCategory)
-        }
-
-        if (sortBy === 'price_asc') query = query.order('price', { ascending: true })
-        else if (sortBy === 'price_desc') query = query.order('price', { ascending: false })
-        else query = query.order('created_at', { ascending: false })
-
-        query = query.range(pageNum * PAGE_SIZE, (pageNum + 1) * PAGE_SIZE - 1)
-
-        const { data } = await query
+        const { data } = await servicesRepo.search({
+            search: appliedSearch ? sanitizeSearch(appliedSearch) : '',
+            category: activeCategory,
+            sortBy,
+            page: pageNum,
+            pageSize: PAGE_SIZE,
+        })
 
         if (reset || pageNum === 0) setServices(data || [])
         else setServices(prev => [...prev, ...(data || [])])

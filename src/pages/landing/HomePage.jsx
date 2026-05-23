@@ -7,7 +7,7 @@ import Avatar from '../../components/ui/Avatar'
 import StarRating from '../../components/ui/StarRating'
 import PublicHeader from '../../components/layout/PublicHeader'
 import Footer from '../../components/layout/Footer'
-import { supabase } from '../../lib/supabase'
+import * as analyticsRepo from '../../data/analyticsRepo'
 
 const features = [
     { icon: 'search', title: 'Find Experts', description: 'Browse verified immigration consultants and attorneys', color: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' },
@@ -40,9 +40,8 @@ export default function HomePage() {
 
     async function fetchHeroData() {
         // Run platform stats and featured consultant in parallel
-        const [statsRes, consultantsRes] = await Promise.all([
-            // Single RPC call replaces full reviews table scan
-            supabase.rpc('get_platform_stats'),
+        const [stats, consultantsRes] = await Promise.all([
+            analyticsRepo.getPlatformStats(),
             supabase
                 .from('profiles')
                 .select('id, full_name, avatar_url, role, specializations, years_experience')
@@ -51,13 +50,11 @@ export default function HomePage() {
                 .limit(5),
         ])
 
-        // Platform stats from pre-aggregated RPC
-        const stats = statsRes.data
         if (stats) {
             setPlatformStats({
-                consultants: stats.consultant_count || 0,
-                avgRating: stats.avg_rating ? Number(stats.avg_rating).toFixed(1) : null,
-                reviews: stats.total_reviews || 0,
+                consultants: stats.consultants,
+                avgRating: stats.avgRating,
+                reviews: stats.reviews,
             })
         }
 

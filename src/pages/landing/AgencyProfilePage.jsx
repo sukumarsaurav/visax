@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import PublicHeader from '../../components/layout/PublicHeader'
@@ -6,7 +6,13 @@ import Footer from '../../components/layout/Footer'
 import Button from '../../components/ui/Button'
 import Avatar from '../../components/ui/Avatar'
 import StarRating from '../../components/ui/StarRating'
-import { supabase } from '../../lib/supabase'
+import { useSEO } from '../../hooks/useSEO'
+import { buildAgencySchema, buildBreadcrumb } from '../../lib/seo'
+import * as agenciesRepo from '../../data/agenciesRepo'
+import * as profilesRepo from '../../data/profilesRepo'
+import * as servicesRepo from '../../data/servicesRepo'
+import * as reviewsRepo from '../../data/reviewsRepo'
+import * as availabilityRepo from '../../data/availabilityRepo'
 
 const COLOR_MAP = {
     blue: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
@@ -60,30 +66,70 @@ export default function AgencyProfilePage() {
     const [meetingType, setMeetingType] = useState('video')
 
     useEffect(() => {
-        if (!id) return
+        if (!id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+            setNotFound(true)
+            setLoading(false)
+            return
+        }
         fetchAll()
     }, [id])
 
+    // ── SEO ─────────────────────────────────────────────────────────────────
+    // Agencies are typed as LegalService for schema purposes (immigration
+    // agencies offer legal advisory + paperwork). Include member count so
+    // Google understands the org size, and AggregateRating when reviews exist.
+    const seoAvgRating = useMemo(() => {
+        if (!reviews?.length) return null
+        return reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length
+    }, [reviews])
+
+    const seoSchemas = useMemo(() => {
+        if (!agency) return null
+        return [
+            buildBreadcrumb([
+                { name: 'Home', url: '/' },
+                { name: 'Find Professionals', url: '/find-professionals' },
+                { name: agency.name || 'Agency', url: `/agency/${id}` },
+            ]),
+            buildAgencySchema({
+                id,
+                name: agency.name,
+                logo: agency.logo_url,
+                description: agency.description,
+                city: agency.city,
+                address: agency.address,
+                memberCount: (members?.length || 0) + 1, // +1 for the owner
+                avgRating: seoAvgRating,
+                reviewCount: reviews?.length || 0,
+            }),
+        ]
+    }, [agency, members, reviews, id, seoAvgRating])
+
+    useSEO(agency ? {
+        title: `${agency.name} — Immigration Agency${agency.city ? ` in ${agency.city}` : ''}`,
+        description: agency.description
+            ? `${agency.name} is a verified immigration agency${agency.city ? ` in ${agency.city}, India` : ''} with ${(members?.length || 0) + 1} consultants. ${agency.description.slice(0, 100)} Book on Immizy.`
+            : `Book consultations with ${agency.name}, a verified immigration agency on Immizy${agency.city ? `, ${agency.city}` : ''}.`,
+        keywords: [
+            'immigration agency',
+            agency.city && `immigration agency in ${agency.city}`,
+            agency.name,
+        ].filter(Boolean).join(', '),
+        ogImage: agency.logo_url,
+        schema: seoSchemas,
+    } : {})
+
     useEffect(() => {
         if (!selectedConsultant) return
-        supabase
-            .from('consultant_availability')
-            .select('*')
-            .eq('consultant_id', selectedConsultant)
-            .eq('is_active', true)
-            .then(({ data }) => {
-                setAvailability(data || [])
-                setSelectedSlot(null)
-            })
+        availabilityRepo.listActive(selectedConsultant).then(({ data }) => {
+            setAvailability(data || [])
+            setSelectedSlot(null)
+        })
     }, [selectedConsultant])
 
     async function fetchAll() {
         setLoading(true)
-        const { data: agencyData } = await supabase
-            .from('agencies')
-            .select('*')
-            .eq('id', id)
-            .single()
+        const { data: agencyData } = await agenciesRepo.getById(id)
 
         if (!agencyData) {
             setNotFound(true)
@@ -93,27 +139,20 @@ export default function AgencyProfilePage() {
         setAgency(agencyData)
 
         const [ownerRes, membersRes] = await Promise.all([
-            supabase.from('profiles').select('id, full_name, avatar_url, bio, languages, specializations, years_experience').eq('id', agencyData.owner_id).single(),
-            supabase.from('agency_members').select(`
-                id, role, status,
-                profile:profiles!agency_members_profile_id_fkey(id, full_name, avatar_url, specializations, years_experience)
-            `).eq('agency_id', id).eq('status', 'active'),
+            profilesRepo.getMarketingProfile(agencyData.owner_id),
+            agenciesRepo.listActiveMembers(id),
         ])
 
         setOwner(ownerRes.data)
         const memberList = membersRes.data || []
         setMembers(memberList)
 
-        // All consultant IDs (owner + members)
         const consultantIds = [agencyData.owner_id, ...memberList.map(m => m.profile.id)]
 
         const [servicesRes, reviewsRes, availRes] = await Promise.all([
-            supabase.from('services').select('*').eq('provider_id', agencyData.owner_id).eq('is_active', true).order('price'),
-            supabase.from('reviews').select(`
-                id, rating, comment, created_at, is_anonymous, consultant_id,
-                reviewer:profiles!reviews_reviewer_id_fkey(id, full_name, avatar_url)
-            `).in('consultant_id', consultantIds).order('created_at', { ascending: false }).limit(5),
-            supabase.from('consultant_availability').select('*').eq('consultant_id', agencyData.owner_id).eq('is_active', true),
+            servicesRepo.listActiveByProvider(agencyData.owner_id),
+            reviewsRepo.listForConsultants(consultantIds, { limit: 5 }),
+            availabilityRepo.listActive(agencyData.owner_id),
         ])
 
         setServices(servicesRes.data || [])

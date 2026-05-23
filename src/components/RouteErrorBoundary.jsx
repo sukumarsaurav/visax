@@ -1,5 +1,6 @@
 import { Component } from 'react'
 import Button from './ui/Button'
+import { report } from '../lib/errorReporter'
 
 /**
  * Per-route error boundary — catches errors within a dashboard page
@@ -19,7 +20,9 @@ export default class RouteErrorBoundary extends Component {
     }
 
     componentDidCatch(error, info) {
+        // eslint-disable-next-line no-console
         console.error('RouteErrorBoundary caught:', error, info)
+        report(error, { boundary: 'route', componentStack: info?.componentStack })
     }
 
     handleRetry = () => {

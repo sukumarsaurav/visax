@@ -4,7 +4,8 @@ import PublicHeader from '../../components/layout/PublicHeader'
 import Footer from '../../components/layout/Footer'
 import Button from '../../components/ui/Button'
 import Avatar from '../../components/ui/Avatar'
-import { supabase } from '../../lib/supabase'
+import * as servicesRepo from '../../data/servicesRepo'
+import * as reviewsRepo from '../../data/reviewsRepo'
 
 const PROCESS_STEPS = [
     { step: 1, title: 'Select a Provider', description: 'Choose a verified attorney or agency from our list.' },
@@ -32,15 +33,7 @@ export default function ServiceDetailsPage() {
 
     async function fetchServiceData() {
         setLoading(true)
-
-        const { data: svc } = await supabase
-            .from('services')
-            .select(`
-                *,
-                provider:profiles!services_provider_id_fkey(id, full_name, avatar_url, bio, languages, years_experience, specializations, role)
-            `)
-            .eq('id', serviceId)
-            .single()
+        const { data: svc } = await servicesRepo.getById(serviceId)
 
         if (!svc) {
             setNotFound(true)
@@ -51,30 +44,12 @@ export default function ServiceDetailsPage() {
         setService(svc)
         setProvider(svc.provider)
 
-        // Fetch reviews for the provider
-        const { data: revs } = await supabase
-            .from('reviews')
-            .select(`
-                id, rating, comment, created_at, is_anonymous,
-                reviewer:profiles!reviews_reviewer_id_fkey(id, full_name, avatar_url)
-            `)
-            .eq('consultant_id', svc.provider_id)
-            .order('created_at', { ascending: false })
-            .limit(3)
-        setReviews(revs || [])
-
-        // Fetch related services (same category, different service)
-        const { data: related } = await supabase
-            .from('services')
-            .select(`
-                id, title, price, category,
-                provider:profiles!services_provider_id_fkey(id, full_name, avatar_url, years_experience)
-            `)
-            .eq('is_active', true)
-            .eq('category', svc.category || '')
-            .neq('id', serviceId)
-            .limit(3)
-        setRelatedServices(related || [])
+        const [revsRes, relatedRes] = await Promise.all([
+            reviewsRepo.listForConsultant(svc.provider_id, { limit: 3 }),
+            servicesRepo.listRelated({ category: svc.category, excludeId: serviceId, limit: 3 }),
+        ])
+        setReviews(revsRes.data || [])
+        setRelatedServices(relatedRes.data || [])
 
         setLoading(false)
     }

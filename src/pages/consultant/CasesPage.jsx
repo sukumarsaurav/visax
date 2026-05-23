@@ -5,10 +5,10 @@ import Badge from '../../components/ui/Badge'
 import Avatar from '../../components/ui/Avatar'
 import Button from '../../components/ui/Button'
 import { useCases } from '../../hooks/useCases'
-import { useMessages } from '../../hooks/useMessages'
-import { supabase } from '../../lib/supabase'
+import { useSendMessage } from '../../hooks/useSendMessage'
 import { useAuth } from '../../contexts/AuthContext'
 import { formatDate } from '../../utils/date'
+import * as caseActivitiesRepo from '../../data/caseActivitiesRepo'
 
 const STATUS_MAP = {
     in_progress: { label: 'In Progress', color: 'blue' },
@@ -32,7 +32,7 @@ const filterTabs = [
 export default function CasesPage() {
     const { user } = useAuth()
     const { cases, loading, updateCase } = useCases()
-    const { sendMessage } = useMessages()
+    const sendMessage = useSendMessage()
     const [activeFilter, setActiveFilter] = useState('all')
     const [selectedCase, setSelectedCase] = useState(null)
     const [isPanelOpen, setIsPanelOpen] = useState(false)
@@ -58,12 +58,7 @@ export default function CasesPage() {
 
     const fetchActivities = useCallback(async (caseId) => {
         setActivitiesLoading(true)
-        const { data } = await supabase
-            .from('case_activities')
-            .select('*, author:profiles!case_activities_author_id_fkey(id, full_name, avatar_url)')
-            .eq('case_id', caseId)
-            .order('created_at', { ascending: false })
-            .limit(20)
+        const { data } = await caseActivitiesRepo.listByCase(caseId)
         setActivities(data || [])
         setActivitiesLoading(false)
     }, [])
@@ -79,10 +74,9 @@ export default function CasesPage() {
         if (!messageText.trim() || !selectedCase?.client?.id) return
         setSending(true)
         await sendMessage({ recipientId: selectedCase.client.id, content: messageText, caseId: selectedCase.id })
-        // Add to activities
-        await supabase.from('case_activities').insert({
-            case_id: selectedCase.id,
-            author_id: user.id,
+        await caseActivitiesRepo.create({
+            caseId: selectedCase.id,
+            authorId: user.id,
             type: 'message',
             content: messageText,
         })
@@ -94,9 +88,9 @@ export default function CasesPage() {
     const handleAddNote = async () => {
         if (!noteText.trim()) return
         setSavingNote(true)
-        await supabase.from('case_activities').insert({
-            case_id: selectedCase.id,
-            author_id: user.id,
+        await caseActivitiesRepo.create({
+            caseId: selectedCase.id,
+            authorId: user.id,
             type: 'note',
             content: noteText,
         })
@@ -111,9 +105,9 @@ export default function CasesPage() {
         const { data } = await updateCase(selectedCase.id, { status: newStatus })
         if (data) {
             setSelectedCase(prev => ({ ...prev, status: newStatus }))
-            await supabase.from('case_activities').insert({
-                case_id: selectedCase.id,
-                author_id: user.id,
+            await caseActivitiesRepo.create({
+                caseId: selectedCase.id,
+                authorId: user.id,
                 type: 'status_change',
                 content: `Status changed to ${STATUS_MAP[newStatus]?.label || newStatus}`,
             })

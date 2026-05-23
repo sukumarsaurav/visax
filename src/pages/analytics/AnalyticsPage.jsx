@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
-import { supabase } from '../../lib/supabase'
+import * as analyticsRepo from '../../data/analyticsRepo'
 import Card, { CardHeader, CardTitle } from '../../components/ui/Card'
 import StatCard from '../../components/ui/StatCard'
 import Avatar from '../../components/ui/Avatar'
@@ -46,8 +46,12 @@ export default function AnalyticsPage() {
 
             if (isAgencyAdmin) {
                 await fetchAgencyStats()
+            } else if (isConsultant) {
+                await fetchConsultantStatsRpc(profile.id)
             } else {
-                await fetchIndividualStats(isConsultant)
+                // Clients still use direct counts — there's no client-side
+                // RPC and the volumes are small.
+                await fetchClientStats()
             }
         } catch {
             setStats(null)
@@ -55,126 +59,26 @@ export default function AnalyticsPage() {
         setLoading(false)
     }
 
-    async function fetchIndividualStats(isConsultant) {
-        const idCol = isConsultant ? 'consultant_id' : 'client_id'
+    async function fetchConsultantStatsRpc(consultantId) {
+        const result = await analyticsRepo.getConsultantAnalytics(consultantId)
+        setStats(result)
+    }
 
-        const [
-            totalCasesRes, activeCasesRes,
-            totalApptRes, completedApptRes,
-            paidInvoiceRes, pendingInvoiceRes, totalInvoiceRes,
-        ] = await Promise.all([
-            supabase.from('cases').select('id', { count: 'exact', head: true }).eq(idCol, profile.id),
-            supabase.from('cases').select('id', { count: 'exact', head: true }).eq(idCol, profile.id).eq('status', 'in_progress'),
-            supabase.from('appointments').select('id', { count: 'exact', head: true }).eq(idCol, profile.id),
-            supabase.from('appointments').select('id', { count: 'exact', head: true }).eq(idCol, profile.id).eq('status', 'completed'),
-            supabase.from('invoices').select('amount').eq(idCol, profile.id).eq('status', 'paid'),
-            supabase.from('invoices').select('amount').eq(idCol, profile.id).eq('status', 'pending'),
-            supabase.from('invoices').select('id', { count: 'exact', head: true }).eq(idCol, profile.id),
-        ])
-
-        const totalRevenue = (paidInvoiceRes.data || []).reduce((s, i) => s + Number(i.amount), 0)
-        const pendingRevenue = (pendingInvoiceRes.data || []).reduce((s, i) => s + Number(i.amount), 0)
-
-        setStats({
-            totalCases: totalCasesRes.count || 0,
-            activeCases: activeCasesRes.count || 0,
-            totalAppointments: totalApptRes.count || 0,
-            completedAppointments: completedApptRes.count || 0,
-            totalRevenue,
-            pendingRevenue,
-            totalInvoices: totalInvoiceRes.count || 0,
-        })
+    async function fetchClientStats() {
+        const result = await analyticsRepo.getClientAnalytics(profile.id)
+        setStats(result)
     }
 
     async function fetchAgencyStats() {
-        // Get the agency
-        const { data: agency } = await supabase
-            .from('agencies')
-            .select('id')
-            .eq('owner_id', profile.id)
-            .maybeSingle()
-
+        const agency = await analyticsRepo.getAgencyByOwner(profile.id)
         if (!agency) {
-            await fetchIndividualStats(true)
+            await fetchConsultantStatsRpc(profile.id)
             return
         }
-
-        // Get all team members
-        const { data: members } = await supabase
-            .from('agency_members')
-            .select(`
-                profile_id,
-                role,
-                profile:profiles!agency_members_profile_id_fkey(id, full_name, avatar_url)
-            `)
-            .eq('agency_id', agency.id)
-            .eq('status', 'active')
-
-        const memberIds = [profile.id, ...(members || []).map(m => m.profile_id)]
-
-        // Aggregate across all members — use pre-aggregated rating summary to avoid
-        // loading all review rows. Cases/appts/invoices stay unbounded since totals
-        // require complete counts; for large agencies use get_consultant_analytics RPC.
-        const [casesRes, apptRes, invoiceRes, ratingsRes] = await Promise.all([
-            supabase.from('cases').select('status, consultant_id').in('consultant_id', memberIds),
-            supabase.from('appointments').select('status, consultant_id').in('consultant_id', memberIds),
-            supabase.from('invoices').select('status, amount, consultant_id').in('consultant_id', memberIds),
-            supabase.from('consultant_rating_summary').select('consultant_id, avg_rating, review_count').in('consultant_id', memberIds),
-        ])
-
-        const cases = casesRes.data || []
-        const appts = apptRes.data || []
-        const invoices = invoiceRes.data || []
-        const ratingSummaries = ratingsRes.data || []
-
-        const totalRevenue = invoices.filter(i => i.status === 'paid').reduce((s, i) => s + Number(i.amount), 0)
-        const pendingRevenue = invoices.filter(i => i.status === 'pending').reduce((s, i) => s + Number(i.amount), 0)
-
-        const totalReviews = ratingSummaries.reduce((s, r) => s + r.review_count, 0)
-        const weightedRatingSum = ratingSummaries.reduce((s, r) => s + Number(r.avg_rating) * r.review_count, 0)
-        const avgRating = totalReviews > 0 ? (weightedRatingSum / totalReviews).toFixed(1) : null
-
-        // Build per-member rating lookup from pre-aggregated summary
-        const ratingByMember = Object.fromEntries(ratingSummaries.map(r => [r.consultant_id, r]))
-
-        setStats({
-            totalCases: cases.length,
-            activeCases: cases.filter(c => c.status === 'in_progress').length,
-            totalAppointments: appts.length,
-            completedAppointments: appts.filter(a => a.status === 'completed').length,
-            totalRevenue,
-            pendingRevenue,
-            totalInvoices: invoices.length,
-            avgRating,
-            teamSize: members?.length || 0,
-        })
-
-        // Per-member breakdown
-        const allMembers = [
-            { profile_id: profile.id, profile: { id: profile.id, full_name: profile.full_name, avatar_url: profile.avatar_url }, role: 'Agency Admin' },
-            ...(members || []),
-        ]
-
-        const perMember = allMembers.map(m => {
-            const mCases = cases.filter(c => c.consultant_id === m.profile_id)
-            const mAppts = appts.filter(a => a.consultant_id === m.profile_id)
-            const mInvoices = invoices.filter(i => i.consultant_id === m.profile_id)
-            const mRatingSummary = ratingByMember[m.profile_id]
-            const mRevenue = mInvoices.filter(i => i.status === 'paid').reduce((s, i) => s + Number(i.amount), 0)
-            const mRating = mRatingSummary ? Number(mRatingSummary.avg_rating).toFixed(1) : null
-
-            return {
-                ...m,
-                caseCount: mCases.length,
-                activeCases: mCases.filter(c => c.status === 'in_progress').length,
-                apptCount: mAppts.length,
-                completedAppts: mAppts.filter(a => a.status === 'completed').length,
-                revenue: mRevenue,
-                rating: mRating,
-            }
-        })
-
-        setTeamStats(perMember)
+        const result = await analyticsRepo.getAgencyAnalytics(agency.id)
+        if (!result) { setStats(null); return }
+        setStats(result.totals)
+        setTeamStats(result.members)
     }
 
     if (loading) {

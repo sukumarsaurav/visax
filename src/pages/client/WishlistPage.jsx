@@ -4,8 +4,8 @@ import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import Avatar from '../../components/ui/Avatar'
 import Badge from '../../components/ui/Badge'
-import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
+import * as wishlistRepo from '../../data/wishlistRepo'
 
 export default function WishlistPage() {
     const { user } = useAuth()
@@ -20,25 +20,14 @@ export default function WishlistPage() {
 
     async function fetchWishlist() {
         setLoading(true)
-        const { data } = await supabase
-            .from('wishlist')
-            .select(`
-                id,
-                created_at,
-                consultant:profiles!wishlist_consultant_id_fkey(
-                    id, full_name, avatar_url, email,
-                    years_experience, languages, specializations, bio
-                )
-            `)
-            .eq('client_id', user.id)
-            .order('created_at', { ascending: false })
+        const { data } = await wishlistRepo.listByClient(user.id)
         setWishlist(data || [])
         setLoading(false)
     }
 
     const handleRemove = async (id) => {
         setRemoving(id)
-        await supabase.from('wishlist').delete().eq('id', id)
+        await wishlistRepo.remove(id)
         setWishlist(prev => prev.filter(w => w.id !== id))
         setRemoving(null)
     }
