@@ -5,6 +5,16 @@ import toast from 'react-hot-toast'
 import { friendlyError } from '../../lib/errors'
 import { useSEO } from '../../hooks/useSEO'
 import { SEO } from '../../lib/seo'
+import { isEmail } from '../../lib/validators'
+
+// Allow only in-app paths (no protocol-relative, no absolute URL) for
+// post-login redirect — prevents open-redirect via crafted router state.
+function safeNext(from) {
+    if (typeof from !== 'string') return null
+    if (!from.startsWith('/') || from.startsWith('//') || from.startsWith('/\\')) return null
+    try { new URL(from); return null } catch { /* relative — good */ }
+    return from === '/login' ? null : from
+}
 
 export default function LoginPage() {
     useSEO(SEO.login)
@@ -20,7 +30,7 @@ export default function LoginPage() {
     function validate() {
         const errs = {}
         if (!form.email.trim()) errs.email = 'Email is required'
-        else if (!/\S+@\S+\.\S+/.test(form.email)) errs.email = 'Enter a valid email'
+        else if (!isEmail(form.email.trim())) errs.email = 'Enter a valid email'
         if (!form.password) errs.password = 'Password is required'
         return errs
     }
@@ -35,12 +45,17 @@ export default function LoginPage() {
         setLoading(false)
 
         if (error) {
-            toast.error(friendlyError(error, 'Invalid email or password'))
-            setErrors({ password: 'Invalid credentials' })
+            const msg = error.status === 429
+                ? 'Too many attempts. Please wait a moment and try again.'
+                : friendlyError(error, 'Invalid email or password')
+            toast.error(msg)
+            // Form-level error (not field-specific) so we don't accidentally
+            // confirm which of email/password was wrong.
+            setErrors({ form: msg })
         } else {
             toast.success('Welcome back!')
-            const from = location.state?.from?.pathname
-            navigate(from && from !== '/login' ? from : getDashboardPath(), { replace: true })
+            const next = safeNext(location.state?.from?.pathname)
+            navigate(next ?? getDashboardPath(), { replace: true })
         }
     }
 
@@ -58,28 +73,38 @@ export default function LoginPage() {
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
                 <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Email</label>
+                    <label htmlFor="login-email" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Email</label>
                     <input
+                        id="login-email"
+                        name="email"
                         type="email"
+                        autoComplete="email"
                         value={form.email}
                         onChange={set('email')}
                         placeholder="you@example.com"
+                        aria-invalid={!!errors.email}
+                        aria-describedby={errors.email ? 'login-email-error' : undefined}
                         className={`w-full rounded-lg border px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:bg-slate-800 dark:text-white ${errors.email ? 'border-red-400 bg-red-50 dark:bg-red-900/10' : 'border-slate-200 bg-white dark:border-slate-700'}`}
                     />
-                    {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
+                    {errors.email && <p id="login-email-error" className="text-xs text-red-500">{errors.email}</p>}
                 </div>
 
                 <div className="flex flex-col gap-1.5">
                     <div className="flex items-center justify-between">
-                        <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Password</label>
+                        <label htmlFor="login-password" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Password</label>
                         <Link to="/forgot-password" className="text-xs font-medium text-primary hover:underline">Forgot password?</Link>
                     </div>
                     <div className="relative">
                         <input
+                            id="login-password"
+                            name="password"
                             type={showPassword ? 'text' : 'password'}
+                            autoComplete="current-password"
                             value={form.password}
                             onChange={set('password')}
                             placeholder="••••••••"
+                            aria-invalid={!!errors.password}
+                            aria-describedby={errors.password ? 'login-password-error' : undefined}
                             className={`w-full rounded-lg border px-4 py-2.5 pr-10 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:bg-slate-800 dark:text-white ${errors.password ? 'border-red-400 bg-red-50 dark:bg-red-900/10' : 'border-slate-200 bg-white dark:border-slate-700'}`}
                         />
                         <button
@@ -88,11 +113,15 @@ export default function LoginPage() {
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                             aria-label={showPassword ? 'Hide password' : 'Show password'}
                         >
-                            <span className="material-symbols-outlined text-[20px]">{showPassword ? 'visibility_off' : 'visibility'}</span>
+                            <span className="material-symbols-outlined text-[20px]" aria-hidden="true">{showPassword ? 'visibility_off' : 'visibility'}</span>
                         </button>
                     </div>
-                    {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
+                    {errors.password && <p id="login-password-error" className="text-xs text-red-500">{errors.password}</p>}
                 </div>
+
+                {errors.form && (
+                    <p role="alert" className="text-xs text-red-500 -mt-1">{errors.form}</p>
+                )}
 
                 <button
                     type="submit"

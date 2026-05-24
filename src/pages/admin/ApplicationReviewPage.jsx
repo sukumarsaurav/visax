@@ -7,6 +7,7 @@ import { useDebounce } from '../../hooks/useDebounce'
 import ConfirmModal from '../../components/ui/ConfirmModal'
 import * as profilesRepo from '../../data/profilesRepo'
 import * as documentsRepo from '../../data/documentsRepo'
+import { getSignedUrl } from '../../lib/storage'
 
 const STATUS_COLORS = {
     pending_review: 'yellow',
@@ -93,20 +94,27 @@ export default function ApplicationReviewPage() {
         return `${Math.floor(h / 24)}d ago`
     }
 
+    // F-AR03: return the error so callers can abort before approve/reject
     const saveNote = async (profileId) => {
-        if (!note.trim()) return
+        if (!note.trim()) return null
         const { data: existing } = await profilesRepo.getNotificationPreferences(profileId)
         const prefs = existing?.notification_preferences || {}
-        await profilesRepo.updateBare(profileId, {
+        const { error } = await profilesRepo.updateBare(profileId, {
             notification_preferences: { ...prefs, application_notes: note.trim() },
         })
+        return error || null
     }
 
     const executeApprove = async () => {
         if (!selectedApp) return
         setSaving(true)
         setConfirm(null)
-        await saveNote(selectedApp.id)
+        const noteError = await saveNote(selectedApp.id)
+        if (noteError) {
+            toast.error('Failed to save note: ' + noteError.message)
+            setSaving(false)
+            return
+        }
         const { error } = await profilesRepo.updateBare(selectedApp.id, {
             application_status: 'approved',
             is_verified: true,
@@ -133,7 +141,12 @@ export default function ApplicationReviewPage() {
         if (!selectedApp) return
         setSaving(true)
         setConfirm(null)
-        await saveNote(selectedApp.id)
+        const noteError = await saveNote(selectedApp.id)
+        if (noteError) {
+            toast.error('Failed to save note: ' + noteError.message)
+            setSaving(false)
+            return
+        }
         const { error } = await profilesRepo.updateBare(selectedApp.id, {
             application_status: 'rejected',
             is_verified: false,
@@ -149,7 +162,8 @@ export default function ApplicationReviewPage() {
                 entityId: selectedApp.id,
                 details: { role: selectedApp.role, note: note.trim() },
             })
-            slackNotify('application.rejected', { name: selectedApp.full_name, role: selectedApp.role, note: note.trim() })
+            // Don't include the note in the Slack payload — notes can mention PII / immigration status.
+            slackNotify('application.rejected', { name: selectedApp.full_name, role: selectedApp.role })
             trackEvent('application_rejected', { role: selectedApp.role })
             fetchApplications()
         }
@@ -370,10 +384,20 @@ export default function ApplicationReviewPage() {
                                                         <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{doc.name}</p>
                                                         <p className="text-xs text-slate-400">{doc.file_size ? `${(doc.file_size / 1024).toFixed(0)} KB` : ''} • {new Date(doc.created_at).toLocaleDateString()}</p>
                                                         {doc.file_path && (
-                                                            <a href={doc.file_path} target="_blank" rel="noreferrer"
-                                                                className="mt-3 flex items-center justify-center gap-1 h-8 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 text-slate-400 text-xs font-medium transition-colors">
+                                                            <button
+                                                                type="button"
+                                                                onClick={async () => {
+                                                                    try {
+                                                                        // Documents live in a private bucket — must use a signed URL.
+                                                                        const url = await getSignedUrl(doc.file_path, 300)
+                                                                        window.open(url, '_blank', 'noopener,noreferrer')
+                                                                    } catch (e) {
+                                                                        toast.error(friendlyError(e, 'Could not open document'))
+                                                                    }
+                                                                }}
+                                                                className="mt-3 w-full flex items-center justify-center gap-1 h-8 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 text-slate-400 text-xs font-medium transition-colors">
                                                                 <span className="material-symbols-outlined text-base">open_in_new</span> View
-                                                            </a>
+                                                            </button>
                                                         )}
                                                     </div>
                                                 </div>

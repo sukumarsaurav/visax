@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
+import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import * as clientInvitationsRepo from '../../data/clientInvitationsRepo'
+import { friendlyError } from '../../lib/errors'
+import { checkPassword } from '../../lib/validators'
 
 function Spinner() {
     return (
@@ -74,6 +77,24 @@ export default function AcceptInvitePage() {
     }
 
     async function acceptAndRedirect(userId) {
+        // Guard: the authenticated user's email MUST match the invitation's
+        // target email. Without this check, any logged-in user who has the
+        // token URL can claim the invitation on behalf of their own account.
+        const { data: { user: currentUser } } = await supabase.auth.getUser()
+        if (!currentUser) { setStep('invalid'); return }
+
+        const invitedEmail = invitation?.client_email?.toLowerCase().trim()
+        const currentEmail = currentUser.email?.toLowerCase().trim()
+        if (invitedEmail !== currentEmail) {
+            setError(
+                `This invitation was sent to ${invitation.client_email}. ` +
+                `You are signed in as ${currentUser.email}. ` +
+                'Please sign in with the invited email address.'
+            )
+            setStep('auth')
+            return
+        }
+
         setStep('accepting')
         await clientInvitationsRepo.accept(token, userId)
         navigate('/client', { replace: true })
@@ -82,6 +103,10 @@ export default function AcceptInvitePage() {
     async function handleSignUp(e) {
         e.preventDefault()
         setError('')
+
+        const pwCheck = checkPassword(password, { email: invitation?.client_email })
+        if (!pwCheck.ok) { setError(pwCheck.error); return }
+
         setWorking(true)
 
         const { data, error: signUpErr } = await signUp({
@@ -91,7 +116,7 @@ export default function AcceptInvitePage() {
             role: 'client',
         })
 
-        if (signUpErr) { setError(signUpErr.message); setWorking(false); return }
+        if (signUpErr) { setError(friendlyError(signUpErr, 'Could not create account.')); setWorking(false); return }
 
         // Accept the invitation immediately with the new user id
         if (data?.user) {
@@ -109,7 +134,7 @@ export default function AcceptInvitePage() {
         setWorking(true)
 
         const { data, error: signInErr } = await signIn({ email: siEmail, password: siPassword })
-        if (signInErr) { setError(signInErr.message); setWorking(false); return }
+        if (signInErr) { setError(friendlyError(signInErr, 'Invalid email or password.')); setWorking(false); return }
 
         if (data?.user) {
             await acceptAndRedirect(data.user.id)
@@ -300,10 +325,11 @@ export default function AcceptInvitePage() {
                                         <input
                                             required
                                             type={showPass ? 'text' : 'password'}
+                                            autoComplete="new-password"
                                             value={password}
                                             onChange={e => setPassword(e.target.value)}
-                                            placeholder="Create a strong password"
-                                            minLength={8}
+                                            placeholder="Min 10 chars, mixed types"
+                                            minLength={10}
                                             className="w-full pl-10 pr-10 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-primary focus:outline-none"
                                         />
                                         <button type="button" onClick={() => setShowPass(v => !v)}

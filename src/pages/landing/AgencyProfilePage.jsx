@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { isHttpUrl } from '../../lib/validators'
 import PublicHeader from '../../components/layout/PublicHeader'
 import Footer from '../../components/layout/Footer'
 import Button from '../../components/ui/Button'
@@ -119,8 +120,11 @@ export default function AgencyProfilePage() {
         schema: seoSchemas,
     } : {})
 
+    // F-AP01: '' means "Any Available (Earliest)" — we leave the owner's availability
+    // loaded from fetchAll() in place rather than fetching with an empty ID.
+    // Selecting a specific consultant overwrites it with their own schedule.
     useEffect(() => {
-        if (!selectedConsultant) return
+        if (!selectedConsultant) return // '' → keep owner's availability already loaded
         availabilityRepo.listActive(selectedConsultant).then(({ data }) => {
             setAvailability(data || [])
             setSelectedSlot(null)
@@ -215,13 +219,22 @@ export default function AgencyProfilePage() {
     const agencyName = agency.name || owner?.full_name || 'Agency'
     const totalConsultants = members.length + 1 // members + owner
 
+    // F-AP02: await clipboard.writeText and catch failures
     async function handleShare() {
         const url = window.location.href
         if (navigator.share) {
-            await navigator.share({ title: agencyName, url })
+            try {
+                await navigator.share({ title: agencyName, url })
+            } catch {
+                // User cancelled — no toast needed
+            }
         } else {
-            await navigator.clipboard.writeText(url)
-            toast.success('Link copied to clipboard')
+            try {
+                await navigator.clipboard.writeText(url)
+                toast.success('Link copied to clipboard')
+            } catch {
+                toast.error('Could not copy link — try manually.')
+            }
         }
     }
 
@@ -286,7 +299,8 @@ export default function AgencyProfilePage() {
                                             )}
                                         </div>
 
-                                        {agency.website_url && (
+                                        {/* F-AP03: only render clickable link when URL is a safe http/https URL */}
+                                        {agency.website_url && isHttpUrl(agency.website_url) && (
                                             <a href={agency.website_url} target="_blank" rel="noopener noreferrer"
                                                 className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-sm font-medium text-slate-900 dark:text-white transition-colors">
                                                 <span className="material-symbols-outlined text-[18px]">language</span>

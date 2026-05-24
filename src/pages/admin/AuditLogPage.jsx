@@ -80,24 +80,29 @@ export default function AdminAuditLog() {
         setPage(0)
     }
 
+    // F-AL03: wrapped in try-catch so a serialisation error surfaces as a toast
     const exportCSV = () => {
-        const headers = ['Timestamp', 'User', 'Email', 'Role', 'Action', 'Entity Type', 'Entity ID', 'IP Address']
-        const rows = logs.map(l => [
-            new Date(l.created_at).toISOString(),
-            l.profiles?.full_name || 'System',
-            l.profiles?.email || '',
-            l.profiles?.role || 'system',
-            l.action,
-            l.entity_type || '',
-            l.entity_id || '',
-            l.ip_address || '',
-        ])
-        const csv = [headers, ...rows].map(r => r.map(escField).join(',')).join('\n')
-        const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url; a.download = 'audit_logs.csv'; a.click()
-        URL.revokeObjectURL(url)
+        try {
+            const headers = ['Timestamp', 'User', 'Email', 'Role', 'Action', 'Entity Type', 'Entity ID', 'IP Address']
+            const rows = logs.map(l => [
+                new Date(l.created_at).toISOString(),
+                l.profiles?.full_name || 'System',
+                l.profiles?.email || '',
+                l.profiles?.role || 'system',
+                l.action,
+                l.entity_type || '',
+                l.entity_id || '',
+                l.ip_address || '',
+            ])
+            const csv = [headers, ...rows].map(r => r.map(escField).join(',')).join('\n')
+            const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url; a.download = 'audit_logs.csv'; a.click()
+            URL.revokeObjectURL(url)
+        } catch (err) {
+            toast.error('Export failed: ' + (err.message || 'Unknown error'))
+        }
     }
 
     const getActionColor = (action) => {
@@ -234,7 +239,11 @@ export default function AdminAuditLog() {
                                         {log.ip_address || '—'}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right">
-                                        <button className="text-slate-400 hover:text-primary p-1 rounded-full">
+                                        {/* F-AL01: aria-label so screen readers announce expand/collapse */}
+                                        <button
+                                            className="text-slate-400 hover:text-primary p-1 rounded-full"
+                                            aria-label={selectedLog?.id === log.id ? 'Collapse details' : 'Expand details'}
+                                        >
                                             <span className="material-symbols-outlined text-[20px]">
                                                 {selectedLog?.id === log.id ? 'expand_less' : 'expand_more'}
                                             </span>

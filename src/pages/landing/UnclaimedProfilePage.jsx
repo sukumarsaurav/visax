@@ -3,6 +3,8 @@ import { Link, useParams, Navigate } from 'react-router-dom'
 import PublicHeader from '../../components/layout/PublicHeader'
 import Footer from '../../components/layout/Footer'
 import { supabase } from '../../lib/supabase'
+import { isEmail } from '../../lib/validators'
+import { writeAuditLog } from '../../lib/auditLog'
 import * as unclaimedProfilesRepo from '../../data/unclaimedProfilesRepo'
 import { useSEO } from '../../hooks/useSEO'
 import toast from 'react-hot-toast'
@@ -37,13 +39,21 @@ export default function UnclaimedProfilePage() {
     async function fetchProfile() {
         const { data, error } = await unclaimedProfilesRepo.getPublic(id)
         if (error || !data) { setNotFound(true) }
-        else { setProfile(data) }
+        else {
+            // F-UP03: only allow http/https avatar URLs — reject javascript: and data: URIs
+            if (data.avatar_url && !data.avatar_url.startsWith('http')) {
+                data.avatar_url = null
+            }
+            setProfile(data)
+        }
         setLoading(false)
     }
 
     async function handleEnquiry(e) {
         e.preventDefault()
-        if (!form.name || !form.email) return
+        // F-UP01: validate email format — existence check alone accepts "foo" or "test@"
+        if (!form.name.trim()) { toast.error('Name is required'); return }
+        if (!isEmail(form.email)) { toast.error('Please enter a valid email address'); return }
         setSubmitting(true)
 
         const { error } = await unclaimedProfilesRepo.createEnquiry({
@@ -59,6 +69,14 @@ export default function UnclaimedProfilePage() {
             setSubmitting(false)
             return
         }
+
+        // F-UP02: audit log so we have a trail of who enquired (helps if consultant reports unsolicited email)
+        await writeAuditLog({
+            action: 'Enquiry Sent',
+            entityType: 'unclaimed_profile',
+            entityId: id,
+            details: { enquirer_email: form.email, visa_type: form.visaType },
+        }).catch(() => {}) // non-blocking — don't fail the UX if logging fails
 
         // Send magic-link claim notification to consultant via Supabase Auth
         await supabase.auth.signInWithOtp({

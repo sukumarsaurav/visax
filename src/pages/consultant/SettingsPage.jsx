@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase'
 import AvatarUpload from '../../components/ui/AvatarUpload'
+import ConfirmModal from '../../components/ui/ConfirmModal'
 import { uploadAvatar } from '../../lib/storage'
 import toast from 'react-hot-toast'
 import * as profilesRepo from '../../data/profilesRepo'
@@ -75,6 +76,9 @@ export default function SettingsPage() {
     const [savingNotifs, setSavingNotifs] = useState(false)
     const [savingPassword, setSavingPassword] = useState(false)
     const [savingLocale, setSavingLocale] = useState(false)
+    // F-SE01: confirm before significant consultation fee changes
+    const [feeConfirm, setFeeConfirm] = useState(null) // pending form snapshot
+    const originalFee = useRef(null) // fee as loaded from DB
 
     const [profile, setProfile] = useState({
         full_name: '', email: '', phone: '', bio: '',
@@ -99,6 +103,8 @@ export default function SettingsPage() {
         setLoading(true)
         const { data } = await profilesRepo.getFullProfile(user.id)
         if (data) {
+            const fee = data.consultation_fee || ''
+            originalFee.current = fee
             setProfile({
                 full_name: data.full_name || '',
                 email: data.email || user.email || '',
@@ -106,7 +112,7 @@ export default function SettingsPage() {
                 bio: data.bio || '',
                 city: data.city || '',
                 years_experience: data.years_experience || '',
-                consultation_fee: data.consultation_fee || '',
+                consultation_fee: fee,
                 license_number: data.license_number || '',
                 website: data.website || '',
                 linkedin_url: data.linkedin_url || '',
@@ -130,8 +136,8 @@ export default function SettingsPage() {
         return url
     }
 
-    async function saveProfile(e) {
-        e.preventDefault()
+    // F-SE01: actual profile save — called directly or after fee-change confirmation
+    async function doSaveProfile() {
         setSavingProfile(true)
         const { error } = await profilesRepo.updateBare(user.id, {
             full_name: profile.full_name,
@@ -147,8 +153,26 @@ export default function SettingsPage() {
             specializations: profile.specializations.split(',').map(s => s.trim()).filter(Boolean),
         })
         setSavingProfile(false)
+        setFeeConfirm(null)
         if (error) toast.error(error.message)
-        else toast.success('Profile saved!')
+        else {
+            originalFee.current = profile.consultation_fee
+            toast.success('Profile saved!')
+        }
+    }
+
+    // F-SE01: intercept submit and show confirmation if consultation fee changed significantly
+    async function saveProfile(e) {
+        e.preventDefault()
+        const oldFee = parseFloat(originalFee.current) || 0
+        const newFee = parseFloat(profile.consultation_fee) || 0
+        // Confirm if fee changed by more than 10% or from/to zero
+        const feeChanged = oldFee !== newFee && (oldFee === 0 || newFee === 0 || Math.abs(newFee - oldFee) / Math.max(oldFee, 1) > 0.1)
+        if (feeChanged) {
+            setFeeConfirm(true)
+            return
+        }
+        await doSaveProfile()
     }
 
     async function saveNotifications() {
@@ -192,6 +216,17 @@ export default function SettingsPage() {
 
     return (
         <div className="space-y-5">
+            {/* F-SE01: confirm before applying a significant consultation fee change */}
+            <ConfirmModal
+                open={!!feeConfirm}
+                onClose={() => setFeeConfirm(null)}
+                onConfirm={doSaveProfile}
+                title="Update consultation fee?"
+                message={`You're changing your fee from ₹${Number(originalFee.current || 0).toLocaleString('en-IN')} to ₹${Number(profile.consultation_fee || 0).toLocaleString('en-IN')} per session. Existing booked clients will see the new rate on future bookings.`}
+                confirmLabel="Update Fee"
+                variant="primary"
+                loading={savingProfile}
+            />
 
             {/* ── Profile hero card ─────────────────────────────── */}
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">

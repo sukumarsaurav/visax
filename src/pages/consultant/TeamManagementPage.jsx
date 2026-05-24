@@ -4,6 +4,7 @@ import StatCard from '../../components/ui/StatCard'
 import Badge from '../../components/ui/Badge'
 import Avatar from '../../components/ui/Avatar'
 import Button from '../../components/ui/Button'
+import ConfirmModal from '../../components/ui/ConfirmModal'
 import { useAuth } from '../../contexts/AuthContext'
 import toast from 'react-hot-toast'
 import * as agenciesRepo from '../../data/agenciesRepo'
@@ -18,6 +19,8 @@ export default function TeamManagementPage() {
     const [loading, setLoading] = useState(true)
     const [inviteEmail, setInviteEmail] = useState('')
     const [inviting, setInviting] = useState(false)
+    // F-TM02: confirmation before deactivating a member
+    const [deactivateConfirm, setDeactivateConfirm] = useState(null) // member object
 
     useEffect(() => { if (profile) fetchTeam() }, [profile])
 
@@ -63,6 +66,20 @@ export default function TeamManagementPage() {
 
     return (
         <div className="flex flex-col gap-6">
+            {/* F-TM02: confirm before deactivating a team member */}
+            <ConfirmModal
+                open={!!deactivateConfirm}
+                onClose={() => setDeactivateConfirm(null)}
+                onConfirm={() => {
+                    updateMemberStatus(deactivateConfirm.id, 'inactive')
+                    setDeactivateConfirm(null)
+                }}
+                title="Deactivate team member?"
+                message={`Remove ${deactivateConfirm?.profile?.full_name || 'this member'} from active team access? They will lose access to agency resources until reactivated.`}
+                confirmLabel="Deactivate"
+                variant="danger"
+            />
+
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-xl font-black text-slate-900 dark:text-white">Team Management</h2>
@@ -132,9 +149,10 @@ export default function TeamManagementPage() {
                                         Approve
                                     </button>
                                 )}
-                                {m.status === 'active' && (
+                                {/* F-TM01: hide Deactivate for the current user (self-demotion prevention) */}
+                                {m.status === 'active' && m.profile?.id !== profile?.id && (
                                     <button
-                                        onClick={() => updateMemberStatus(m.id, 'inactive')}
+                                        onClick={() => setDeactivateConfirm(m)}
                                         className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-50 dark:border-slate-700"
                                     >
                                         Deactivate

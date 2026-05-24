@@ -5,6 +5,7 @@ import Button from '../../components/ui/Button'
 import Avatar from '../../components/ui/Avatar'
 import { createStripePaymentLink, slackNotify, trackEvent } from '../../lib/integrations'
 import { escField } from '../../lib/csvEscape'
+import { writeAuditLog } from '../../lib/auditLog'
 import * as invoicesRepo from '../../data/invoicesRepo'
 import * as promotionsRepo from '../../data/promotionsRepo'
 import * as adminStatsRepo from '../../data/adminStatsRepo'
@@ -97,6 +98,19 @@ export default function SalesSubscriptionsPage() {
         if (result.success) {
             toast.success('Payment link created — opening in new tab')
             window.open(result.url, '_blank')
+            // F-SS03: audit log whenever an admin generates a payment link
+            await writeAuditLog({
+                action: 'Settings Updated',
+                entityType: 'invoice',
+                entityId: inv.id,
+                details: {
+                    action: 'payment_link_generated',
+                    invoice_number: inv.invoice_number,
+                    amount: inv.amount,
+                    currency: inv.currency || 'USD',
+                    client: inv.profiles?.email,
+                },
+            })
             slackNotify('payment.received', {
                 client: inv.profiles?.full_name || 'Unknown',
                 amount: inv.amount,

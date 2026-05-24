@@ -1,13 +1,15 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
 
-// Generate a deterministic-looking application ID
+// Cosmetic "application ID" shown on the success screen. Generated per-mount
+// so each visitor sees a distinct value (previously evaluated at module
+// scope, which gave every user the same ID until the bundle reloaded).
 function generateAppId() {
     const year = new Date().getFullYear()
     const num = Math.floor(10000 + Math.random() * 90000)
     return `#APP-${year}-${num}`
 }
-
-const appId = generateAppId()
 
 const statusSteps = [
     {
@@ -36,6 +38,9 @@ const statusSteps = [
 ]
 
 export default function ProfessionalSubmittedPage() {
+    const { getDashboardPath } = useAuth()
+    const [appId] = useState(generateAppId)
+    const dashPath = getDashboardPath()
     return (
         <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex flex-col">
             {/* Header */}
@@ -125,7 +130,7 @@ export default function ProfessionalSubmittedPage() {
                             <p className="text-xs text-slate-500 dark:text-slate-400">You can access a limited version of your dashboard while you wait.</p>
                         </div>
                         <Link
-                            to="/consultant"
+                            to={dashPath}
                             className="shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-blue-600 text-white text-sm font-bold transition-all shadow-md shadow-primary/20"
                         >
                             Go to Dashboard

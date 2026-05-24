@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
+import toast from 'react-hot-toast'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
+import ConfirmModal from '../../components/ui/ConfirmModal'
+import { writeAuditLog } from '../../lib/auditLog'
 import * as platformSettingsRepo from '../../data/platformSettingsRepo'
 import * as promotionsRepo from '../../data/promotionsRepo'
 
@@ -18,15 +21,12 @@ export default function ReferralProgramPage() {
     const [saving, setSaving] = useState(false)
     const [savingConfig, setSavingConfig] = useState(false)
     const [showAddModal, setShowAddModal] = useState(false)
-    const [toast, setToast] = useState(null)
     const [stats, setStats] = useState({ total: 0, active: 0, totalRedemptions: 0, conversionRate: 0 })
     const [form, setForm] = useState({ code: '', discount_percent: 10, description: '', valid_months: 1, max_redemptions: '', expires_at: '' })
     const [config, setConfig] = useState(DEFAULT_CONFIG)
-
-    const showToast = (msg, type = 'success') => {
-        setToast({ msg, type })
-        setTimeout(() => setToast(null), 3000)
-    }
+    // F-RP04 (bonus): confirm before deleting a promo code
+    const [deleteConfirm, setDeleteConfirm] = useState(null) // promo id
+    const [deleting, setDeleting] = useState(false)
 
     const fetchPromotions = useCallback(async () => {
         setLoading(true)
@@ -50,19 +50,29 @@ export default function ReferralProgramPage() {
     const handleSaveConfig = async () => {
         setSavingConfig(true)
         const { error } = await platformSettingsRepo.setValue('referral_config', config)
-        if (error) showToast('Failed: ' + error.message, 'error')
-        else showToast('Settings saved!')
+        if (error) {
+            toast.error('Failed: ' + error.message)
+        } else {
+            toast.success('Settings saved!')
+            // F-RP03: audit log whenever referral config changes
+            await writeAuditLog({
+                action: 'Settings Updated',
+                entityType: 'settings',
+                details: { setting: 'referral_config', ...config },
+            })
+        }
         setSavingConfig(false)
     }
 
     useEffect(() => { fetchPromotions(); fetchConfig() }, [fetchPromotions, fetchConfig])
 
     const handleCreate = async () => {
-        if (!form.code.trim()) { showToast('Promo code is required', 'error'); return }
+        if (!form.code.trim()) { toast.error('Promo code is required'); return }
         setSaving(true)
         const payload = {
             code: form.code.toUpperCase().trim(),
-            discount_percent: Number(form.discount_percent),
+            // F-RP02: clamp discount to valid range
+            discount_percent: Math.max(0, Math.min(100, Number(form.discount_percent) || 0)),
             description: form.description,
             valid_months: Number(form.valid_months),
             max_redemptions: form.max_redemptions ? Number(form.max_redemptions) : null,
@@ -70,9 +80,9 @@ export default function ReferralProgramPage() {
             status: 'active',
         }
         const { error } = await promotionsRepo.create(payload)
-        if (error) { showToast('Failed: ' + error.message, 'error') }
+        if (error) { toast.error('Failed: ' + error.message) }
         else {
-            showToast('Promotion created!')
+            toast.success('Promotion created!')
             setShowAddModal(false)
             setForm({ code: '', discount_percent: 10, description: '', valid_months: 1, max_redemptions: '', expires_at: '' })
             fetchPromotions()
@@ -83,15 +93,18 @@ export default function ReferralProgramPage() {
     const handleToggleStatus = async (promo) => {
         const newStatus = promo.status === 'active' ? 'paused' : 'active'
         await promotionsRepo.setStatus(promo.id, newStatus)
-        showToast(`Promotion ${newStatus}`)
+        toast.success(`Promotion ${newStatus}`)
         fetchPromotions()
     }
 
-    const handleDelete = async (id) => {
-        if (!confirm('Delete this promotion?')) return
+    // Extracted delete logic — called after ConfirmModal confirms
+    const doDelete = async (id) => {
+        setDeleting(true)
         await promotionsRepo.remove(id)
-        showToast('Deleted')
+        toast.success('Deleted')
         fetchPromotions()
+        setDeleteConfirm(null)
+        setDeleting(false)
     }
 
     const statusBadge = (status) => {
@@ -106,11 +119,16 @@ export default function ReferralProgramPage() {
 
     return (
         <div className="flex flex-col gap-6 relative">
-            {toast && (
-                <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-semibold text-white ${toast.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
-                    {toast.msg}
-                </div>
-            )}
+            <ConfirmModal
+                open={!!deleteConfirm}
+                onClose={() => setDeleteConfirm(null)}
+                onConfirm={() => doDelete(deleteConfirm)}
+                title="Delete promotion?"
+                message="This promo code will be permanently removed and any shared links will stop working."
+                confirmLabel="Delete"
+                variant="danger"
+                loading={deleting}
+            />
 
             {/* Actions */}
             <div className="flex justify-end gap-3">
@@ -168,7 +186,8 @@ export default function ReferralProgramPage() {
                         <label className="block">
                             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Referee Discount</span>
                             <div className="relative mt-2">
-                                <input type="number" value={config.referee_discount}
+                                {/* F-RP02: min/max enforce 0–100% range in both UI and submission */}
+                                <input type="number" min="0" max="100" value={config.referee_discount}
                                     onChange={e => setConfig(c => ({ ...c, referee_discount: Number(e.target.value) }))}
                                     className="w-full pr-8 py-2.5 px-3 border border-slate-200 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:ring-1 focus:ring-primary" />
                                 <span className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400">%</span>
@@ -244,7 +263,7 @@ export default function ReferralProgramPage() {
                                                 className={`p-1.5 rounded-md text-xs ${p.status === 'active' ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'}`}>
                                                 <span className="material-symbols-outlined text-[18px]">{p.status === 'active' ? 'pause_circle' : 'play_circle'}</span>
                                             </button>
-                                            <button onClick={() => handleDelete(p.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md">
+                                            <button onClick={() => setDeleteConfirm(p.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md">
                                                 <span className="material-symbols-outlined text-[18px]">delete</span>
                                             </button>
                                         </div>

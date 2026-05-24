@@ -97,6 +97,7 @@ const UnclaimedProfilePage = lazy(() => import('./pages/landing/UnclaimedProfile
 // Auth pages (additional)
 const ClaimProfilePage = lazy(() => import('./pages/auth/ClaimProfilePage'))
 const AcceptInvitePage = lazy(() => import('./pages/auth/AcceptInvitePage'))
+const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'))
 
 // Admin pages (additional)
 const AdminUnclaimedProfiles = lazy(() => import('./pages/admin/UnclaimedProfilesPage'))
@@ -248,6 +249,13 @@ export default function App() {
                         <Route path="/register" element={<RegisterPage />} />
                         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                     </Route>
+
+                    {/* Reset password — intentionally outside AuthLayout.
+                        Supabase appends #access_token=...&type=recovery to this URL and
+                        immediately establishes a recovery session, so isAuthenticated
+                        becomes true. AuthLayout would redirect to dashboard — bypassed here
+                        by using AuthLayout-style shell directly in the page component. */}
+                    <Route path="/reset-password" element={<ResetPasswordPage />} />
 
                     {/* Professional registration flow (standalone, two-panel design) */}
                     <Route path="/professional-register" element={<ProfessionalWelcomePage />} />

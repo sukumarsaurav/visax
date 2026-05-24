@@ -10,6 +10,10 @@ import * as paymentsRepo from '../../data/paymentsRepo'
 import { uploadAvatar, uploadDocument } from '../../lib/storage'
 import { validateUpload } from '../../lib/fileValidation'
 import { useUnsavedChangesGuard } from '../../hooks/useUnsavedChangesGuard'
+import { isEmail, checkPassword } from '../../lib/validators'
+
+const MAX_LANGUAGES = 12
+const MAX_LANGUAGE_LEN = 30
 
 const expertiseAreas = [
     'Skilled Worker Visa',
@@ -235,8 +239,9 @@ export default function ProfessionalRegisterPage() {
         const e = {}
         if (!firstName.trim()) e.firstName = 'Required'
         if (!lastName.trim()) e.lastName = 'Required'
-        if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) e.email = 'Valid email required'
-        if (password.length < 8) e.password = 'Minimum 8 characters'
+        if (!email.trim() || !isEmail(email.trim())) e.email = 'Valid email required'
+        const pwCheck = checkPassword(password, { email: email.trim() })
+        if (!pwCheck.ok) e.password = pwCheck.error
         if (password !== confirmPassword) e.confirmPassword = 'Passwords do not match'
         setErrors(e)
         return Object.keys(e).length === 0
@@ -696,9 +701,11 @@ export default function ProfessionalRegisterPage() {
                                         <label className="text-xs font-bold text-slate-700 dark:text-slate-300">Password</label>
                                         <input
                                             type="password"
+                                            autoComplete="new-password"
                                             value={password}
                                             onChange={(e) => { setPassword(e.target.value); setErrors(p => ({...p, password: ''})) }}
-                                            placeholder="Min. 8 characters"
+                                            placeholder="Min. 10 chars, mixed types"
+                                            minLength={10}
                                             className={inputCls('password')}
                                         />
                                         {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
@@ -787,13 +794,21 @@ export default function ProfessionalRegisterPage() {
                                     <input
                                         type="text"
                                         placeholder="Type & press Enter…"
+                                        maxLength={MAX_LANGUAGE_LEN}
                                         className="flex-1 bg-transparent border-none p-0 outline-none text-slate-900 dark:text-white placeholder:text-slate-400 min-w-[120px] text-sm"
                                         onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && e.target.value.trim()) {
-                                                e.preventDefault()
-                                                setLanguages(prev => [...prev, e.target.value.trim()])
-                                                e.target.value = ''
-                                            }
+                                            if (e.key !== 'Enter') return
+                                            const raw = e.target.value.trim().slice(0, MAX_LANGUAGE_LEN)
+                                            if (!raw) return
+                                            e.preventDefault()
+                                            // Dedup case-insensitively; cap total count.
+                                            const lower = raw.toLowerCase()
+                                            setLanguages(prev => {
+                                                if (prev.length >= MAX_LANGUAGES) return prev
+                                                if (prev.some(l => l.toLowerCase() === lower)) return prev
+                                                return [...prev, raw]
+                                            })
+                                            e.target.value = ''
                                         }}
                                     />
                                 </div>

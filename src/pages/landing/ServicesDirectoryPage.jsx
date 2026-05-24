@@ -10,6 +10,9 @@ import { sanitizeSearch } from '../../lib/searchEscape'
 
 const PAGE_SIZE = 10
 
+// F-SD01: allowlist of valid sort values — rejects unexpected strings from modified requests
+const VALID_SORTS = ['newest', 'price_asc', 'price_desc']
+
 const ICON_COLORS = [
     { icon: 'work', color: 'text-primary', bg: 'bg-primary/10' },
     { icon: 'family_restroom', color: 'text-purple-600', bg: 'bg-purple-50' },
@@ -170,7 +173,10 @@ export default function ServicesDirectoryPage() {
                                 <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Sort By</label>
                                 <select
                                     value={sortBy}
-                                    onChange={e => setSortBy(e.target.value)}
+                                    onChange={e => {
+                                        // F-SD01: allowlist validation — ignore unknown values
+                                        if (VALID_SORTS.includes(e.target.value)) setSortBy(e.target.value)
+                                    }}
                                     className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 py-2.5 px-3 text-sm font-medium text-slate-900 dark:text-white focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                                 >
                                     <option value="newest">Newest</option>
@@ -206,7 +212,9 @@ export default function ServicesDirectoryPage() {
                                     </div>
                                     <div className="flex flex-col gap-4">
                                         {services.map((svc, idx) => {
-                                            const { icon, color, bg } = ICON_COLORS[idx % ICON_COLORS.length]
+                                            // F-SD02: guard against empty ICON_COLORS array (% 0 would throw)
+                                            const safeLen = ICON_COLORS.length || 1
+                                            const { icon, color, bg } = ICON_COLORS[idx % safeLen] ?? ICON_COLORS[0]
                                             const avgRating = getAvgRating(svc.provider?.id)
                                             return (
                                                 <div key={svc.id} className="flex flex-col gap-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm transition-all hover:shadow-md sm:flex-row sm:items-center">

@@ -2,11 +2,14 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { toast } from 'react-hot-toast'
 import Button from '../../components/ui/Button'
 import ToggleSwitch from '../../components/ui/ToggleSwitch'
+import ConfirmModal from '../../components/ui/ConfirmModal'
 import * as platformSettingsRepo from '../../data/platformSettingsRepo'
 import { uploadLegalDoc } from '../../lib/storage'
 import { useAuth } from '../../contexts/AuthContext'
 import { writeAuditLog } from '../../lib/auditLog'
 import { invalidatePlatformConfig } from '../../lib/platformConfig'
+import { isHttpUrl } from '../../lib/validators'
+import { friendlyError } from '../../lib/errors'
 
 const tabs = [
     { id: 'general', label: 'General' },
@@ -36,6 +39,8 @@ export default function PlatformSettingsPage() {
     const [lastSaved, setLastSaved] = useState(null)
     const [isDirty, setIsDirty] = useState(false)
     const [uploadingLegal, setUploadingLegal] = useState({ terms: false, privacy: false })
+    // F-PS03: maintenance mode confirmation
+    const [maintenanceConfirm, setMaintenanceConfirm] = useState(false)
 
     const [general, setGeneral] = useState(DEFAULT_GENERAL)
     const [maintenanceMsg, setMaintenanceMsg] = useState(DEFAULT_MAINTENANCE_MSG)
@@ -103,15 +108,48 @@ export default function PlatformSettingsPage() {
         return error
     }
 
-    const handleSave = async () => {
+    const doSave = async () => {
+        setMaintenanceConfirm(false)
         setSaving(true)
+
+        // F-PS01/PS02: validate all URLs before persisting — rejects javascript: and phishing links
+        if (activeTab === 'social') {
+            for (const platform of SOCIAL_PLATFORMS) {
+                const url = social[platform.key]
+                if (url && !isHttpUrl(url)) {
+                    toast.error(`${platform.label}: URL must start with https://`)
+                    setSaving(false)
+                    return
+                }
+            }
+        }
+        if (activeTab === 'legal') {
+            const legalFields = [
+                { key: 'terms_url', label: 'Terms of Service URL' },
+                { key: 'privacy_url', label: 'Privacy Policy URL' },
+            ]
+            for (const { key, label } of legalFields) {
+                const url = legal[key]
+                if (url && !isHttpUrl(url)) {
+                    toast.error(`${label}: must start with https://`)
+                    setSaving(false)
+                    return
+                }
+            }
+        }
+
+        // F-PS07: clamp max_upload_mb to a safe range on save
+        const safeGeneral = activeTab === 'general' || activeTab === 'maintenance'
+            ? { ...general, max_upload_mb: Math.max(1, Math.min(100, Number(general.max_upload_mb) || 25)) }
+            : general
+
         const toSave = []
-        if (activeTab === 'general') toSave.push(['general', general])
+        if (activeTab === 'general') toSave.push(['general', safeGeneral])
         if (activeTab === 'social') toSave.push(['social_links', social])
         if (activeTab === 'legal') toSave.push(['legal', legal])
         if (activeTab === 'maintenance') {
             toSave.push(['maintenance_message', { message: maintenanceMsg }])
-            toSave.push(['general', { ...general }])
+            toSave.push(['general', safeGeneral])
         }
 
         let error = null
@@ -125,12 +163,23 @@ export default function PlatformSettingsPage() {
         } else {
             invalidatePlatformConfig()
             toast.success('Settings saved!')
-            setLastSaved(new Date().toLocaleString())
-            setIsDirty(false)
-            original.current = { ...original.current, general, social, maintenanceMsg, legal }
             await writeAuditLog({ action: 'Settings Updated', entityType: 'settings', details: { tab: activeTab } })
+            // F-PS06: re-fetch from server so original.current reflects actual server state
+            // (instead of updating optimistically which diverges on partial failure)
+            await loadSettings()
         }
         setSaving(false)
+    }
+
+    const handleSave = () => {
+        // F-PS03: turning maintenance ON requires explicit confirmation — accidental enable locks all users out
+        const wasOff = !(original.current.general?.maintenance_mode)
+        const turningOn = general.maintenance_mode
+        if (activeTab === 'maintenance' && wasOff && turningOn) {
+            setMaintenanceConfirm(true)
+            return
+        }
+        doSave()
     }
 
     if (loading) {
@@ -143,6 +192,17 @@ export default function PlatformSettingsPage() {
 
     return (
         <div className="flex flex-col h-full">
+            {/* F-PS03: confirm before enabling maintenance mode — locks all non-admin users out */}
+            <ConfirmModal
+                open={maintenanceConfirm}
+                onClose={() => setMaintenanceConfirm(false)}
+                onConfirm={doSave}
+                title="Enable maintenance mode?"
+                message="This will immediately lock out all non-admin users, including those mid-session. Only admins will be able to access the platform. Are you sure you want to proceed?"
+                confirmLabel="Enable maintenance"
+                variant="danger"
+            />
+
             <div className="border-b border-slate-200 dark:border-slate-700 pb-4 mb-0">
                 <p className="text-slate-500 dark:text-slate-400">Manage global configurations, social presence, and legal documents.</p>
                 {isDirty && (
@@ -272,8 +332,9 @@ export default function PlatformSettingsPage() {
                                             const url = await uploadLegalDoc(file, doc.key)
                                             patchLegal(l => ({ ...l, [`${doc.key}_url`]: url }))
                                             toast.success(`${doc.label} uploaded — save to apply`)
-                                        } catch {
-                                            toast.error('Upload failed')
+                                        } catch (e) {
+                                            // F-PS05: propagate the real cause rather than swallowing it
+                                            toast.error(friendlyError(e, 'Upload failed'))
                                         }
                                         setUploadingLegal(u => ({ ...u, [doc.key]: false }))
                                     }

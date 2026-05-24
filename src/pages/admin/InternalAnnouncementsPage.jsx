@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
+import toast from 'react-hot-toast'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
+import ConfirmModal from '../../components/ui/ConfirmModal'
 import { useAuth } from '../../contexts/AuthContext'
 import { slackNotify, trackEvent } from '../../lib/integrations'
+import { writeAuditLog } from '../../lib/auditLog'
 import { useDebounce } from '../../hooks/useDebounce'
 import * as announcementsRepo from '../../data/announcementsRepo'
 
@@ -29,14 +32,11 @@ export default function InternalAnnouncementsPage() {
     const [showDrawer, setShowDrawer] = useState(false)
     const [search, setSearch] = useState('')
     const [filterStatus, setFilterStatus] = useState('All Statuses')
-    const [toast, setToast] = useState(null)
     const [form, setForm] = useState({ title: '', content: '', priority: 'normal', is_global: true })
     const [stats, setStats] = useState({ published: 0, drafts: 0 })
-
-    const showToast = (msg, type = 'success') => {
-        setToast({ msg, type })
-        setTimeout(() => setToast(null), 3000)
-    }
+    // F-IA02: confirm before permanently deleting an announcement
+    const [deleteConfirm, setDeleteConfirm] = useState(null) // announcement object
+    const [deleting, setDeleting] = useState(false)
 
     const debouncedSearch = useDebounce(search, 300)
 
@@ -56,7 +56,7 @@ export default function InternalAnnouncementsPage() {
 
     const handleCreate = async (asDraft = false) => {
         if (!form.title.trim() || !form.content.trim()) {
-            showToast('Title and content are required', 'error')
+            toast.error('Title and content are required')
             return
         }
         setSaving(true)
@@ -68,9 +68,15 @@ export default function InternalAnnouncementsPage() {
             author_id: user?.id,
         })
         if (error) {
-            showToast('Failed: ' + error.message, 'error')
+            toast.error('Failed: ' + error.message)
         } else {
-            showToast(asDraft ? 'Saved as draft' : 'Announcement published!')
+            toast.success(asDraft ? 'Saved as draft' : 'Announcement published!')
+            // F-IA05: audit log on create
+            await writeAuditLog({
+                action: 'Announcement Created',
+                entityType: 'announcement',
+                details: { title: form.title, priority: form.priority, is_global: asDraft ? false : form.is_global },
+            })
             if (!asDraft) {
                 slackNotify('announcement.published', { title: form.title, is_global: form.is_global })
                 trackEvent('announcement_published', { priority: form.priority, is_global: form.is_global })
@@ -84,23 +90,46 @@ export default function InternalAnnouncementsPage() {
 
     const handleToggleGlobal = async (ann) => {
         await announcementsRepo.update(ann.id, { is_global: !ann.is_global })
+        // F-IA05: audit log on publish/unpublish
+        await writeAuditLog({
+            action: 'Settings Updated',
+            entityType: 'announcement',
+            entityId: ann.id,
+            details: { title: ann.title, action: ann.is_global ? 'unpublished' : 'published' },
+        })
         fetchAnnouncements()
     }
 
-    const handleDelete = async (id) => {
-        if (!confirm('Delete this announcement?')) return
-        await announcementsRepo.remove(id)
-        showToast('Deleted')
+    // F-IA02: extracted delete logic — called after ConfirmModal confirms
+    const doDelete = async (ann) => {
+        setDeleting(true)
+        await announcementsRepo.remove(ann.id)
+        // F-IA05: audit log on delete
+        await writeAuditLog({
+            action: 'Resource Deleted',
+            entityType: 'announcement',
+            entityId: ann.id,
+            details: { title: ann.title },
+        })
+        toast.success('Deleted')
         fetchAnnouncements()
+        setDeleteConfirm(null)
+        setDeleting(false)
     }
 
     return (
         <div className="flex flex-col gap-6 relative">
-            {toast && (
-                <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-semibold text-white ${toast.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
-                    {toast.msg}
-                </div>
-            )}
+            {/* F-IA02: confirm before permanently deleting an announcement */}
+            <ConfirmModal
+                open={!!deleteConfirm}
+                onClose={() => setDeleteConfirm(null)}
+                onConfirm={() => doDelete(deleteConfirm)}
+                title="Delete announcement?"
+                message={`"${deleteConfirm?.title}" will be permanently removed and cannot be recovered.`}
+                confirmLabel="Delete"
+                variant="danger"
+                loading={deleting}
+            />
 
             {/* Actions */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -198,7 +227,7 @@ export default function InternalAnnouncementsPage() {
                                             title={a.is_global ? 'Unpublish' : 'Publish globally'}>
                                             <span className="material-symbols-outlined text-[18px]">{a.is_global ? 'unpublished' : 'publish'}</span>
                                         </button>
-                                        <button onClick={() => handleDelete(a.id)} className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-md">
+                                        <button onClick={() => setDeleteConfirm(a)} className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-md">
                                             <span className="material-symbols-outlined text-[20px]">delete</span>
                                         </button>
                                     </div>

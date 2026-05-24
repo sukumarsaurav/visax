@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
+import toast from 'react-hot-toast'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
+import { writeAuditLog } from '../../lib/auditLog'
 import * as platformSettingsRepo from '../../data/platformSettingsRepo'
 
 const DEFAULT_LANGUAGES = [
@@ -26,13 +28,7 @@ export default function LocalizationManagementPage() {
     const [translations, setTranslations] = useState({})
     const [saving, setSaving] = useState(false)
     const [savingGlobal, setSavingGlobal] = useState(false)
-    const [toast, setToast] = useState(null)
     const [search, setSearch] = useState('')
-
-    const showToast = (msg, type = 'success') => {
-        setToast({ msg, type })
-        setTimeout(() => setToast(null), 3000)
-    }
 
     const loadSettings = useCallback(async () => {
         const { value } = await platformSettingsRepo.getValue('localization')
@@ -57,29 +53,47 @@ export default function LocalizationManagementPage() {
         const updated = languages.map(l => l.id === id ? { ...l, isActive: !l.isActive } : l)
         setLanguages(updated)
         await persistAll(updated, globalSettings, translations)
-        showToast('Language status updated')
+        // F-LM05: audit log on language toggle
+        const lang = languages.find(l => l.id === id)
+        await writeAuditLog({
+            action: 'Settings Updated',
+            entityType: 'settings',
+            details: { setting: 'language_status', language: id, active: !lang?.isActive },
+        })
+        toast.success('Language status updated')
     }
 
     const handleSaveGlobal = async () => {
         setSavingGlobal(true)
         await persistAll(languages, globalSettings, translations)
-        showToast('Global settings saved')
+        // F-LM05: audit log on global settings save
+        await writeAuditLog({
+            action: 'Settings Updated',
+            entityType: 'settings',
+            details: { setting: 'localization_global', ...globalSettings },
+        })
+        toast.success('Global settings saved')
         setSavingGlobal(false)
     }
 
     const handleSaveTranslations = async () => {
         setSaving(true)
         await persistAll(languages, globalSettings, translations)
-        showToast('Translations saved')
+        toast.success('Translations saved')
         setSaving(false)
     }
 
+    // F-LM03: wrapped in try-catch so a serialisation error surfaces as a toast
     const handleExport = () => {
-        const blob = new Blob([JSON.stringify(translations, null, 2)], { type: 'application/json' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url; a.download = 'translations.json'; a.click()
-        URL.revokeObjectURL(url)
+        try {
+            const blob = new Blob([JSON.stringify(translations, null, 2)], { type: 'application/json' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url; a.download = 'translations.json'; a.click()
+            URL.revokeObjectURL(url)
+        } catch (err) {
+            toast.error('Export failed: ' + (err.message || 'Unknown error'))
+        }
     }
 
     const TRANSLATION_KEYS = [
@@ -109,12 +123,6 @@ export default function LocalizationManagementPage() {
 
     return (
         <div className="flex flex-col gap-6">
-            {toast && (
-                <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-semibold text-white ${toast.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
-                    {toast.msg}
-                </div>
-            )}
-
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Localization Management</h2>
@@ -122,7 +130,8 @@ export default function LocalizationManagementPage() {
                 </div>
                 <div className="flex items-center gap-3">
                     <Button variant="outline" icon="download" onClick={handleExport}>Export</Button>
-                    <Button icon="add">Add Language</Button>
+                    {/* F-LM01: placeholder handler — full language-add flow is a future feature */}
+                    <Button icon="add" onClick={() => toast('Language management coming soon — contact support to add a new locale.')}>Add Language</Button>
                 </div>
             </div>
 
@@ -296,17 +305,25 @@ export default function LocalizationManagementPage() {
                         </h3>
                         <div className="flex flex-col gap-4">
                             <label className="flex items-center gap-3 w-full px-4 py-3 border border-dashed border-slate-300 dark:border-slate-600 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-primary transition-all group cursor-pointer">
-                                <input type="file" accept=".json,.csv" className="hidden" onChange={async (e) => {
+                                {/* F-LM02: accept only JSON (handler does JSON.parse — CSV would always throw) */}
+                {/* F-LM04: guard against oversized import files */}
+                <input type="file" accept=".json" className="hidden" onChange={async (e) => {
                                     const file = e.target.files[0]
                                     if (!file) return
+                                    const MAX_JSON_BYTES = 1 * 1024 * 1024 // 1 MB
+                                    if (file.size > MAX_JSON_BYTES) {
+                                        toast.error('Translation file must be under 1 MB')
+                                        e.target.value = ''
+                                        return
+                                    }
                                     const text = await file.text()
                                     try {
                                         const imported = JSON.parse(text)
                                         const merged = { ...translations, ...imported }
                                         setTranslations(merged)
-                                        showToast('Translations imported')
+                                        toast.success('Translations imported')
                                     } catch {
-                                        showToast('Invalid JSON file', 'error')
+                                        toast.error('Invalid JSON file')
                                     }
                                 }} />
                                 <div className="size-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center group-hover:bg-primary/10 group-hover:text-primary transition-colors">

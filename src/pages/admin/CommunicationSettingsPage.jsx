@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import * as platformSettingsRepo from '../../data/platformSettingsRepo'
+import { supabase } from '../../lib/supabase'
+import { isEmail } from '../../lib/validators'
+import { writeAuditLog } from '../../lib/auditLog'
 
 const DEFAULT_TEMPLATES = [
     { id: 1, name: 'Welcome Email', subject: 'Welcome to Immizy!', body: 'Hi {{client_name}},\n\nWelcome to Immizy! We are thrilled to have you on board.\n\nBest regards,\nThe Immizy Team', status: 'active' },
@@ -72,6 +75,13 @@ export default function CommunicationSettingsPage() {
             setTemplates(updated)
             setSelectedTemplate(prev => ({ ...prev, subject: editSubject, body: editBody, status: 'active' }))
             showToast('Template saved!')
+            // F-CS05: audit sensitive settings changes
+            await writeAuditLog({
+                action: 'Email Template Updated',
+                entityType: 'settings',
+                entityId: String(selectedTemplate.id),
+                details: { template_name: selectedTemplate.name, status: 'active' },
+            })
         }
         setSaving(false)
     }
@@ -87,6 +97,13 @@ export default function CommunicationSettingsPage() {
             setTemplates(updated)
             setSelectedTemplate(prev => ({ ...prev, subject: editSubject, body: editBody, status: 'draft' }))
             showToast('Saved as draft')
+            // F-CS05: audit draft saves as well
+            await writeAuditLog({
+                action: 'Email Template Updated',
+                entityType: 'settings',
+                entityId: String(selectedTemplate.id),
+                details: { template_name: selectedTemplate.name, status: 'draft' },
+            })
         }
         setSaving(false)
     }
@@ -151,6 +168,7 @@ export default function CommunicationSettingsPage() {
 
     const handleSendTestEmail = async () => {
         if (!testEmail) { showToast('Enter a recipient email', 'error'); return }
+        if (!isEmail(testEmail)) { showToast('Enter a valid email', 'error'); return }
         setSendingTest(true)
         try {
             const { error } = await supabase.functions.invoke('send-test-email', {
@@ -163,8 +181,10 @@ export default function CommunicationSettingsPage() {
             })
             if (error) throw error
             showToast(`Test email sent to ${testEmail}`)
-        } catch {
-            showToast(`Test email queued for ${testEmail}`)
+        } catch (e) {
+            // Surface the actual failure — the previous catch silently lied
+            // about a successful "queued" send.
+            showToast(`Test email failed: ${e?.message || 'unknown error'}`, 'error')
         }
         setSendingTest(false)
     }
@@ -196,18 +216,27 @@ export default function CommunicationSettingsPage() {
                             In-App
                         </button>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-2 space-y-1">
-                        {templates.map((template) => (
-                            <button key={template.id} onClick={() => handleSelectTemplate(template)}
-                                className={`w-full text-left group flex items-start justify-between rounded-lg px-3 py-3 transition-all ${selectedTemplate.id === template.id ? 'bg-primary/10 ring-1 ring-inset ring-primary/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
-                                <div>
-                                    <p className={`text-sm ${selectedTemplate.id === template.id ? 'font-bold text-slate-900 dark:text-white' : 'font-medium text-slate-700 dark:text-slate-200'}`}>{template.name}</p>
-                                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 line-clamp-1">Subject: {template.subject}</p>
-                                </div>
-                                <span className={`flex h-2 w-2 shrink-0 rounded-full mt-1.5 ${template.status === 'active' ? 'bg-green-500' : 'bg-amber-400'}`} title={template.status === 'active' ? 'Active' : 'Draft'}></span>
-                            </button>
-                        ))}
-                    </div>
+                    {/* F-CS06: show email templates only on the Emails tab; In-App shows a placeholder */}
+                    {activeTab === 'emails' ? (
+                        <div className="flex-1 overflow-y-auto p-2 space-y-1">
+                            {templates.map((template) => (
+                                <button key={template.id} onClick={() => handleSelectTemplate(template)}
+                                    className={`w-full text-left group flex items-start justify-between rounded-lg px-3 py-3 transition-all ${selectedTemplate.id === template.id ? 'bg-primary/10 ring-1 ring-inset ring-primary/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
+                                    <div>
+                                        <p className={`text-sm ${selectedTemplate.id === template.id ? 'font-bold text-slate-900 dark:text-white' : 'font-medium text-slate-700 dark:text-slate-200'}`}>{template.name}</p>
+                                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 line-clamp-1">Subject: {template.subject}</p>
+                                    </div>
+                                    <span className={`flex h-2 w-2 shrink-0 rounded-full mt-1.5 ${template.status === 'active' ? 'bg-green-500' : 'bg-amber-400'}`} title={template.status === 'active' ? 'Active' : 'Draft'}></span>
+                                </button>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="flex flex-1 flex-col items-center justify-center gap-3 py-12 text-slate-400">
+                            <span className="material-symbols-outlined text-[40px]">notifications</span>
+                            <p className="text-sm font-semibold">In-App notifications</p>
+                            <p className="text-xs text-center px-4">In-app notification templates are not yet configurable. Coming soon.</p>
+                        </div>
+                    )}
                 </aside>
 
                 {/* RIGHT PANE: Editor */}

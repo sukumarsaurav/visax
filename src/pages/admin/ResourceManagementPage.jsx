@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
+import toast from 'react-hot-toast'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
+import ConfirmModal from '../../components/ui/ConfirmModal'
 import { useAuth } from '../../contexts/AuthContext'
 import { useDebounce } from '../../hooks/useDebounce'
+import { writeAuditLog } from '../../lib/auditLog'
 import * as resourcesRepo from '../../data/resourcesRepo'
 
 const TYPE_COLORS = {
@@ -27,14 +30,11 @@ export default function ResourceManagementPage() {
     const [showEditDrawer, setShowEditDrawer] = useState(false)
     const [search, setSearch] = useState('')
     const [categoryFilter, setCategoryFilter] = useState('All')
-    const [toast, setToast] = useState(null)
     const [stats, setStats] = useState({ total: 0, published: 0, drafts: 0, downloads: 0 })
     const [form, setForm] = useState(blankForm)
-
-    const showToast = (msg, type = 'success') => {
-        setToast({ msg, type })
-        setTimeout(() => setToast(null), 3000)
-    }
+    // F-RM04: confirm before permanently deleting a resource
+    const [deleteConfirm, setDeleteConfirm] = useState(null) // resource id
+    const [deleting, setDeleting] = useState(false)
 
     const debouncedSearch = useDebounce(search, 300)
 
@@ -56,7 +56,7 @@ export default function ResourceManagementPage() {
     useEffect(() => { fetchResources() }, [fetchResources])
 
     const handleAdd = async () => {
-        if (!form.title.trim()) { showToast('Title is required', 'error'); return }
+        if (!form.title.trim()) { toast.error('Title is required'); return }
         setSaving(true)
         const { error } = await resourcesRepo.create({
             title: form.title,
@@ -68,8 +68,19 @@ export default function ResourceManagementPage() {
             is_public: form.status === 'published',
             created_by: user?.id,
         })
-        if (error) { showToast('Failed: ' + error.message, 'error') }
-        else { showToast('Resource added!'); setShowAddDrawer(false); setForm(blankForm); fetchResources() }
+        if (error) { toast.error('Failed: ' + error.message) }
+        else {
+            toast.success('Resource added!')
+            // F-RM03: audit log on create
+            await writeAuditLog({
+                action: 'Resource Created',
+                entityType: 'resource',
+                details: { title: form.title, category: form.category, status: form.status },
+            })
+            setShowAddDrawer(false)
+            setForm(blankForm)
+            fetchResources()
+        }
         setSaving(false)
     }
 
@@ -85,17 +96,26 @@ export default function ResourceManagementPage() {
             status: form.status,
             is_public: form.status === 'published',
         })
-        if (error) { showToast('Failed: ' + error.message, 'error') }
-        else { showToast('Updated!'); setShowEditDrawer(false); fetchResources() }
+        if (error) { toast.error('Failed: ' + error.message) }
+        else { toast.success('Updated!'); setShowEditDrawer(false); fetchResources() }
         setSaving(false)
     }
 
-    const handleDelete = async (id) => {
-        if (!confirm('Delete this resource?')) return
+    // F-RM04: extracted delete logic — called after ConfirmModal confirms
+    const doDelete = async (id) => {
+        setDeleting(true)
         await resourcesRepo.remove(id)
-        showToast('Deleted')
+        // F-RM03: audit log on delete
+        await writeAuditLog({
+            action: 'Resource Deleted',
+            entityType: 'resource',
+            entityId: id,
+        })
+        toast.success('Deleted')
         setSelectedResource(null)
         fetchResources()
+        setDeleteConfirm(null)
+        setDeleting(false)
     }
 
     const openEdit = (res) => {
@@ -167,11 +187,17 @@ export default function ResourceManagementPage() {
 
     return (
         <div className="flex flex-col gap-6">
-            {toast && (
-                <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-semibold text-white ${toast.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
-                    {toast.msg}
-                </div>
-            )}
+            {/* F-RM04: confirm before permanently deleting a resource */}
+            <ConfirmModal
+                open={!!deleteConfirm}
+                onClose={() => setDeleteConfirm(null)}
+                onConfirm={() => doDelete(deleteConfirm)}
+                title="Delete resource?"
+                message="This resource will be permanently removed. Any links to it will stop working."
+                confirmLabel="Delete"
+                variant="danger"
+                loading={deleting}
+            />
 
             {/* Actions */}
             <div className="flex justify-end gap-3">
@@ -256,7 +282,7 @@ export default function ResourceManagementPage() {
                                                 <button onClick={e => { e.stopPropagation(); openEdit(r) }} className="p-1.5 text-slate-500 hover:text-primary hover:bg-primary/10 rounded-md">
                                                     <span className="material-symbols-outlined text-[18px]">edit</span>
                                                 </button>
-                                                <button onClick={e => { e.stopPropagation(); handleDelete(r.id) }} className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-md">
+                                                <button onClick={e => { e.stopPropagation(); setDeleteConfirm(r.id) }} className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-md">
                                                     <span className="material-symbols-outlined text-[18px]">delete</span>
                                                 </button>
                                             </div>
@@ -299,7 +325,7 @@ export default function ResourceManagementPage() {
                                     <span className="material-symbols-outlined text-sm">open_in_new</span> Open Resource
                                 </a>
                             )}
-                            <button onClick={() => handleDelete(selectedResource.id)}
+                            <button onClick={() => setDeleteConfirm(selectedResource.id)}
                                 className="flex items-center justify-center gap-2 w-full h-9 rounded-lg border border-red-200 text-red-600 text-sm font-semibold hover:bg-red-50 transition-colors">
                                 <span className="material-symbols-outlined text-sm">delete</span> Delete
                             </button>

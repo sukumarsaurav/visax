@@ -140,10 +140,12 @@ export default function AdminDashboard() {
                                     <p className="mt-2 text-sm">No revenue data yet</p>
                                 </div>
                             </div>
-                        ) : (
+                        ) : (() => {
+                            // Hoist max out of the .map callback — was being recomputed once per bar.
+                            const max = Math.max(...monthlyRevenue.map(x => Number(x.revenue || 0)), 1)
+                            return (
                             <div className="mt-4 flex items-end gap-2 h-48">
                                 {monthlyRevenue.map((m, i) => {
-                                    const max = Math.max(...monthlyRevenue.map(x => Number(x.revenue || 0)), 1)
                                     const pct = Math.round((Number(m.revenue || 0) / max) * 100)
                                     return (
                                         <div key={i} className="flex flex-1 flex-col items-center gap-1">
@@ -156,7 +158,8 @@ export default function AdminDashboard() {
                                     )
                                 })}
                             </div>
-                        )}
+                            )
+                        })()}
                     </Card>
                 </div>
 

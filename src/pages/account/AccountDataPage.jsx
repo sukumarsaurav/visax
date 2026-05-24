@@ -186,14 +186,21 @@ export default function AccountDataPage() {
                                 {item.locked ? (
                                     <span className="material-symbols-outlined text-slate-400 text-[18px]">lock</span>
                                 ) : (
+                                    {/* F-AD01: await consent log so failures surface rather than being silently dropped */}
                                     <input type="checkbox" defaultChecked
                                         className="size-4 rounded border-slate-300 dark:border-slate-600 text-primary"
-                                        onChange={() => {
-                                            gdprRepo.logConsent({
-                                                userId: user.id,
-                                                type: item.label.toLowerCase().replace(/ /g, '_'),
-                                                granted: true,
-                                            })
+                                        onChange={async (e) => {
+                                            try {
+                                                await gdprRepo.logConsent({
+                                                    userId: user.id,
+                                                    type: item.label.toLowerCase().replace(/ /g, '_'),
+                                                    granted: e.target.checked,
+                                                })
+                                            } catch (err) {
+                                                toast.error('Failed to update preference. Please try again.')
+                                                // Revert the checkbox to reflect server state
+                                                e.target.checked = !e.target.checked
+                                            }
                                         }}
                                     />
                                 )}

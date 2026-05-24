@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react'
+import toast from 'react-hot-toast'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import Avatar from '../../components/ui/Avatar'
 import * as platformSettingsRepo from '../../data/platformSettingsRepo'
 import * as promotionsRepo from '../../data/promotionsRepo'
+import { writeAuditLog } from '../../lib/auditLog'
 
 export default function MarketingPage() {
     const [selectedProgram, setSelectedProgram] = useState(null)
@@ -18,12 +20,6 @@ export default function MarketingPage() {
         referee_amount: 15,
     })
     const [savingConfig, setSavingConfig] = useState(false)
-    const [toast, setToast] = useState(null)
-
-    const showToast = (msg, type = 'success') => {
-        setToast({ msg, type })
-        setTimeout(() => setToast(null), 3000)
-    }
 
     const loadData = useCallback(async () => {
         const [promosRes, cfgRes] = await Promise.all([
@@ -51,8 +47,25 @@ export default function MarketingPage() {
 
     const handleSaveReferralConfig = async () => {
         setSavingConfig(true)
-        await platformSettingsRepo.setValue('referral_program', referralConfig)
-        showToast('Referral configuration saved')
+        // F-MK03: clamp amount values to non-negative on save
+        const safeConfig = {
+            ...referralConfig,
+            referrer_amount: Math.max(0, referralConfig.referrer_amount),
+            referee_amount:  Math.max(0, referralConfig.referee_amount),
+        }
+        const { error } = await platformSettingsRepo.setValue('referral_program', safeConfig)
+        if (error) {
+            toast.error('Failed to save configuration. Please try again.')
+        } else {
+            setReferralConfig(safeConfig)
+            // F-MK06: audit log on config save
+            await writeAuditLog({
+                action: 'Settings Updated',
+                entityType: 'referral_config',
+                details: { approval_workflow: safeConfig.approval_workflow },
+            })
+            toast.success('Referral configuration saved')
+        }
         setSavingConfig(false)
     }
 
@@ -60,16 +73,11 @@ export default function MarketingPage() {
     if (!selectedProgram) {
         return (
             <div className="flex flex-col gap-6">
-                {toast && (
-                    <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-semibold text-white ${toast.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
-                        {toast.msg}
-                    </div>
-                )}
-
                 {/* Actions */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <p className="text-slate-500 dark:text-slate-400">Manage referrals, affiliates, loyalty rewards, and promotional campaigns.</p>
-                    <Button icon="add">Create Program</Button>
+                    {/* F-MK01: placeholder handler — full create-program UI is a future feature */}
+                    <Button icon="add" onClick={() => toast('Program creation coming soon.')}>Create Program</Button>
                 </div>
 
                 {/* Stats Overview */}
@@ -128,12 +136,6 @@ export default function MarketingPage() {
     if (selectedProgram === 'referral') {
         return (
             <div className="flex flex-col gap-6">
-                {toast && (
-                    <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-semibold text-white ${toast.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
-                        {toast.msg}
-                    </div>
-                )}
-
                 {/* Breadcrumbs */}
                 <div className="flex items-center gap-2 text-sm">
                     <button onClick={() => setSelectedProgram(null)} className="text-slate-500 hover:text-primary transition-colors">Marketing</button>
@@ -145,7 +147,8 @@ export default function MarketingPage() {
                 <div className="flex flex-wrap justify-between items-center gap-4">
                     <p className="text-slate-500 dark:text-slate-400">Configure rules, rewards, and monitor program performance.</p>
                     <div className="flex gap-3">
-                        <Button variant="outline" icon="description">View Reports</Button>
+                        {/* F-MK02: placeholder handler — reports page is a future feature */}
+                        <Button variant="outline" icon="description" onClick={() => toast('Reports coming soon.')}>View Reports</Button>
                     </div>
                 </div>
 
@@ -223,9 +226,10 @@ export default function MarketingPage() {
                                             </select>
                                         </label>
                                         <label className="block">
+                                            {/* F-MK03: min="0" prevents negative reward amounts */}
                                             <span className="text-xs font-semibold text-slate-500">Amount / Value</span>
                                             <input className="mt-1 w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
-                                                type="number"
+                                                type="number" min="0" max="1000"
                                                 value={referralConfig.referrer_amount}
                                                 onChange={e => setReferralConfig(c => ({ ...c, referrer_amount: Number(e.target.value) }))} />
                                         </label>
@@ -243,9 +247,10 @@ export default function MarketingPage() {
                                             </select>
                                         </label>
                                         <label className="block">
+                                            {/* F-MK03: min="0" prevents negative discount amounts */}
                                             <span className="text-xs font-semibold text-slate-500">Amount / Value</span>
                                             <input className="mt-1 w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm"
-                                                type="number"
+                                                type="number" min="0" max="100"
                                                 value={referralConfig.referee_amount}
                                                 onChange={e => setReferralConfig(c => ({ ...c, referee_amount: Number(e.target.value) }))} />
                                         </label>
@@ -288,7 +293,7 @@ export default function MarketingPage() {
                     <Card className="p-0 overflow-hidden">
                         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
                             <h3 className="font-bold text-slate-900 dark:text-white">All Promotions</h3>
-                            <a href="/admin/referral-program" className="text-sm text-primary font-semibold hover:underline">Manage →</a>
+                            {/* F-MK05: removed self-referential Manage link; promotions are managed inline via this tab */}
                         </div>
                         <table className="w-full text-left text-sm">
                             <thead className="bg-slate-50 dark:bg-slate-800">

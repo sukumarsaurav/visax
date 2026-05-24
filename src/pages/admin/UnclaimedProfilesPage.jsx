@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import toast from 'react-hot-toast'
+import ConfirmModal from '../../components/ui/ConfirmModal'
 import { useDebounce } from '../../hooks/useDebounce'
 import * as unclaimedProfilesRepo from '../../data/unclaimedProfilesRepo'
 
@@ -49,6 +50,9 @@ export default function UnclaimedProfilesPage() {
     const [csvPreview, setCsvPreview] = useState([])
     const [csvImporting, setCsvImporting] = useState(false)
     const [sendingEmail, setSendingEmail] = useState(null)
+    // F-UP03: confirm before permanently deleting an unclaimed profile
+    const [deleteConfirm, setDeleteConfirm] = useState(null) // profile id
+    const [deleting, setDeleting] = useState(false)
     const fileRef = useRef()
 
     const debouncedSearch = useDebounce(search, 300)
@@ -87,6 +91,13 @@ export default function UnclaimedProfilesPage() {
     function handleFileUpload(e) {
         const file = e.target.files[0]
         if (!file) return
+        // F-UP05: guard against oversized files before reading into memory
+        const MAX_CSV_BYTES = 2 * 1024 * 1024 // 2 MB
+        if (file.size > MAX_CSV_BYTES) {
+            toast.error('CSV file must be under 2 MB')
+            if (fileRef.current) fileRef.current.value = ''
+            return
+        }
         const reader = new FileReader()
         reader.onload = (ev) => {
             const rows = parseCSV(ev.target.result)
@@ -134,17 +145,24 @@ export default function UnclaimedProfilesPage() {
         toast.success(`Claim email sent to ${profile.email}`)
     }
 
-    function copyClaimLink(token) {
-        navigator.clipboard.writeText(CLAIM_BASE + token)
-        toast.success('Claim link copied!')
+    // F-UP04: await clipboard write so errors can be caught and reported
+    async function copyClaimLink(token) {
+        try {
+            await navigator.clipboard.writeText(CLAIM_BASE + token)
+            toast.success('Claim link copied!')
+        } catch {
+            toast.error('Could not copy link — try manually.')
+        }
     }
 
-    async function deleteProfile(id) {
-        if (!window.confirm('Delete this unclaimed profile?')) return
+    // F-UP03: actual delete, called after ConfirmModal confirms
+    async function doDelete(id) {
+        setDeleting(true)
         const { error } = await unclaimedProfilesRepo.remove(id)
-        if (error) { toast.error(error.message); return }
-        toast.success('Deleted')
-        fetchProfiles()
+        if (error) { toast.error(error.message) }
+        else { toast.success('Deleted'); fetchProfiles() }
+        setDeleting(false)
+        setDeleteConfirm(null)
     }
 
     const counts = {
@@ -155,6 +173,18 @@ export default function UnclaimedProfilesPage() {
 
     return (
         <div className="flex flex-col gap-6">
+            {/* F-UP03: confirm before permanently deleting an unclaimed profile */}
+            <ConfirmModal
+                open={!!deleteConfirm}
+                onClose={() => setDeleteConfirm(null)}
+                onConfirm={() => doDelete(deleteConfirm)}
+                title="Delete profile?"
+                message="This unclaimed profile will be permanently removed and cannot be recovered."
+                confirmLabel="Delete"
+                variant="danger"
+                loading={deleting}
+            />
+
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-4">
                 <div>
@@ -244,7 +274,7 @@ export default function UnclaimedProfilesPage() {
                             { key: 'email', label: 'Email *', type: 'email', required: true, placeholder: 'anita@consultancy.in' },
                             { key: 'phone', label: 'Phone', type: 'text', placeholder: '+91 98765 43210' },
                             { key: 'city', label: 'City', type: 'text', placeholder: 'Mumbai' },
-                            { key: 'years_experience', label: 'Years Experience', type: 'number', placeholder: '5' },
+                            { key: 'years_experience', label: 'Years Experience', type: 'number', placeholder: '5', min: '0' },
                         ].map(f => (
                             <div key={f.key}>
                                 <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">{f.label}</label>
@@ -252,6 +282,7 @@ export default function UnclaimedProfilesPage() {
                                     type={f.type}
                                     required={f.required}
                                     placeholder={f.placeholder}
+                                    min={f.min}
                                     value={form[f.key]}
                                     onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
                                     className="w-full text-sm border border-slate-300 dark:border-slate-600 rounded-xl px-3 py-2.5 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
@@ -429,10 +460,10 @@ export default function UnclaimedProfilesPage() {
                                                         </button>
                                                     </>
                                                 )}
-                                                {/* Delete */}
+                                                {/* Delete — F-UP03: opens ConfirmModal instead of window.confirm */}
                                                 {!p.is_claimed && (
                                                     <button
-                                                        onClick={() => deleteProfile(p.id)}
+                                                        onClick={() => setDeleteConfirm(p.id)}
                                                         title="Delete"
                                                         className="flex size-8 items-center justify-center rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                                                     >

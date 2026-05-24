@@ -39,7 +39,12 @@ export default function RegisterPage() {
         if (Object.keys(errs).length) { setErrors(errs); return }
 
         setLoading(true)
-        const { error } = await signUp({ email: form.email, password: form.password, fullName: form.fullName, role: 'client' })
+        const { error } = await signUp({
+            email: form.email.trim(),
+            password: form.password,
+            fullName: form.fullName.trim(),
+            role: 'client',
+        })
         setLoading(false)
 
         if (error) {
@@ -71,16 +76,30 @@ export default function RegisterPage() {
                     { field: 'email', label: 'Email', type: 'email', placeholder: 'you@example.com' },
                     { field: 'password', label: 'Password', type: 'password', placeholder: '••••••••' },
                     { field: 'confirm', label: 'Confirm Password', type: 'password', placeholder: '••••••••' },
-                ].map(({ field, label, type, placeholder }) => (
+                ].map(({ field, label, type, placeholder }) => {
+                    const inputId = `reg-${field}`
+                    const errId = `reg-${field}-error`
+                    const isPassword = type === 'password'
+                    const autoComplete =
+                        field === 'email' ? 'email'
+                        : field === 'fullName' ? 'name'
+                        : isPassword ? 'new-password'
+                        : undefined
+                    return (
                     <div key={field} className="flex flex-col gap-1.5">
-                        <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">{label}</label>
-                        {type === 'password' ? (
+                        <label htmlFor={inputId} className="text-sm font-semibold text-slate-700 dark:text-slate-300">{label}</label>
+                        {isPassword ? (
                             <div className="relative">
                                 <input
+                                    id={inputId}
+                                    name={field}
                                     type={showPasswords[field] ? 'text' : 'password'}
+                                    autoComplete={autoComplete}
                                     value={form[field]}
                                     onChange={set(field)}
                                     placeholder={placeholder}
+                                    aria-invalid={!!errors[field]}
+                                    aria-describedby={errors[field] ? errId : undefined}
                                     className={`${inputClass(field)} pr-10`}
                                 />
                                 <button
@@ -89,19 +108,29 @@ export default function RegisterPage() {
                                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
                                     aria-label={showPasswords[field] ? 'Hide password' : 'Show password'}
                                 >
-                                    <span className="material-symbols-outlined text-[20px]">{showPasswords[field] ? 'visibility_off' : 'visibility'}</span>
+                                    <span className="material-symbols-outlined text-[20px]" aria-hidden="true">{showPasswords[field] ? 'visibility_off' : 'visibility'}</span>
                                 </button>
                             </div>
                         ) : (
-                            <input type={type} value={form[field]} onChange={set(field)} placeholder={placeholder} className={inputClass(field)}
-                                autoComplete={field === 'email' ? 'email' : field === 'fullName' ? 'name' : undefined}
-                                maxLength={field === 'fullName' ? 100 : field === 'email' ? 254 : undefined} />
+                            <input
+                                id={inputId}
+                                name={field}
+                                type={type}
+                                value={form[field]}
+                                onChange={set(field)}
+                                placeholder={placeholder}
+                                className={inputClass(field)}
+                                autoComplete={autoComplete}
+                                aria-invalid={!!errors[field]}
+                                aria-describedby={errors[field] ? errId : undefined}
+                                maxLength={field === 'fullName' ? 100 : field === 'email' ? 254 : undefined}
+                            />
                         )}
                         {/* Inline password strength meter */}
                         {field === 'password' && form.password && (
-                            <div className="flex items-center gap-1.5 mt-1">
+                            <div className="flex items-center gap-1.5 mt-1" role="status" aria-live="polite">
                                 {[0, 1, 2, 3].map(i => (
-                                    <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${
+                                    <div key={i} aria-hidden="true" className={`h-1 flex-1 rounded-full transition-colors ${
                                         i < pwStrength
                                             ? pwStrength <= 1 ? 'bg-red-400'
                                             : pwStrength === 2 ? 'bg-amber-400'
@@ -115,9 +144,9 @@ export default function RegisterPage() {
                                 </span>
                             </div>
                         )}
-                        {errors[field] && <p className="text-xs text-red-500">{errors[field]}</p>}
+                        {errors[field] && <p id={errId} className="text-xs text-red-500">{errors[field]}</p>}
                     </div>
-                ))}
+                )})}
 
                 <button
                     type="submit"

@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../contexts/AuthContext'
 import { friendlyError } from '../../lib/errors'
+import { checkPassword } from '../../lib/validators'
 import { useSEO } from '../../hooks/useSEO'
 import toast from 'react-hot-toast'
 import * as unclaimedProfilesRepo from '../../data/unclaimedProfilesRepo'
@@ -16,10 +18,28 @@ export default function ClaimProfilePage() {
 
     const [searchParams] = useSearchParams()
     const navigate = useNavigate()
+    const { getDashboardPath } = useAuth()
     const tokenFromUrl = searchParams.get('token')
 
+    const [mounting, setMounting] = useState(!!tokenFromUrl) // true until first detectSession resolves
     const [step, setStep] = useState('lookup')      // lookup | preview | signup | set_password | done
     const [token, setToken] = useState(tokenFromUrl || '')
+
+    // CP02: Strip the token from the URL immediately after reading it into
+    // state. The query string is visible in browser history, server access
+    // logs, and Referer headers sent to any embedded third-party resource —
+    // all of which could expose the single-use claim secret.
+    //
+    // We use window.history.replaceState (not React Router's navigate) so
+    // the URL is cleaned without triggering a re-render. navigate() would
+    // cause tokenFromUrl to become null on re-render, which would re-fire the
+    // detectSession effect (it depends on [tokenFromUrl]) and reset state.
+    useEffect(() => {
+        if (tokenFromUrl) {
+            window.history.replaceState({}, '', '/claim-profile')
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
     const [profile, setProfile] = useState(null)    // data from get_unclaimed_profile_by_token
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
@@ -41,8 +61,9 @@ export default function ClaimProfilePage() {
                 // User came back via magic link and has a token — go claim
                 setStep('set_password')
             } else if (tokenFromUrl) {
-                lookupToken(tokenFromUrl)
+                await lookupToken(tokenFromUrl)
             }
+            setMounting(false)
         }
         detectSession()
     }, [tokenFromUrl])
@@ -64,7 +85,9 @@ export default function ClaimProfilePage() {
     async function handleSignup(e) {
         e.preventDefault()
         if (password !== confirmPassword) { setError('Passwords do not match.'); return }
-        if (password.length < 8) { setError('Password must be at least 8 characters.'); return }
+        // F-CP03: use shared checkPassword — enforces the same policy as RegisterPage
+        const pwCheck = checkPassword(password, { email: profile?.email })
+        if (!pwCheck.ok) { setError(pwCheck.message); return }
         setError('')
         setLoading(true)
 
@@ -110,7 +133,9 @@ export default function ClaimProfilePage() {
     async function handleSetPassword(e) {
         e.preventDefault()
         if (newPw !== confirmNewPw) { setError('Passwords do not match.'); return }
-        if (newPw.length < 8) { setError('Password must be at least 8 characters.'); return }
+        // F-CP03: shared password policy check (set_password path)
+        const pwCheck = checkPassword(newPw, { email: profile?.email })
+        if (!pwCheck.ok) { setError(pwCheck.message); return }
         setError('')
         setLoading(true)
 
@@ -121,6 +146,8 @@ export default function ClaimProfilePage() {
     }
 
     const initials = profile?.full_name?.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+    // F-CP06: only render avatar if it uses an http/https scheme — rejects javascript: and tracking pixels
+    const safeAvatarUrl = profile?.avatar_url?.startsWith('http') ? profile.avatar_url : null
 
     return (
         <div className="flex min-h-screen bg-background-light dark:bg-background-dark">
@@ -170,8 +197,16 @@ export default function ClaimProfilePage() {
                 <div className="flex flex-1 items-center justify-center p-8">
                     <div className="w-full max-w-md">
 
+                        {/* Initial spinner — prevents a flash of the lookup step before we know whether the user is authenticated via magic link. */}
+                        {mounting && (
+                            <div className="flex flex-col items-center gap-3 py-12">
+                                <span className="material-symbols-outlined animate-spin text-primary text-3xl">progress_activity</span>
+                                <p className="text-sm text-slate-500">Checking your link…</p>
+                            </div>
+                        )}
+
                         {/* ── Step: Lookup ── */}
-                        {step === 'lookup' && (
+                        {!mounting && step === 'lookup' && (
                             <div>
                                 <span className="material-symbols-outlined text-primary text-[36px]">lock_open</span>
                                 <h1 className="text-2xl font-black text-slate-900 dark:text-white mt-2 mb-1">Claim your profile</h1>
@@ -179,11 +214,13 @@ export default function ClaimProfilePage() {
                                     Enter the claim token from the email we sent you.
                                 </p>
                                 <div className="flex flex-col gap-3">
+                                    {/* F-CP04: maxLength prevents huge pastes from reaching the RPC */}
                                     <input
                                         type="text"
                                         value={token}
                                         onChange={e => setToken(e.target.value)}
                                         placeholder="Paste your claim token here"
+                                        maxLength={256}
                                         className="w-full text-sm border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-3 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary font-mono"
                                     />
                                     {error && <p className="text-sm text-red-500">{error}</p>}
@@ -206,7 +243,7 @@ export default function ClaimProfilePage() {
                         )}
 
                         {/* ── Step: Preview ── */}
-                        {step === 'preview' && profile && (
+                        {!mounting && step === 'preview' && profile && (
                             <div>
                                 <h1 className="text-2xl font-black text-slate-900 dark:text-white mb-1">Is this you?</h1>
                                 <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
@@ -216,8 +253,8 @@ export default function ClaimProfilePage() {
                                 {/* Profile preview card */}
                                 <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 mb-6">
                                     <div className="size-14 rounded-xl bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-black text-lg shrink-0">
-                                        {profile.avatar_url
-                                            ? <img src={profile.avatar_url} alt={profile.full_name} className="w-full h-full object-cover rounded-xl" />
+                                        {safeAvatarUrl
+                                            ? <img src={safeAvatarUrl} alt={profile.full_name} className="w-full h-full object-cover rounded-xl" />
                                             : initials}
                                     </div>
                                     <div>
@@ -255,7 +292,7 @@ export default function ClaimProfilePage() {
                         )}
 
                         {/* ── Step: Signup / Set Password ── */}
-                        {(step === 'signup' || step === 'set_password') && (
+                        {!mounting && (step === 'signup' || step === 'set_password') && (
                             <div>
                                 <h1 className="text-2xl font-black text-slate-900 dark:text-white mb-1">
                                     {step === 'set_password' ? 'Set your password' : 'Create your account'}
@@ -324,7 +361,7 @@ export default function ClaimProfilePage() {
                         )}
 
                         {/* ── Step: Confirm email ── */}
-                        {step === 'confirm_email' && (
+                        {!mounting && step === 'confirm_email' && (
                             <div className="text-center">
                                 <span className="material-symbols-outlined text-primary text-[48px]">mark_email_read</span>
                                 <h1 className="text-2xl font-black text-slate-900 dark:text-white mt-3 mb-2">Check your email</h1>
@@ -337,7 +374,7 @@ export default function ClaimProfilePage() {
                         )}
 
                         {/* ── Step: Done ── */}
-                        {step === 'done' && (
+                        {!mounting && step === 'done' && (
                             <div className="text-center">
                                 <div className="flex size-16 items-center justify-center rounded-2xl bg-green-100 dark:bg-green-900/30 mx-auto">
                                     <span className="material-symbols-outlined text-green-600 text-[36px]">verified_user</span>
@@ -347,7 +384,7 @@ export default function ClaimProfilePage() {
                                     Your profile is now live and under review. We'll notify you when you're approved and verified.
                                 </p>
                                 <Link
-                                    to="/dashboard"
+                                    to={getDashboardPath()}
                                     className="inline-flex items-center gap-2 bg-primary hover:bg-blue-600 text-white font-bold px-6 py-3 rounded-xl transition-all"
                                 >
                                     <span className="material-symbols-outlined text-[18px]">dashboard</span>

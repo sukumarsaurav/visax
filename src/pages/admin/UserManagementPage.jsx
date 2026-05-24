@@ -33,6 +33,8 @@ export default function UserManagementPage() {
     const [drawerOpen, setDrawerOpen] = useState(false)
     const [editForm, setEditForm] = useState({})
     const [confirm, setConfirm] = useState(null) // { action: 'suspend'|'unsuspend', label, message }
+    // F-UM01: role-change requires explicit confirmation
+    const [roleConfirm, setRoleConfirm] = useState(null) // { from, to, userName, userEmail }
 
     const debouncedSearch = useDebounce(search, 300)
 
@@ -82,8 +84,25 @@ export default function UserManagementPage() {
         setDrawerOpen(true)
     }
 
-    const handleSave = async () => {
+    const handleSave = () => {
         if (!selectedUser) return
+
+        // F-UM01: any role change must be explicitly confirmed before committing
+        if (editForm.role !== selectedUser.role) {
+            setRoleConfirm({
+                from: selectedUser.role,
+                to: editForm.role,
+                userName: selectedUser.full_name || selectedUser.email,
+                userEmail: selectedUser.email,
+            })
+            return
+        }
+        doSave()
+    }
+
+    const doSave = async () => {
+        if (!selectedUser) return
+        setRoleConfirm(null)
         setSaving(true)
         const { error } = await profilesRepo.updateBare(selectedUser.id, {
             full_name: editForm.full_name,
@@ -93,14 +112,24 @@ export default function UserManagementPage() {
         })
 
         if (error) {
-            toast.error(friendlyError(error, 'Failed to save changes'))
+            // Surface last-admin constraint from migration 012 with a clear message
+            const msg = error.message?.includes('last platform administrator')
+                ? error.message
+                : friendlyError(error, 'Failed to save changes')
+            toast.error(msg)
         } else {
             toast.success('User updated successfully')
             await writeAuditLog({
                 action: 'User Updated',
                 entityType: 'profile',
                 entityId: selectedUser.id,
-                details: { role: editForm.role, status: editForm.application_status, is_verified: editForm.is_verified },
+                // F-UM01: include previous_role so the audit trail shows the before/after
+                details: {
+                    previous_role: selectedUser.role,
+                    role: editForm.role,
+                    status: editForm.application_status,
+                    is_verified: editForm.is_verified,
+                },
             })
             if (selectedUser.email) {
                 mailchimpSync({ email: selectedUser.email, full_name: editForm.full_name, role: editForm.role })
@@ -123,10 +152,10 @@ export default function UserManagementPage() {
         } else {
             toast.success(`User ${newStatus === 'suspended' ? 'suspended' : 'reactivated'}`)
             await writeAuditLog({
-                action: newStatus === 'suspended' ? 'User Suspended' : 'User Updated',
+                action: newStatus === 'suspended' ? 'User Suspended' : 'User Reactivated',
                 entityType: 'profile',
                 entityId: selectedUser.id,
-                details: { new_status: newStatus },
+                details: { previous_status: selectedUser.application_status, new_status: newStatus },
             })
             if (newStatus === 'suspended') {
                 slackNotify('user.suspended', { name: selectedUser.full_name, email: selectedUser.email })
@@ -203,7 +232,7 @@ export default function UserManagementPage() {
 
     return (
         <div className="flex flex-col gap-6 h-full relative">
-            {/* Confirm modal for destructive actions */}
+            {/* Confirm modal for suspend/reactivate actions */}
             <ConfirmModal
                 open={!!confirm}
                 onClose={() => setConfirm(null)}
@@ -215,9 +244,26 @@ export default function UserManagementPage() {
                 loading={saving}
             />
 
+            {/* F-UM01: Confirm role change — elevation to admin is highlighted as critical */}
+            <ConfirmModal
+                open={!!roleConfirm}
+                onClose={() => setRoleConfirm(null)}
+                onConfirm={doSave}
+                title={`Change role: ${ROLE_LABELS[roleConfirm?.from] || roleConfirm?.from} → ${ROLE_LABELS[roleConfirm?.to] || roleConfirm?.to}`}
+                message={
+                    roleConfirm?.to === 'admin'
+                        ? `You are granting ${roleConfirm?.userName} full platform admin access. Admins can manage all users, settings, and data. This is irreversible without another admin changing it back.`
+                        : `You are changing ${roleConfirm?.userName}'s role from ${ROLE_LABELS[roleConfirm?.from] || roleConfirm?.from} to ${ROLE_LABELS[roleConfirm?.to] || roleConfirm?.to}. Their dashboard and permissions will change immediately.`
+                }
+                confirmLabel={roleConfirm?.to === 'admin' ? 'Grant admin access' : 'Change role'}
+                variant={roleConfirm?.to === 'admin' ? 'danger' : 'primary'}
+                loading={saving}
+            />
+
             {/* Actions */}
             <div className="flex justify-end gap-3">
-                <Button variant="outline" icon="file_download" onClick={exportCSV}>Export</Button>
+                {/* Note: only exports the current page — labelled accordingly to set expectations. */}
+                <Button variant="outline" icon="file_download" onClick={exportCSV}>Export this page</Button>
             </div>
 
             {/* KPI Cards — all wired to real data */}
@@ -398,6 +444,8 @@ export default function UserManagementPage() {
                                                 <span className="absolute inset-y-0 left-0 pl-3 flex items-center material-symbols-outlined text-slate-400 text-[20px]">mail</span>
                                                 <input className="w-full pl-10 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-sm px-3 py-2.5" value={editForm.email || ''} readOnly />
                                             </div>
+                                            {/* F-UM07: explain why the field is read-only */}
+                                            <p className="mt-1 text-xs text-slate-400">Email is managed by Supabase Auth. Use "Reset Password" to send the user a reset link.</p>
                                         </label>
                                         <div className="grid grid-cols-2 gap-4">
                                             <label className="block">

@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import toast from 'react-hot-toast'
+import { isEmail } from '../../lib/validators'
+import { friendlyError } from '../../lib/errors'
 
 export default function ForgotPasswordPage() {
     const { resetPassword } = useAuth()
@@ -12,15 +14,22 @@ export default function ForgotPasswordPage() {
 
     async function handleSubmit(e) {
         e.preventDefault()
-        if (!email.trim()) { setError('Email is required'); return }
-        if (!/\S+@\S+\.\S+/.test(email)) { setError('Enter a valid email'); return }
+        const trimmed = email.trim()
+        if (!trimmed) { setError('Email is required'); return }
+        if (!isEmail(trimmed)) { setError('Enter a valid email'); return }
 
         setLoading(true)
-        const { error: err } = await resetPassword(email)
+        const { error: err } = await resetPassword(trimmed)
         setLoading(false)
 
-        if (err) toast.error(err.message)
-        else setSent(true)
+        if (err) {
+            const msg = err.status === 429
+                ? 'Too many attempts. Please wait a moment and try again.'
+                : friendlyError(err, 'Could not send reset email. Please try again.')
+            toast.error(msg)
+        } else {
+            setSent(true)
+        }
     }
 
     if (sent) {
@@ -32,7 +41,7 @@ export default function ForgotPasswordPage() {
                 <div>
                     <h1 className="text-xl font-black text-slate-900 dark:text-white">Check your email</h1>
                     <p className="mt-2 text-sm text-slate-500">
-                        We sent a password reset link to <strong className="text-slate-700 dark:text-slate-300">{email}</strong>
+                        If an account exists for <strong className="text-slate-700 dark:text-slate-300">{email}</strong>, a reset link is on its way. Check your inbox and spam folder.
                     </p>
                 </div>
                 <Link to="/login" className="text-sm font-semibold text-primary hover:underline">Back to sign in</Link>
@@ -49,15 +58,20 @@ export default function ForgotPasswordPage() {
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
                 <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-semibold text-slate-700 dark:text-slate-300">Email</label>
+                    <label htmlFor="forgot-email" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Email</label>
                     <input
+                        id="forgot-email"
+                        name="email"
                         type="email"
+                        autoComplete="email"
                         value={email}
                         onChange={e => { setEmail(e.target.value); setError('') }}
                         placeholder="you@example.com"
+                        aria-invalid={!!error}
+                        aria-describedby={error ? 'forgot-email-error' : undefined}
                         className={`w-full rounded-lg border px-4 py-2.5 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20 dark:bg-slate-800 dark:text-white ${error ? 'border-red-400 bg-red-50 dark:bg-red-900/10' : 'border-slate-200 bg-white dark:border-slate-700'}`}
                     />
-                    {error && <p className="text-xs text-red-500">{error}</p>}
+                    {error && <p id="forgot-email-error" className="text-xs text-red-500">{error}</p>}
                 </div>
 
                 <button

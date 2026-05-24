@@ -2,7 +2,10 @@ import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'react-hot-toast'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
+import ConfirmModal from '../../components/ui/ConfirmModal'
 import { writeAuditLog } from '../../lib/auditLog'
+import { friendlyError } from '../../lib/errors'
+import { supabase } from '../../lib/supabase'
 import * as platformSettingsRepo from '../../data/platformSettingsRepo'
 import * as integrationsRepo from '../../data/integrationsRepo'
 
@@ -156,6 +159,8 @@ export default function SystemIntegrationsPage() {
     const [showSecrets, setShowSecrets] = useState({})
     const [fieldValues, setFieldValues] = useState({})
     const [testResult, setTestResult] = useState(null)
+    // F-SI03: confirmation when disabling a verified/active integration
+    const [disableConfirm, setDisableConfirm] = useState(null) // { id, name }
 
     const loadSettings = useCallback(async () => {
         const [settingsRes, providersRes] = await Promise.all([
@@ -190,11 +195,30 @@ export default function SystemIntegrationsPage() {
     const handleToggle = async (id, e) => {
         e?.stopPropagation()
         const current = intSettings[id]?.enabled || false
+        const isVerified = !!(intSettings[id]?.last_verified)
+        const name = INTEGRATION_META.find(m => m.id === id)?.name || id
+
+        // F-SI03: require confirmation before disabling a verified/active integration
+        if (current && isVerified) {
+            setDisableConfirm({ id, name })
+            return
+        }
+
+        await doToggle(id, current, name)
+    }
+
+    const doToggle = async (id, current, name) => {
         const updated = { ...intSettings, [id]: { ...(intSettings[id] || {}), enabled: !current } }
         setIntSettings(updated)
         const { error } = await platformSettingsRepo.setValue('integrations', updated)
-        if (error) toast.error('Failed to update integration status')
-        else toast.success(`${INTEGRATION_META.find(m => m.id === id)?.name} ${!current ? 'enabled' : 'disabled'}`)
+        if (error) {
+            // Roll back optimistic update
+            setIntSettings(prev => prev)
+            toast.error('Failed to update integration status')
+        } else {
+            toast.success(`${name} ${!current ? 'enabled' : 'disabled'}`)
+        }
+        setDisableConfirm(null)
     }
 
     // Separate non-secret fields from secret fields and persist them appropriately
@@ -282,14 +306,22 @@ export default function SystemIntegrationsPage() {
             if (result.success) {
                 setTestResult({ ok: true, data: result.data })
                 await loadSettings()
+                // F-SI04: audit log on successful verification
+                await writeAuditLog({
+                    action: 'Integration Verified',
+                    entityType: 'integration',
+                    entityId: selectedId,
+                    details: { integration: selectedId, account: result.data?.account_name },
+                })
                 toast.success(`${selectedMeta?.name} connected successfully!`)
             } else {
                 setTestResult({ ok: false, error: result.error })
                 toast.error(result.error || 'Connection test failed')
             }
-        } catch {
-            setTestResult({ ok: false, error: 'Network error — could not reach test endpoint' })
-            toast.error('Network error — could not reach test endpoint')
+        } catch (err) {
+            const msg = friendlyError(err, 'Network error — could not reach test endpoint')
+            setTestResult({ ok: false, error: msg })
+            toast.error(msg)
         }
         setTesting(false)
     }
@@ -301,6 +333,17 @@ export default function SystemIntegrationsPage() {
 
     return (
         <div className="flex flex-col gap-6">
+            {/* F-SI03: confirm before disabling a live integration */}
+            <ConfirmModal
+                open={!!disableConfirm}
+                onClose={() => setDisableConfirm(null)}
+                onConfirm={() => doToggle(disableConfirm.id, true, disableConfirm.name)}
+                title={`Disable ${disableConfirm?.name}?`}
+                message={`${disableConfirm?.name} is currently verified and active. Disabling it will stop all features it powers until you re-enable and re-verify it.`}
+                confirmLabel="Disable"
+                variant="danger"
+            />
+
             <div className="flex items-center justify-between">
                 <p className="text-sm text-slate-500 dark:text-slate-400">Click any integration to configure credentials and test the connection.</p>
             </div>
@@ -355,6 +398,7 @@ export default function SystemIntegrationsPage() {
                             <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-700 pt-4">
                                 <button
                                     onClick={(e) => handleToggle(int.id, e)}
+                                    aria-label={`${int.name} integration toggle`}
                                     className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${enabled ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-700'}`}
                                 >
                                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition ${enabled ? 'translate-x-4' : 'translate-x-0'}`}></span>
@@ -410,11 +454,10 @@ export default function SystemIntegrationsPage() {
                                                 </p>
                                             )}
                                         </div>
+                                        {/* F-SI02: call handleToggle (persists to DB) instead of local setIntSettings only */}
                                         <button
-                                            onClick={() => {
-                                                const updated = { ...intSettings, [selectedId]: { ...(intSettings[selectedId] || {}), enabled: !selectedSettings.enabled } }
-                                                setIntSettings(updated)
-                                            }}
+                                            onClick={() => handleToggle(selectedId, null)}
+                                            aria-label={`${selectedMeta.name} integration toggle`}
                                             className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-white/30 transition-colors ${selectedSettings.enabled ? 'bg-white/30' : 'bg-white/10'}`}
                                         >
                                             <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition ${selectedSettings.enabled ? 'translate-x-5' : 'translate-x-0'}`}></span>

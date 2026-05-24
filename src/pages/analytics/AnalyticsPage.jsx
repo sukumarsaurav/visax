@@ -95,7 +95,10 @@ export default function AnalyticsPage() {
 
     if (!stats) return <EmptyAnalytics />
 
-    const maxCases = isAgencyAdmin && teamStats.length > 0 ? Math.max(...teamStats.map(m => m.caseCount), 1) : 1
+    // F-AP01: guard against undefined/non-array teamStats — spread of empty array with no default throws
+    const maxCases = (isAgencyAdmin && Array.isArray(teamStats) && teamStats.length > 0)
+        ? Math.max(...teamStats.map(m => m.caseCount || 0), 1)
+        : 1
 
     return (
         <div className="flex flex-col gap-6">

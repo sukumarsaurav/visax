@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import Card from '../../components/ui/Card'
 import Badge from '../../components/ui/Badge'
+import ConfirmModal from '../../components/ui/ConfirmModal'
 import toast from 'react-hot-toast'
 import { formatDate } from '../../utils/date'
 import * as documentsRepo from '../../data/documentsRepo'
@@ -28,6 +29,9 @@ export default function DocumentsPage() {
     const [loading, setLoading] = useState(true)
     const [uploading, setUploading] = useState(false)
     const [downloadingId, setDownloadingId] = useState(null)
+    // F-DC02: confirmation before permanent delete
+    const [deleteConfirm, setDeleteConfirm] = useState(null) // doc object
+    const [deleting, setDeleting] = useState(false)
     const fileRef = useRef()
 
     useEffect(() => {
@@ -96,21 +100,40 @@ export default function DocumentsPage() {
         setDownloadingId(null)
     }
 
-    async function handleDelete(doc) {
+    async function doDelete(doc) {
+        setDeleting(true)
         try {
             await removeDocumentFile(doc.file_path)
         } catch {
             toast.error('Failed to delete file')
+            setDeleting(false)
+            setDeleteConfirm(null)
             return
         }
         const { error: dbErr } = await documentsRepo.remove(doc.id)
-        if (dbErr) { toast.error('Failed to remove document record'); return }
-        setDocs(prev => prev.filter(d => d.id !== doc.id))
-        toast.success('Document deleted')
+        if (dbErr) { toast.error('Failed to remove document record') }
+        else {
+            setDocs(prev => prev.filter(d => d.id !== doc.id))
+            toast.success('Document deleted')
+        }
+        setDeleting(false)
+        setDeleteConfirm(null)
     }
 
     return (
         <div className="flex flex-col gap-6">
+            {/* F-DC02: confirm before permanently deleting a document */}
+            <ConfirmModal
+                open={!!deleteConfirm}
+                onClose={() => setDeleteConfirm(null)}
+                onConfirm={() => doDelete(deleteConfirm)}
+                title="Delete document?"
+                message={`"${deleteConfirm?.name}" will be permanently removed and cannot be recovered.`}
+                confirmLabel="Delete"
+                variant="danger"
+                loading={deleting}
+            />
+
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-lg font-bold text-slate-900 dark:text-white">My Documents</h2>
@@ -169,7 +192,7 @@ export default function DocumentsPage() {
                                     </button>
                                 )}
                                 <button
-                                    onClick={() => handleDelete(doc)}
+                                    onClick={() => setDeleteConfirm(doc)}
                                     className="flex size-8 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"
                                     title="Delete"
                                 >
