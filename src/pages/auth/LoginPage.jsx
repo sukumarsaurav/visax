@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import toast from 'react-hot-toast'
@@ -6,6 +6,7 @@ import { friendlyError } from '../../lib/errors'
 import { useSEO } from '../../hooks/useSEO'
 import { SEO } from '../../lib/seo'
 import { isEmail } from '../../lib/validators'
+import { useRateLimit } from '../../hooks/useRateLimit'
 
 // Allow only in-app paths (no protocol-relative, no absolute URL) for
 // post-login redirect — prevents open-redirect via crafted router state.
@@ -59,6 +60,14 @@ export default function LoginPage() {
         }
     }
 
+    // F-L06: client-side rate limit — UX guard, not a security control
+    // (server enforces its own quota; this prevents accidental burst-clicks)
+    const limitedSubmit = useRateLimit(handleSubmit, {
+        max: 5,
+        windowMs: 60_000,
+        onLimit: () => toast.error('Too many sign-in attempts. Wait a moment and try again.'),
+    })
+
     const set = (field) => (e) => {
         setForm(f => ({ ...f, [field]: e.target.value }))
         setErrors(errs => ({ ...errs, [field]: undefined }))
@@ -71,7 +80,7 @@ export default function LoginPage() {
                 <p className="mt-1 text-sm text-slate-500">Sign in to your Immizy account</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+            <form onSubmit={limitedSubmit} className="flex flex-col gap-4" noValidate>
                 <div className="flex flex-col gap-1.5">
                     <label htmlFor="login-email" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Email</label>
                     <input

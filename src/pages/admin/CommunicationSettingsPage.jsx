@@ -5,6 +5,7 @@ import * as platformSettingsRepo from '../../data/platformSettingsRepo'
 import { supabase } from '../../lib/supabase'
 import { isEmail } from '../../lib/validators'
 import { writeAuditLog } from '../../lib/auditLog'
+import toast from 'react-hot-toast'
 
 const DEFAULT_TEMPLATES = [
     { id: 1, name: 'Welcome Email', subject: 'Welcome to Immizy!', body: 'Hi {{client_name}},\n\nWelcome to Immizy! We are thrilled to have you on board.\n\nBest regards,\nThe Immizy Team', status: 'active' },
@@ -28,14 +29,8 @@ export default function CommunicationSettingsPage() {
     const [editSubject, setEditSubject] = useState(DEFAULT_TEMPLATES[0].subject)
     const [saving, setSaving] = useState(false)
     const [sendingTest, setSendingTest] = useState(false)
-    const [toast, setToast] = useState(null)
     const [testEmail, setTestEmail] = useState('')
     const textareaRef = useRef(null)
-
-    const showToast = (msg, type = 'success') => {
-        setToast({ msg, type })
-        setTimeout(() => setToast(null), 3000)
-    }
 
     useEffect(() => {
         async function loadTemplates() {
@@ -70,11 +65,11 @@ export default function CommunicationSettingsPage() {
             t.id === selectedTemplate.id ? { ...t, subject: editSubject, body: editBody, status: 'active' } : t
         )
         const error = await saveTemplates(updated)
-        if (error) { showToast('Failed: ' + error.message, 'error') }
+        if (error) { toast.error('Failed: ' + error.message) }
         else {
             setTemplates(updated)
             setSelectedTemplate(prev => ({ ...prev, subject: editSubject, body: editBody, status: 'active' }))
-            showToast('Template saved!')
+            toast.success('Template saved!')
             // F-CS05: audit sensitive settings changes
             await writeAuditLog({
                 action: 'Email Template Updated',
@@ -92,11 +87,11 @@ export default function CommunicationSettingsPage() {
             t.id === selectedTemplate.id ? { ...t, subject: editSubject, body: editBody, status: 'draft' } : t
         )
         const error = await saveTemplates(updated)
-        if (error) { showToast('Failed: ' + error.message, 'error') }
+        if (error) { toast.error('Failed: ' + error.message) }
         else {
             setTemplates(updated)
             setSelectedTemplate(prev => ({ ...prev, subject: editSubject, body: editBody, status: 'draft' }))
-            showToast('Saved as draft')
+            toast.success('Saved as draft')
             // F-CS05: audit draft saves as well
             await writeAuditLog({
                 action: 'Email Template Updated',
@@ -113,7 +108,7 @@ export default function CommunicationSettingsPage() {
         if (original) {
             setEditBody(original.body)
             setEditSubject(original.subject)
-            showToast('Reverted to original')
+            toast.success('Reverted to original')
         }
     }
 
@@ -167,8 +162,8 @@ export default function CommunicationSettingsPage() {
     }
 
     const handleSendTestEmail = async () => {
-        if (!testEmail) { showToast('Enter a recipient email', 'error'); return }
-        if (!isEmail(testEmail)) { showToast('Enter a valid email', 'error'); return }
+        if (!testEmail) { toast.error('Enter a recipient email'); return }
+        if (!isEmail(testEmail)) { toast.error('Enter a valid email'); return }
         setSendingTest(true)
         try {
             const { error } = await supabase.functions.invoke('send-test-email', {
@@ -180,11 +175,11 @@ export default function CommunicationSettingsPage() {
                 },
             })
             if (error) throw error
-            showToast(`Test email sent to ${testEmail}`)
+            toast.success(`Test email sent to ${testEmail}`)
         } catch (e) {
             // Surface the actual failure — the previous catch silently lied
             // about a successful "queued" send.
-            showToast(`Test email failed: ${e?.message || 'unknown error'}`, 'error')
+            toast.error(`Test email failed: ${e?.message || 'unknown error'}`)
         }
         setSendingTest(false)
     }
@@ -193,11 +188,6 @@ export default function CommunicationSettingsPage() {
 
     return (
         <div className="flex flex-col gap-6">
-            {toast && (
-                <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-semibold text-white ${toast.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
-                    {toast.msg}
-                </div>
-            )}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <p className="text-slate-500 dark:text-slate-400">Manage automated email and in-app notification templates.</p>
                 <Button variant="outline" icon="history">View Logs</Button>

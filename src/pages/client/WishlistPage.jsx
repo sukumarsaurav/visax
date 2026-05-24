@@ -4,14 +4,18 @@ import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import Avatar from '../../components/ui/Avatar'
 import Badge from '../../components/ui/Badge'
+import ConfirmModal from '../../components/ui/ConfirmModal'
 import { useAuth } from '../../contexts/AuthContext'
 import * as wishlistRepo from '../../data/wishlistRepo'
+import toast from 'react-hot-toast'
 
 export default function WishlistPage() {
     const { user } = useAuth()
     const [wishlist, setWishlist] = useState([])
     const [loading, setLoading] = useState(true)
     const [removing, setRemoving] = useState(null)
+    // F-WL01: confirm before removing a saved professional
+    const [deleteConfirm, setDeleteConfirm] = useState(null) // wishlist item object
 
     useEffect(() => {
         if (!user) return
@@ -25,15 +29,33 @@ export default function WishlistPage() {
         setLoading(false)
     }
 
-    const handleRemove = async (id) => {
-        setRemoving(id)
-        await wishlistRepo.remove(id)
-        setWishlist(prev => prev.filter(w => w.id !== id))
+    // F-WL01: called after ConfirmModal confirms
+    const handleRemove = async (item) => {
+        setRemoving(item.id)
+        const { error } = await wishlistRepo.remove(item.id)
+        if (error) {
+            toast.error('Failed to remove from wishlist. Please try again.')
+        } else {
+            setWishlist(prev => prev.filter(w => w.id !== item.id))
+        }
+        setDeleteConfirm(null)
         setRemoving(null)
     }
 
     return (
         <div className="flex flex-col gap-6">
+            {/* F-WL01: confirm before removing a saved professional */}
+            <ConfirmModal
+                open={!!deleteConfirm}
+                onClose={() => setDeleteConfirm(null)}
+                onConfirm={() => handleRemove(deleteConfirm)}
+                title="Remove from wishlist?"
+                message={`${deleteConfirm?.consultant?.full_name || 'This professional'} will be removed from your saved list.`}
+                confirmLabel="Remove"
+                variant="danger"
+                loading={!!removing}
+            />
+
             <div>
                 <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">My Wishlist</h1>
                 <p className="text-slate-500 dark:text-slate-400 mt-1">
@@ -68,7 +90,7 @@ export default function WishlistPage() {
                             <Card key={w.id} className="relative">
                                 {/* Remove button */}
                                 <button
-                                    onClick={() => handleRemove(w.id)}
+                                    onClick={() => setDeleteConfirm(w)}
                                     disabled={removing === w.id}
                                     className="absolute top-4 right-4 p-1.5 rounded-full text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                                     title="Remove from wishlist"

@@ -4,6 +4,8 @@ import { useConversations } from '../../hooks/useConversations'
 import { useThread } from '../../hooks/useThread'
 import { useSendMessage } from '../../hooks/useSendMessage'
 import { useAuth } from '../../contexts/AuthContext'
+import { useRateLimit } from '../../hooks/useRateLimit'
+import toast from 'react-hot-toast'
 
 function formatMsgTime(d) {
     if (!d) return ''
@@ -51,10 +53,17 @@ export default function MessagesPage() {
         setSending(false)
     }
 
+    // F-MS01: client-side rate limit — max 20 messages per minute per conversation
+    const limitedSend = useRateLimit(handleSend, {
+        max: 20,
+        windowMs: 60_000,
+        onLimit: () => toast.error('Sending too fast — please slow down a moment.'),
+    })
+
     const handleKeyDown = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault()
-            handleSend()
+            limitedSend()
         }
     }
 
@@ -188,7 +197,7 @@ export default function MessagesPage() {
                                 className="flex-1 resize-none border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-1 focus:ring-primary focus:outline-none"
                             />
                             <button
-                                onClick={handleSend}
+                                onClick={limitedSend}
                                 disabled={sending || !newMessage.trim()}
                                 className="flex-shrink-0 size-10 rounded-xl bg-primary text-white flex items-center justify-center hover:bg-blue-600 disabled:opacity-50 transition-colors shadow-sm"
                             >

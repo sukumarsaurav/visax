@@ -6,6 +6,8 @@ import { useAuth } from '../../contexts/AuthContext'
 import { formatDate } from '../../utils/date'
 import * as clientInvitationsRepo from '../../data/clientInvitationsRepo'
 import * as profilesRepo from '../../data/profilesRepo'
+import toast from 'react-hot-toast'
+import { isEmail } from '../../lib/validators'
 
 const STATUS_CONFIG = {
     pending: { color: 'amber', label: 'Pending', icon: 'schedule' },
@@ -21,22 +23,11 @@ const DEFAULT_PERMISSIONS = {
     sign_contracts: false,
 }
 
-function Toast({ msg, onClose }) {
-    useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t) }, [])
-    return (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-xl bg-slate-900 dark:bg-white px-5 py-3 text-white dark:text-slate-900 shadow-xl text-sm font-medium">
-            <span className="material-symbols-outlined text-emerald-400 dark:text-emerald-600">check_circle</span>
-            {msg}
-        </div>
-    )
-}
-
 export default function InviteClientPage() {
     const { user } = useAuth()
     const [invitations, setInvitations] = useState([])
     const [loading, setLoading] = useState(true)
     const [sending, setSending] = useState(false)
-    const [toast, setToast] = useState('')
 
     const [email, setEmail] = useState('')
     const [message, setMessage] = useState('Welcome to the Immizy Client Portal. Please click the link below to set up your account and access your case information.')
@@ -56,7 +47,11 @@ export default function InviteClientPage() {
 
     const handleSendInvite = async (e) => {
         e.preventDefault()
-        if (!email.trim()) return
+        // F-IC01: validate email format before hitting the DB
+        if (!email.trim() || !isEmail(email.trim())) {
+            toast.error('Please enter a valid email address.')
+            return
+        }
         setSending(true)
 
         const token = crypto.randomUUID()
@@ -72,7 +67,9 @@ export default function InviteClientPage() {
             expiresAt,
         })
 
-        if (!error && inv) {
+        if (error || !inv) {
+            toast.error('Failed to send invitation. Please try again.')
+        } else {
             // Send the invitation email via edge function
             const { data: consultantProfile } = await profilesRepo.getFullProfile(user.id)
 
@@ -86,7 +83,7 @@ export default function InviteClientPage() {
                 },
             })
 
-            setToast('Invitation sent!')
+            toast.success('Invitation sent!')
             setEmail('')
             setMessage('Welcome to the Immizy Client Portal. Please click the link below to set up your account and access your case information.')
             fetchInvitations()
@@ -103,7 +100,7 @@ export default function InviteClientPage() {
         const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
         await clientInvitationsRepo.resend(inv.id, expiresAt)
         setInvitations(prev => prev.map(i => i.id === inv.id ? { ...i, status: 'pending' } : i))
-        setToast('Invitation resent!')
+        toast.success('Invitation resent!')
     }
 
     const togglePermission = (key) => {
@@ -112,8 +109,6 @@ export default function InviteClientPage() {
 
     return (
         <div className="flex flex-col gap-6">
-            {toast && <Toast msg={toast} onClose={() => setToast('')} />}
-
             <div>
                 <h1 className="text-2xl font-black text-slate-900 dark:text-white">Invite Client</h1>
                 <p className="text-slate-500 mt-1">Send portal access invitations to your clients.</p>

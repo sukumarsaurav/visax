@@ -10,7 +10,7 @@ import * as paymentsRepo from '../../data/paymentsRepo'
 import { uploadAvatar, uploadDocument } from '../../lib/storage'
 import { validateUpload } from '../../lib/fileValidation'
 import { useUnsavedChangesGuard } from '../../hooks/useUnsavedChangesGuard'
-import { isEmail, checkPassword } from '../../lib/validators'
+import { isEmail, checkPassword, isPhone } from '../../lib/validators'
 
 const MAX_LANGUAGES = 12
 const MAX_LANGUAGE_LEN = 30
@@ -243,6 +243,8 @@ export default function ProfessionalRegisterPage() {
         const pwCheck = checkPassword(password, { email: email.trim() })
         if (!pwCheck.ok) e.password = pwCheck.error
         if (password !== confirmPassword) e.confirmPassword = 'Passwords do not match'
+        // F-PR04: validate phone shape if provided (field is optional)
+        if (phone.trim() && !isPhone(phone.trim())) e.phone = 'Enter a valid phone number'
         setErrors(e)
         return Object.keys(e).length === 0
     }
@@ -516,6 +518,11 @@ export default function ProfessionalRegisterPage() {
         }
     }
 
+    // F-PR06: revoke stale object URLs to prevent memory leaks on each avatar re-pick
+    useEffect(() => {
+        return () => { if (avatarPreview) URL.revokeObjectURL(avatarPreview) }
+    }, [avatarPreview])
+
     async function handlePhotoSelect(e) {
         const file = e.target.files?.[0]
         if (!file) return
@@ -745,6 +752,7 @@ export default function ProfessionalRegisterPage() {
                                             className="flex-1 rounded-r-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                                         />
                                     </div>
+                                    {errors.phone && <p className="text-xs text-red-500 mt-0.5">{errors.phone}</p>}
                                 </div>
                             </div>
                         </div>

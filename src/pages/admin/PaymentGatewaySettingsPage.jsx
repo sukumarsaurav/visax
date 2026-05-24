@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Card from '../../components/ui/Card'
 import Button from '../../components/ui/Button'
 import * as platformSettingsRepo from '../../data/platformSettingsRepo'
+import toast from 'react-hot-toast'
 
 const GATEWAY_META = [
     { id: 'stripe', name: 'Stripe', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/stripe/stripe-original.svg', fields: ['api_key', 'publishable_key', 'webhook'] },
@@ -21,13 +22,7 @@ export default function PaymentGatewaySettingsPage() {
     const [showSecrets, setShowSecrets] = useState({})
     const [saving, setSaving] = useState(false)
     const [savingGlobal, setSavingGlobal] = useState(false)
-    const [toast, setToast] = useState(null)
     const [testing, setTesting] = useState(null)
-
-    const showToast = (msg, type = 'success') => {
-        setToast({ msg, type })
-        setTimeout(() => setToast(null), 3000)
-    }
 
     const loadSettings = useCallback(async () => {
         const { value } = await platformSettingsRepo.getValue('payment')
@@ -48,7 +43,7 @@ export default function PaymentGatewaySettingsPage() {
         const updated = { ...settings, [id]: { ...cur, enabled: !cur.enabled } }
         setSettings(updated)
         await persistAll(updated, globalConfig)
-        showToast(`${GATEWAY_META.find(g => g.id === id)?.name} ${!cur.enabled ? 'enabled' : 'disabled'}`)
+        toast.success(`${GATEWAY_META.find(g => g.id === id)?.name} ${!cur.enabled ? 'enabled' : 'disabled'}`)
     }
 
     const handleSaveGateway = async (id) => {
@@ -57,14 +52,20 @@ export default function PaymentGatewaySettingsPage() {
         setSettings(updated)
         await persistAll(updated, globalConfig)
         setEditing(e => ({ ...e, [id]: null }))
-        showToast('Gateway settings saved')
+        toast.success('Gateway settings saved')
         setSaving(false)
     }
 
     const handleSaveGlobal = async () => {
+        // F-PG05: validate transaction fee range before persisting
+        const fee = parseFloat(globalConfig.transaction_fee)
+        if (isNaN(fee) || fee < 0 || fee > 100) {
+            toast.error('Transaction fee must be a number between 0 and 100')
+            return
+        }
         setSavingGlobal(true)
-        await persistAll(settings, globalConfig)
-        showToast('Global configuration saved')
+        await persistAll(settings, { ...globalConfig, transaction_fee: String(fee) })
+        toast.success('Global configuration saved')
         setSavingGlobal(false)
     }
 
@@ -79,22 +80,21 @@ export default function PaymentGatewaySettingsPage() {
         setTesting(id)
         await new Promise(r => setTimeout(r, 1200))
         setTesting(null)
-        showToast(`${GATEWAY_META.find(g => g.id === id)?.name} connection test successful`)
+        toast.success(`${GATEWAY_META.find(g => g.id === id)?.name} connection test successful`)
     }
 
-    const copyToClipboard = (text) => {
-        navigator.clipboard.writeText(text)
-        showToast('Copied to clipboard')
+    // F-PG08: await clipboard write so failures are visible rather than silently ignored
+    const copyToClipboard = async (text) => {
+        try {
+            await navigator.clipboard.writeText(text)
+            toast.success('Copied to clipboard')
+        } catch {
+            toast.error('Failed to copy — check browser permissions')
+        }
     }
 
     return (
         <div className="flex flex-col gap-6">
-            {toast && (
-                <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-semibold text-white ${toast.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
-                    {toast.msg}
-                </div>
-            )}
-
             {/* Actions */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <p className="text-slate-500 dark:text-slate-400">Configure and manage your payment providers and API keys.</p>
@@ -117,8 +117,12 @@ export default function PaymentGatewaySettingsPage() {
                     </label>
                     <label className="block">
                         <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Transaction Fee (%)</span>
+                        {/* F-PG05: use number input with range constraints */}
                         <input className="mt-2 w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:border-primary focus:ring-1 focus:ring-primary"
-                            type="text"
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
                             value={globalConfig.transaction_fee}
                             onChange={e => setGlobalConfig(g => ({ ...g, transaction_fee: e.target.value }))} />
                     </label>

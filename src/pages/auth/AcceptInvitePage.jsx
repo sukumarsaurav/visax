@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
@@ -31,6 +31,10 @@ export default function AcceptInvitePage() {
     const [error, setError] = useState('')
     const [working, setWorking] = useState(false)
 
+    // F-AI02: guard against double-accept (race between fetchInvitation and the
+    // auth-change effect both calling acceptAndRedirect on the same render cycle)
+    const acceptingRef = useRef(false)
+
     // Sign up form
     const [name, setName] = useState('')
     const [password, setPassword] = useState('')
@@ -55,6 +59,12 @@ export default function AcceptInvitePage() {
     }, [user, authLoading, invitation, step])
 
     async function fetchInvitation() {
+        // F-AI05: validate token shape before hitting the DB — prevents malformed
+        // tokens from being sent to the RPC (SQLi-safety, DoS mitigation)
+        if (!token || token.length > 256 || !/^[A-Za-z0-9_-]+$/.test(token)) {
+            setStep('invalid')
+            return
+        }
         const { data: inv, error } = await clientInvitationsRepo.getByToken(token)
 
         if (error || !inv) { setStep('invalid'); return }
@@ -77,6 +87,10 @@ export default function AcceptInvitePage() {
     }
 
     async function acceptAndRedirect(userId) {
+        // F-AI02: prevent double-accept race (fetchInvitation + auth-change effect)
+        if (acceptingRef.current) return
+        acceptingRef.current = true
+
         // Guard: the authenticated user's email MUST match the invitation's
         // target email. Without this check, any logged-in user who has the
         // token URL can claim the invitation on behalf of their own account.

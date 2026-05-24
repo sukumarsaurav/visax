@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import toast from 'react-hot-toast'
 import { isEmail } from '../../lib/validators'
 import { friendlyError } from '../../lib/errors'
+import { useRateLimit } from '../../hooks/useRateLimit'
 
 export default function ForgotPasswordPage() {
     const { resetPassword } = useAuth()
@@ -32,6 +33,13 @@ export default function ForgotPasswordPage() {
         }
     }
 
+    // F-FP05: client-side rate limit on reset requests
+    const limitedSubmit = useRateLimit(handleSubmit, {
+        max: 3,
+        windowMs: 60_000,
+        onLimit: () => toast.error('Too many reset requests. Wait a minute and try again.'),
+    })
+
     if (sent) {
         return (
             <div className="flex w-full max-w-sm flex-col items-center gap-6 text-center">
@@ -56,7 +64,7 @@ export default function ForgotPasswordPage() {
                 <p className="mt-1 text-sm text-slate-500">Enter your email and we'll send you a reset link</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+            <form onSubmit={limitedSubmit} className="flex flex-col gap-4" noValidate>
                 <div className="flex flex-col gap-1.5">
                     <label htmlFor="forgot-email" className="text-sm font-semibold text-slate-700 dark:text-slate-300">Email</label>
                     <input

@@ -186,7 +186,7 @@ export default function AccountDataPage() {
                                 {item.locked ? (
                                     <span className="material-symbols-outlined text-slate-400 text-[18px]">lock</span>
                                 ) : (
-                                    {/* F-AD01: await consent log so failures surface rather than being silently dropped */}
+                                    // F-AD01: await consent log so failures surface rather than being silently dropped
                                     <input type="checkbox" defaultChecked
                                         className="size-4 rounded border-slate-300 dark:border-slate-600 text-primary"
                                         onChange={async (e) => {

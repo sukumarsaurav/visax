@@ -1,41 +1,48 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
-
-const nextSteps = [
-    {
-        icon: 'person_add',
-        iconColor: 'text-primary bg-blue-100 dark:bg-blue-900/30',
-        title: 'Start Managing Clients',
-        description: 'Add your existing clients, create new cases, and securely upload documents.',
-    },
-    {
-        icon: 'edit_note',
-        iconColor: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30',
-        title: 'Complete Your Profile',
-        description: 'Update your agency details and certifications to stand out in the consultant directory.',
-    },
-    {
-        icon: 'school',
-        iconColor: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30',
-        title: 'Explore Resources',
-        description: 'Access the latest immigration forms, policy guides, and training materials.',
-    },
-]
 
 export default function ProfessionalApprovedPage() {
     const { profile, updateProfile, getDashboardPath } = useAuth()
     const navigate = useNavigate()
     const dashPath = getDashboardPath()
+    // F-PA01: guard against re-firing on every profile reference change
+    const markedCompleteRef = useRef(false)
 
     // Mark onboarding as complete when they visit this page
     useEffect(() => {
-        if (profile && !profile.professional_onboarding_complete) {
+        if (profile && !profile.professional_onboarding_complete && !markedCompleteRef.current) {
+            markedCompleteRef.current = true
             updateProfile({ professional_onboarding_complete: true }).catch(() => {})
         }
     }, [profile])
 
     const agencyName = profile?.agency_name || profile?.full_name || 'your agency'
+
+    // F-PA02: next-steps cards wired to actual routes
+    const nextSteps = [
+        {
+            icon: 'person_add',
+            iconColor: 'text-primary bg-blue-100 dark:bg-blue-900/30',
+            title: 'Start Managing Clients',
+            description: 'Add your existing clients, create new cases, and securely upload documents.',
+            to: `${dashPath}/clients`,
+        },
+        {
+            icon: 'edit_note',
+            iconColor: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30',
+            title: 'Complete Your Profile',
+            description: 'Update your agency details and certifications to stand out in the consultant directory.',
+            to: `${dashPath}/settings`,
+        },
+        {
+            icon: 'school',
+            iconColor: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30',
+            title: 'Explore Resources',
+            description: 'Access the latest immigration forms, policy guides, and training materials.',
+            to: `${dashPath}/resources`,
+        },
+    ]
 
     return (
         <div className="min-h-screen bg-slate-100 dark:bg-slate-950 flex flex-col">
@@ -76,19 +83,20 @@ export default function ProfessionalApprovedPage() {
                         <p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-4">Get Started with Your Account</p>
                         <div className="flex flex-col gap-3">
                             {nextSteps.map((step) => (
-                                <div
+                                <Link
                                     key={step.title}
-                                    className="flex items-center gap-4 p-4 rounded-xl border border-slate-100 dark:border-slate-800 hover:border-primary/30 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all cursor-default"
+                                    to={step.to}
+                                    className="flex items-center gap-4 p-4 rounded-xl border border-slate-100 dark:border-slate-800 hover:border-primary/30 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all"
                                 >
                                     <div className={`size-10 rounded-xl flex items-center justify-center shrink-0 ${step.iconColor}`}>
-                                        <span className="material-symbols-outlined text-[20px]">{step.icon}</span>
+                                        <span className="material-symbols-outlined text-[20px]" aria-hidden="true">{step.icon}</span>
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-bold text-slate-900 dark:text-white">{step.title}</p>
                                         <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{step.description}</p>
                                     </div>
-                                    <span className="material-symbols-outlined text-slate-300 dark:text-slate-600 text-[20px] shrink-0">chevron_right</span>
-                                </div>
+                                    <span className="material-symbols-outlined text-slate-300 dark:text-slate-600 text-[20px] shrink-0" aria-hidden="true">chevron_right</span>
+                                </Link>
                             ))}
                         </div>
                     </div>

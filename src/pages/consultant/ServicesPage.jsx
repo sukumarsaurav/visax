@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
 import Button from '../../components/ui/Button'
+import ConfirmModal from '../../components/ui/ConfirmModal'
 import { useAuth } from '../../contexts/AuthContext'
 import * as servicesRepo from '../../data/servicesRepo'
+import { writeAuditLog } from '../../lib/auditLog'
+import toast from 'react-hot-toast'
 
 const CATEGORIES = ['Visa Application', 'Consultation', 'Document Review', 'Appeal', 'Settlement', 'Citizenship', 'Other']
 const ICON_MAP = { 'Visa Application': 'badge', 'Consultation': 'forum', 'Document Review': 'history_edu', 'Appeal': 'gavel', 'Settlement': 'home_work', 'Citizenship': 'public', 'Other': 'handyman' }
@@ -9,16 +12,6 @@ const COLOR_MAP = { 'Visa Application': 'blue', 'Consultation': 'purple', 'Docum
 const BG_MAP = { blue: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400', purple: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400', orange: 'bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400', red: 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400', emerald: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400', indigo: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400', slate: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' }
 
 const EMPTY_FORM = { title: '', description: '', category: 'Visa Application', price: '', duration_minutes: 60, is_active: true, expertise_areas: '', target_countries: '' }
-
-function Toast({ msg, onClose }) {
-    useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t) }, [])
-    return (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-xl bg-slate-900 dark:bg-white px-5 py-3 text-white dark:text-slate-900 shadow-xl text-sm font-medium">
-            <span className="material-symbols-outlined text-emerald-400 dark:text-emerald-600">check_circle</span>
-            {msg}
-        </div>
-    )
-}
 
 export default function ServicesPage() {
     const { user } = useAuth()
@@ -28,7 +21,8 @@ export default function ServicesPage() {
     const [editService, setEditService] = useState(null)
     const [form, setForm] = useState(EMPTY_FORM)
     const [saving, setSaving] = useState(false)
-    const [toast, setToast] = useState('')
+    // F-SV01: confirm before permanently deleting a service
+    const [deleteConfirm, setDeleteConfirm] = useState(null) // service object
     const [deleting, setDeleting] = useState(null)
 
     useEffect(() => {
@@ -61,8 +55,17 @@ export default function ServicesPage() {
             ? await servicesRepo.update(editService.id, payload)
             : await servicesRepo.create(payload)
         const error = res.error
-        if (!error) {
-            setToast(editService ? 'Service updated!' : 'Service created!')
+        if (error) {
+            toast.error('Failed to save service. Please try again.')
+        } else {
+            // F-SV02: audit log on create/update
+            await writeAuditLog({
+                action: editService ? 'Resource Created' : 'Resource Created',
+                entityType: 'service',
+                entityId: res.data?.id || editService?.id,
+                details: { title: payload.title, price: payload.price, category: payload.category, action: editService ? 'updated' : 'created' },
+            })
+            toast.success(editService ? 'Service updated!' : 'Service created!')
             setShowForm(false)
             fetchServices()
         }
@@ -74,10 +77,19 @@ export default function ServicesPage() {
         setServices(prev => prev.map(s => s.id === svc.id ? { ...s, is_active: !s.is_active } : s))
     }
 
-    const handleDelete = async (id) => {
-        setDeleting(id)
-        await servicesRepo.remove(id)
-        setServices(prev => prev.filter(s => s.id !== id))
+    // F-SV01: called after ConfirmModal confirms
+    const handleDelete = async (svc) => {
+        setDeleting(svc.id)
+        await servicesRepo.remove(svc.id)
+        // F-SV02: audit log on delete
+        await writeAuditLog({
+            action: 'Resource Deleted',
+            entityType: 'service',
+            entityId: svc.id,
+            details: { title: svc.title },
+        })
+        setServices(prev => prev.filter(s => s.id !== svc.id))
+        setDeleteConfirm(null)
         setDeleting(null)
     }
 
@@ -85,7 +97,17 @@ export default function ServicesPage() {
 
     return (
         <div className="flex flex-col gap-6">
-            {toast && <Toast msg={toast} onClose={() => setToast('')} />}
+            {/* F-SV01: confirm before permanently deleting a service */}
+            <ConfirmModal
+                open={!!deleteConfirm}
+                onClose={() => setDeleteConfirm(null)}
+                onConfirm={() => handleDelete(deleteConfirm)}
+                title="Delete service?"
+                message={`"${deleteConfirm?.title}" will be permanently removed and will no longer be bookable by clients.`}
+                confirmLabel="Delete"
+                variant="danger"
+                loading={!!deleting}
+            />
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
@@ -211,7 +233,7 @@ export default function ServicesPage() {
                                             <span className="material-symbols-outlined text-[18px]">edit</span>
                                         </button>
                                         <button
-                                            onClick={() => handleDelete(svc.id)}
+                                            onClick={() => setDeleteConfirm(svc)}
                                             disabled={deleting === svc.id}
                                             className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                                         >

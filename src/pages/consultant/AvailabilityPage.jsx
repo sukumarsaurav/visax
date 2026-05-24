@@ -3,6 +3,7 @@ import Button from '../../components/ui/Button'
 import { useAuth } from '../../contexts/AuthContext'
 import * as availabilityRepo from '../../data/availabilityRepo'
 import * as profilesRepo from '../../data/profilesRepo'
+import toast from 'react-hot-toast'
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const DAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -16,22 +17,11 @@ const DEFAULT_SLOTS = DAYS.map((_, i) => ({
     consultation_type: 'video',
 }))
 
-function Toast({ msg, onClose }) {
-    useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t) }, [])
-    return (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-xl bg-slate-900 dark:bg-white px-5 py-3 text-white dark:text-slate-900 shadow-xl text-sm font-medium">
-            <span className="material-symbols-outlined text-emerald-400 dark:text-emerald-600">check_circle</span>
-            {msg}
-        </div>
-    )
-}
-
 export default function AvailabilityPage() {
     const { user } = useAuth()
     const [slots, setSlots] = useState(DEFAULT_SLOTS)
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
-    const [toast, setToast] = useState('')
     const [bufferMinutes, setBufferMinutes] = useState(15)
     const [sessionLength, setSessionLength] = useState(60)
     const [meetingLink, setMeetingLink] = useState('')
@@ -78,6 +68,14 @@ export default function AvailabilityPage() {
     }
 
     const handleSave = async () => {
+        // F-AV01: reject saves where end_time ≤ start_time on active days
+        const invalid = slots.filter(s => s.is_active && s.end_time <= s.start_time)
+        if (invalid.length > 0) {
+            const dayNames = invalid.map(s => DAYS[s.weekday]).join(', ')
+            toast.error(`End time must be after start time on: ${dayNames}`)
+            return
+        }
+
         setSaving(true)
         const upsertData = slots.map(s => ({
             consultant_id: user.id,
@@ -101,8 +99,10 @@ export default function AvailabilityPage() {
         }
         await profilesRepo.updateBare(user.id, { notification_preferences: merged })
 
-        if (!error) {
-            setToast('Availability saved!')
+        if (error) {
+            toast.error('Failed to save availability. Please try again.')
+        } else {
+            toast.success('Availability saved!')
         }
         setSaving(false)
     }
@@ -119,8 +119,6 @@ export default function AvailabilityPage() {
 
     return (
         <div className="flex flex-col gap-6">
-            {toast && <Toast msg={toast} onClose={() => setToast('')} />}
-
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-black text-slate-900 dark:text-white">Availability</h1>

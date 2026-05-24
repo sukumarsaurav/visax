@@ -84,7 +84,7 @@ export default function ProfessionalWelcomePage() {
                                             <p className="text-xs font-bold text-slate-900 dark:text-white">500+ professionals trust Immizy</p>
                                             <div className="flex items-center gap-0.5 mt-0.5">
                                                 {[...Array(5)].map((_, i) => (
-                                                    <span key={i} className="material-symbols-outlined text-yellow-400 text-[12px]">star</span>
+                                                    <span key={i} className="material-symbols-outlined text-yellow-400 text-[12px]" aria-hidden="true">star</span>
                                                 ))}
                                                 <span className="text-xs text-slate-500 ml-1">4.9 avg. rating</span>
                                             </div>
@@ -98,7 +98,7 @@ export default function ProfessionalWelcomePage() {
                         <div className="flex flex-col gap-8 order-1 lg:order-2">
                             <div className="flex flex-col gap-3">
                                 <span className="inline-flex items-center gap-1.5 text-primary font-bold tracking-wide uppercase text-xs">
-                                    <span className="material-symbols-outlined text-[14px]">workspace_premium</span>
+                                    <span className="material-symbols-outlined text-[14px]" aria-hidden="true">workspace_premium</span>
                                     Professional Registration
                                 </span>
                                 <h1 className="text-slate-900 dark:text-white text-4xl lg:text-5xl font-black leading-tight tracking-tight">
@@ -114,7 +114,7 @@ export default function ProfessionalWelcomePage() {
                                 {benefits.map((b) => (
                                     <div key={b.icon} className="flex items-start gap-4">
                                         <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                                            <span className="material-symbols-outlined text-[20px]">{b.icon}</span>
+                                            <span className="material-symbols-outlined text-[20px]" aria-hidden="true">{b.icon}</span>
                                         </div>
                                         <div>
                                             <h3 className="text-slate-900 dark:text-white text-sm font-bold leading-tight">{b.title}</h3>
@@ -131,7 +131,7 @@ export default function ProfessionalWelcomePage() {
                                     className="flex items-center justify-center gap-2 rounded-xl py-3.5 px-8 bg-primary hover:bg-blue-600 text-white text-base font-bold transition-all shadow-lg shadow-primary/25 hover:shadow-primary/40"
                                 >
                                     <span>Start Registration</span>
-                                    <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+                                    <span className="material-symbols-outlined text-[20px]" aria-hidden="true">arrow_forward</span>
                                 </Link>
                                 <p className="text-center text-sm text-slate-500 dark:text-slate-400">
                                     Already registered?{' '}
@@ -141,7 +141,7 @@ export default function ProfessionalWelcomePage() {
 
                             {/* Account types note */}
                             <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30">
-                                <span className="material-symbols-outlined text-primary text-[20px] shrink-0 mt-0.5">info</span>
+                                <span className="material-symbols-outlined text-primary text-[20px] shrink-0 mt-0.5" aria-hidden="true">info</span>
                                 <p className="text-sm text-slate-600 dark:text-slate-300">
                                     We support both <strong>Individual Consultants</strong> and <strong>Immigration Agencies</strong>. You'll choose your account type during registration.
                                 </p>

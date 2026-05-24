@@ -52,10 +52,10 @@ export default function ProfessionalSubmittedPage() {
                     <span className="text-lg font-black tracking-tight">Immizy</span>
                 </Link>
                 <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-500 dark:text-slate-400">
-                    <span className="cursor-default">Dashboard</span>
-                    <span className="cursor-default">Resource Library</span>
-                    <span className="cursor-default">Settings</span>
-                    <span className="font-bold text-slate-900 dark:text-white cursor-default">Global Services</span>
+                    <Link to={dashPath} className="hover:text-slate-900 dark:hover:text-white transition-colors">Dashboard</Link>
+                    <Link to={`${dashPath}/resources`} className="hover:text-slate-900 dark:hover:text-white transition-colors">Resource Library</Link>
+                    <Link to={`${dashPath}/settings`} className="hover:text-slate-900 dark:hover:text-white transition-colors">Settings</Link>
+                    <span className="font-bold text-slate-900 dark:text-white">Global Services</span>
                 </nav>
             </header>
 
