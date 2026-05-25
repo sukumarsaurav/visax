@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Link, useParams, useNavigate, useLocation } from 'react-router-dom'
+import { Link, useParams, useLocation } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import PublicHeader from '../../components/layout/PublicHeader'
 import Footer from '../../components/layout/Footer'
@@ -10,6 +10,8 @@ import StarRating from '../../components/ui/StarRating'
 import { formatDate } from '../../utils/date'
 import { useSEO } from '../../hooks/useSEO'
 import { buildConsultantSchema, buildBreadcrumb } from '../../lib/seo'
+import { supabase } from '../../lib/supabase'
+import { useAuth } from '../../contexts/AuthContext'
 import * as profilesRepo from '../../data/profilesRepo'
 import * as servicesRepo from '../../data/servicesRepo'
 import * as reviewsRepo from '../../data/reviewsRepo'
@@ -51,7 +53,6 @@ function timeAgo(d) {
 
 export default function ConsultantProfilePage() {
     const { id } = useParams()
-    const navigate = useNavigate()
     const location = useLocation()
 
     // Use profile passed via router state (from FindProfessionals list) to skip the first fetch
@@ -63,11 +64,54 @@ export default function ConsultantProfilePage() {
     const [loading, setLoading] = useState(true)
     const [notFound, setNotFound] = useState(false)
 
+    const { user } = useAuth()
     const today = new Date().toISOString().split('T')[0]
     const [selectedDate, setSelectedDate] = useState(today)
     const [selectedSlot, setSelectedSlot] = useState(null)
     const [meetingType, setMeetingType] = useState('video')
     const [showConfirmation, setShowConfirmation] = useState(false)
+
+    // Frictionless booking: capture name + phone without account creation
+    const [bookingName, setBookingName] = useState('')
+    const [bookingPhone, setBookingPhone] = useState('')
+    const [bookingSubmitting, setBookingSubmitting] = useState(false)
+    const [bookingDone, setBookingDone] = useState(false)
+
+    async function handleFrictionlessBooking() {
+        if (!bookingName.trim() || !bookingPhone.trim()) return
+        setBookingSubmitting(true)
+        try {
+            // Store the booking request as a lead — no auth required
+            const { error } = await supabase.from('leads').insert({
+                phone: bookingPhone.trim(),
+                full_name: bookingName.trim(),
+                source: 'consultant_profile_booking',
+                metadata: {
+                    consultant_id: id,
+                    consultant_name: profile?.full_name,
+                    date: selectedDate,
+                    slot: selectedSlot,
+                    meeting_type: meetingType,
+                },
+            })
+            if (error) throw error
+
+            // Also notify the consultant via the existing notification channel
+            await supabase.from('notifications').insert({
+                user_id: id,
+                type: 'booking_request',
+                title: 'New Booking Request',
+                message: `${bookingName.trim()} wants to book a ${meetingType} consultation on ${selectedDate}${selectedSlot ? ` at ${selectedSlot}` : ''}. Phone: ${bookingPhone.trim()}`,
+                data: { source: 'frictionless_booking', client_phone: bookingPhone.trim() },
+            }).throwOnError()
+
+            setBookingDone(true)
+        } catch (err) {
+            toast.error('Something went wrong. Please try again.')
+        } finally {
+            setBookingSubmitting(false)
+        }
+    }
 
     useEffect(() => {
         // UUID format guard — avoids hitting the DB with garbage params
@@ -545,8 +589,16 @@ export default function ConsultantProfilePage() {
                                 {/* Booking Confirmation Modal */}
                                 <Modal
                                     open={showConfirmation}
-                                    onClose={() => setShowConfirmation(false)}
-                                    title="Confirm Your Booking"
+                                    onClose={() => {
+                                        setShowConfirmation(false)
+                                        // reset form so it's fresh next open (but keep done state visible briefly)
+                                        setTimeout(() => {
+                                            setBookingDone(false)
+                                            setBookingName('')
+                                            setBookingPhone('')
+                                        }, 300)
+                                    }}
+                                    title={bookingDone ? 'Request Sent!' : 'Confirm Your Booking'}
                                     maxWidth="max-w-sm"
                                 >
                                     <div className="flex flex-col gap-5">
@@ -597,29 +649,68 @@ export default function ConsultantProfilePage() {
                                             )}
                                         </div>
 
-                                        {/* Actions */}
-                                        <div className="flex flex-col gap-2">
-                                            <Button
-                                                className="w-full"
-                                                onClick={() => {
-                                                    const params = new URLSearchParams({
-                                                        consultant_id: id,
-                                                        date: selectedDate,
-                                                        ...(selectedSlot && { slot: selectedSlot }),
-                                                        type: meetingType,
-                                                    })
-                                                    navigate(`/register?booking=${params.toString()}`)
-                                                }}
-                                            >
-                                                Confirm & Continue
-                                            </Button>
-                                            <button
-                                                onClick={() => setShowConfirmation(false)}
-                                                className="text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 py-1.5 transition-colors"
-                                            >
-                                                Go Back
-                                            </button>
-                                        </div>
+                                        {/* Actions — frictionless capture (no account needed) */}
+                                        {bookingDone ? (
+                                            <div className="flex flex-col items-center gap-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-5 text-center">
+                                                <span className="material-symbols-outlined text-emerald-600 text-[40px]">check_circle</span>
+                                                <div>
+                                                    <p className="font-bold text-emerald-900 dark:text-emerald-100 text-base">Booking Request Sent!</p>
+                                                    <p className="text-sm text-emerald-700 dark:text-emerald-300 mt-1.5 leading-relaxed">
+                                                        {profile?.full_name?.split(' ')[0]} will contact you at{' '}
+                                                        <strong>+91 {bookingPhone}</strong> within 2 hours.
+                                                    </p>
+                                                </div>
+                                                <Link
+                                                    to="/register"
+                                                    className="text-xs text-primary hover:underline font-medium mt-1"
+                                                    onClick={() => setShowConfirmation(false)}
+                                                >
+                                                    Create account to track your case →
+                                                </Link>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col gap-3">
+                                                <p className="text-sm font-bold text-slate-900 dark:text-white">Your contact details</p>
+                                                <input
+                                                    type="text"
+                                                    value={bookingName}
+                                                    onChange={e => setBookingName(e.target.value)}
+                                                    placeholder="Your full name"
+                                                    className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm px-3 py-2.5 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-primary transition-colors"
+                                                />
+                                                <div className="flex rounded-xl border border-slate-200 dark:border-slate-600 overflow-hidden focus-within:border-primary transition-colors">
+                                                    <span className="flex items-center px-3 bg-slate-50 dark:bg-slate-700 text-slate-500 text-sm border-r border-slate-200 dark:border-slate-600 shrink-0">+91</span>
+                                                    <input
+                                                        type="tel"
+                                                        value={bookingPhone}
+                                                        onChange={e => setBookingPhone(e.target.value)}
+                                                        placeholder="WhatsApp number"
+                                                        className="flex-1 px-3 py-2.5 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 outline-none"
+                                                    />
+                                                </div>
+                                                <Button
+                                                    className="w-full"
+                                                    disabled={bookingSubmitting || !bookingName.trim() || !bookingPhone.trim()}
+                                                    onClick={handleFrictionlessBooking}
+                                                >
+                                                    {bookingSubmitting ? (
+                                                        <span className="flex items-center justify-center gap-2">
+                                                            <span className="animate-spin material-symbols-outlined text-[16px]">progress_activity</span>
+                                                            Sending…
+                                                        </span>
+                                                    ) : 'Request Booking →'}
+                                                </Button>
+                                                <button
+                                                    onClick={() => setShowConfirmation(false)}
+                                                    className="text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 py-1 transition-colors text-center"
+                                                >
+                                                    Go Back
+                                                </button>
+                                                <p className="text-[11px] text-slate-400 text-center leading-relaxed">
+                                                    ✓ No account needed &nbsp;·&nbsp; ✓ 100% free &nbsp;·&nbsp; ✓ No spam
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
                                 </Modal>
 
