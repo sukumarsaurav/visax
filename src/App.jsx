@@ -95,6 +95,7 @@ const ComparisonPage = lazy(() => import('./pages/landing/ComparisonPage'))
 const BlogIndexPage = lazy(() => import('./pages/landing/BlogIndexPage'))
 const BlogPostPage = lazy(() => import('./pages/landing/BlogPostPage'))
 const UnclaimedProfilePage = lazy(() => import('./pages/landing/UnclaimedProfilePage'))
+const ForProfessionalsPage = lazy(() => import('./pages/landing/ForProfessionalsPage'))
 
 // Auth pages (additional)
 const ClaimProfilePage = lazy(() => import('./pages/auth/ClaimProfilePage'))
@@ -230,6 +231,7 @@ export default function App() {
                     <Route path="/terms" element={<TermsPage />} />
                     {/* GDPR — requires auth so the page self-protects via useAuth */}
                     <Route path="/account/data" element={<AccountDataPage />} />
+                    <Route path="/for-professionals" element={<ForProfessionalsPage />} />
                     <Route path="/pricing" element={<PricingPage />} />
                     <Route path="/services" element={<ServicesDirectoryPage />} />
                     <Route path="/services/:serviceId" element={<ServiceDetailsPage />} />

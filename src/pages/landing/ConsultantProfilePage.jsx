@@ -79,6 +79,10 @@ export default function ConsultantProfilePage() {
 
     async function handleFrictionlessBooking() {
         if (!bookingName.trim() || !bookingPhone.trim()) return
+        // After a slug redirect the URL param `id` may still be the slug string.
+        // Always use profile.id (set once resolved) for DB writes.
+        const consultantId = profile?.id
+        if (!consultantId) return
         setBookingSubmitting(true)
         try {
             // Store the booking request as a lead — no auth required
@@ -87,7 +91,7 @@ export default function ConsultantProfilePage() {
                 full_name: bookingName.trim(),
                 source: 'consultant_profile_booking',
                 metadata: {
-                    consultant_id: id,
+                    consultant_id: consultantId,
                     consultant_name: profile?.full_name,
                     date: selectedDate,
                     slot: selectedSlot,
@@ -98,7 +102,7 @@ export default function ConsultantProfilePage() {
 
             // Also notify the consultant via the existing notification channel
             await supabase.from('notifications').insert({
-                user_id: id,
+                user_id: consultantId,
                 type: 'booking_request',
                 title: 'New Booking Request',
                 message: `${bookingName.trim()} wants to book a ${meetingType} consultation on ${selectedDate}${selectedSlot ? ` at ${selectedSlot}` : ''}. Phone: ${bookingPhone.trim()}`,
@@ -114,16 +118,35 @@ export default function ConsultantProfilePage() {
     }
 
     useEffect(() => {
-        // UUID format guard — avoids hitting the DB with garbage params
-        // (e.g. someone testing /consultant/foo or a stale link). Saves a
-        // round-trip and surfaces a clean 404 quickly.
-        if (!id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+        if (!id) { setNotFound(true); setLoading(false); return }
+
+        const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+
+        if (isUUID) {
+            // Standard UUID path — existing behaviour
+            fetchAll()
+        } else {
+            // Slug path — look up the UUID first, then load the profile
+            resolveSlug(id)
+        }
+    }, [id])
+
+    async function resolveSlug(slug) {
+        setLoading(true)
+        const { data } = await profilesRepo.getBySlug(slug)
+        if (!data?.id) {
             setNotFound(true)
             setLoading(false)
             return
         }
-        fetchAll()
-    }, [id])
+        // Rewrite the URL to the canonical UUID so bookmarks are stable
+        // (replace so the slug URL doesn't remain in browser history)
+        window.history.replaceState(null, '', `/consultant/${data.id}`)
+        // Seed profile so fetchAll skips the profile re-fetch,
+        // then pass the resolved UUID explicitly
+        setProfile(data)
+        fetchAll(data.id)
+    }
 
     // ── SEO ─────────────────────────────────────────────────────────────────
     // Compute aggregate stats + structured data once the profile loads. This
@@ -190,14 +213,18 @@ export default function ConsultantProfilePage() {
         schema: seoSchemas,
     } : {})
 
-    async function fetchAll() {
+    // resolvedId — the UUID to use for data fetching.
+    // Defaults to the URL param `id` (which is a UUID on the normal path).
+    // When called from resolveSlug(), the resolved UUID is passed explicitly
+    // so we don't accidentally query using the slug string.
+    async function fetchAll(resolvedId = id) {
         setLoading(true)
         // If profile was passed via router state, skip re-fetching it and run 3 queries instead of 4
         const [profileRes, servicesRes, reviewsRes, availRes] = await Promise.all([
-            profile ? Promise.resolve({ data: profile }) : profilesRepo.getById(id),
-            servicesRepo.listActiveByProvider(id),
-            reviewsRepo.listForConsultant(id, { limit: 5 }),
-            availabilityRepo.listActive(id),
+            profile ? Promise.resolve({ data: profile }) : profilesRepo.getById(resolvedId),
+            servicesRepo.listActiveByProvider(resolvedId),
+            reviewsRepo.listForConsultant(resolvedId, { limit: 5 }),
+            availabilityRepo.listActive(resolvedId),
         ])
 
         if (!profileRes.data) {

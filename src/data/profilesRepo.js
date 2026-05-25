@@ -48,6 +48,19 @@ export function getById(id) {
         .single()
 }
 
+/**
+ * Look up a consultant profile by SEO slug.
+ * Slug format: "priya-sharma-mumbai" (auto-generated from full_name + city).
+ * Used by ConsultantProfilePage when the URL param is not a UUID.
+ */
+export function getBySlug(slug) {
+    return supabase
+        .from('profiles')
+        .select('*')
+        .eq('slug', slug)
+        .single()
+}
+
 /** Look up a profile by email (case-sensitive — caller should normalise). */
 export function getByEmail(email) {
     return supabase
