@@ -208,6 +208,9 @@ export default function ProfessionalRegisterPage() {
     const [uploadedFiles, setUploadedFiles] = useState([])
     const fileInputRef = useRef(null)
 
+    // Track whether plan was pre-filled from URL (skip plan selection step)
+    const [planPrefilledFromUrl, setPlanPrefilledFromUrl] = useState(false)
+
     // Profile photo (stored locally until submit)
     const [avatarFile, setAvatarFile] = useState(null)
     const [avatarPreview, setAvatarPreview] = useState(null)
@@ -552,6 +555,27 @@ export default function ProfessionalRegisterPage() {
         }
     }
 
+    // F-PR07: parse URL plan parameter (?plan=solo_pro) from pricing page
+    // Pre-fill form and skip to professional details step for better UX
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search)
+        const planFromUrl = params.get('plan')
+
+        if (!planFromUrl) return
+
+        // Validate plan exists in either individual or agency tiers
+        const allPlans = [...individualPlans, ...agencyPlans]
+        const validPlan = allPlans.find(p => p.id === planFromUrl)
+
+        if (validPlan) {
+            const isAgency = agencyPlans.some(p => p.id === planFromUrl)
+            setAccountType(isAgency ? 'agency' : 'individual')
+            setSelectedPlan(planFromUrl)
+            setPlanPrefilledFromUrl(true)
+            setStep(2)  // Skip plan selection, go straight to details
+        }
+    }, [])
+
     // F-PR06: revoke stale object URLs to prevent memory leaks on each avatar re-pick
     useEffect(() => {
         return () => { if (avatarPreview) URL.revokeObjectURL(avatarPreview) }
@@ -636,6 +660,29 @@ export default function ProfessionalRegisterPage() {
                             {step === 2 && 'Professional Details'}
                             {step === 3 && 'Business Information & Plan'}
                         </h2>
+                        {/* Trial/Payment messaging banner */}
+                        {step === 1 && (
+                            <div className={`mt-4 rounded-lg border px-4 py-3 text-sm flex items-center gap-3 ${
+                                accountType === 'individual'
+                                    ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-900/40'
+                                    : 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-900/40'
+                            }`}>
+                                <span className={accountType === 'individual' ? 'text-2xl' : 'text-xl'}>
+                                    {accountType === 'individual' ? '🎉' : '💳'}
+                                </span>
+                                <div>
+                                    {accountType === 'individual' ? (
+                                        <p className="text-emerald-700 dark:text-emerald-300">
+                                            <strong>No payment needed!</strong> Enjoy a 15-day free trial. No credit card required.
+                                        </p>
+                                    ) : (
+                                        <p className="text-amber-700 dark:text-amber-300">
+                                            <strong>Agency plans require payment.</strong> You'll set up your subscription after completing your details.
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                         {/* Progress bar */}
                         <div className="mt-4 h-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                             <div

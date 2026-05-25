@@ -300,8 +300,8 @@ export default function PricingPage() {
                 </div>
 
                 {/* ── Billing period toggle ── */}
-                <div className="w-full flex justify-center px-4 pb-10">
-                    <div className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-1 rounded-xl inline-flex">
+                <div className="w-full flex flex-col items-center px-4 pb-10">
+                    <div className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-1 rounded-xl inline-flex mb-3">
                         <button
                             onClick={() => setBillingPeriod('monthly')}
                             className={`px-5 py-1.5 rounded-lg transition-all text-sm font-semibold ${
@@ -324,6 +324,13 @@ export default function PricingPage() {
                             <span className="text-primary text-xs font-extrabold">2 months free</span>
                         </button>
                     </div>
+
+                    {/* Savings badge for yearly billing */}
+                    {billingPeriod === 'yearly' && (
+                        <div className="inline-flex items-center gap-1 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/40 px-3 py-1 rounded-full animate-pulse">
+                            <span className="text-green-600 dark:text-green-400 text-sm font-bold">💰 Save up to 16%</span>
+                        </div>
+                    )}
                 </div>
 
                 {/* ── Plan context line ── */}
