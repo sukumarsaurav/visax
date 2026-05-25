@@ -1,277 +1,405 @@
 import { useState, useEffect } from 'react'
 import { useSEO } from '../../hooks/useSEO'
 import { SEO } from '../../lib/seo'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import Button from '../../components/ui/Button'
 import Avatar from '../../components/ui/Avatar'
 import StarRating from '../../components/ui/StarRating'
 import PublicHeader from '../../components/layout/PublicHeader'
 import Footer from '../../components/layout/Footer'
+import { supabase } from '../../lib/supabase'
 import * as analyticsRepo from '../../data/analyticsRepo'
 
-const features = [
-    { icon: 'search', title: 'Find Experts', description: 'Browse verified immigration consultants and attorneys', color: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400' },
-    { icon: 'calendar_month', title: 'Book Consultations', description: 'Schedule appointments that fit your timeline', color: 'bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400' },
-    { icon: 'folder_shared', title: 'Track Progress', description: 'Monitor your case status in real-time', color: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400' },
-    { icon: 'verified_user', title: 'Verified Pros', description: 'All professionals are vetted and certified', color: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400' }
+// ── Destination wizard data ─────────────────────────────────────────────────
+
+const DESTINATIONS = [
+    { key: 'canada',    flag: '🇨🇦', label: 'Canada',    popular: true  },
+    { key: 'australia', flag: '🇦🇺', label: 'Australia', popular: true  },
+    { key: 'uk',        flag: '🇬🇧', label: 'UK',        popular: false },
+    { key: 'germany',   flag: '🇩🇪', label: 'Germany',   popular: false },
+    { key: 'usa',       flag: '🇺🇸', label: 'USA',       popular: true  },
+    { key: 'other',     flag: '🌍', label: 'Other',      popular: false },
 ]
 
-const testimonials = [
-    { name: 'Priya M.', role: 'Software Engineer', initials: 'PM', color: 'bg-violet-500', text: 'Immizy made our H-1B process incredibly smooth. Having everything in one place — documents, appointments, case tracking — was a game changer.' },
-    { name: 'Carlos R.', role: 'Family Visa Applicant', initials: 'CR', color: 'bg-emerald-500', text: 'Found a consultant who spoke my language and understood my situation. Got my Green Card approved in record time. Highly recommend!' },
-    { name: 'Sarah K.', role: 'International Student', initials: 'SK', color: 'bg-amber-500', text: 'The document tracking alone saved me weeks of stress. My consultant caught a missing form before submission — worth every penny.' },
+const VISA_TYPES = [
+    { key: 'pr',       icon: 'home',         label: 'Permanent Residency' },
+    { key: 'work',     icon: 'work',         label: 'Work Permit / Visa'  },
+    { key: 'student',  icon: 'school',       label: 'Study / Student Visa'},
+    { key: 'family',   icon: 'family_restroom', label: 'Family Sponsorship' },
+    { key: 'business', icon: 'business_center', label: 'Business / Investor' },
+    { key: 'other',    icon: 'more_horiz',   label: 'Not Sure / Other'   },
 ]
 
-const steps = [
-    { number: 1, title: 'Create Your Profile', description: 'Sign up and tell us about your immigration needs' },
-    { number: 2, title: 'Find a Professional', description: 'Browse and compare verified consultants' },
-    { number: 3, title: 'Book a Consultation', description: 'Schedule a video call or in-person meeting' },
-    { number: 4, title: 'Get Expert Guidance', description: 'Receive personalized advice for your journey' }
+// ── Static content ───────────────────────────────────────────────────────────
+
+const proTestimonials = [
+    { name: 'Rajesh K.', role: 'Immigration Consultant, Delhi', initials: 'RK', color: 'bg-blue-500',
+      text: 'I was spending 3 hours a day chasing leads on WhatsApp groups. Immizy sends me 8–12 qualified leads a week. My revenue doubled in 4 months.' },
+    { name: 'Sunita A.', role: 'Agency Owner, Bangalore', initials: 'SA', color: 'bg-violet-500',
+      text: 'The CRM alone is worth every rupee. My team of 6 consultants all work in one place — cases, docs, messaging. No more spreadsheets.' },
 ]
+
+const clientTestimonials = [
+    { name: 'Priya M.', role: 'Software Engineer → Canada PR', initials: 'PM', color: 'bg-emerald-500',
+      text: 'Immizy matched me with a consultant who specialised exactly in Canada Express Entry. Got my PR in 11 months. The case tracking gave me peace of mind throughout.' },
+    { name: 'Carlos R.', role: 'Family Visa Applicant', initials: 'CR', color: 'bg-amber-500',
+      text: 'Found a consultant who spoke my language and understood my situation. Got my Green Card approved in record time. Highly recommend!' },
+    { name: 'Sarah K.', role: 'International Student', initials: 'SK', color: 'bg-rose-500',
+      text: 'The document tracking alone saved me weeks of stress. My consultant caught a missing form before submission — worth every penny.' },
+]
+
+const proFeatures = [
+    { icon: 'leaderboard',    title: 'Qualified Leads',      desc: 'Clients matched to your specialisation, city, and language — no cold outreach needed.' },
+    { icon: 'folder_shared',  title: 'Full CRM',             desc: 'Cases, documents, appointments, invoices, and client messages — all in one dashboard.' },
+    { icon: 'groups',         title: 'Team Management',      desc: 'Invite staff, assign cases, track workload across your agency — from one login.' },
+    { icon: 'analytics',      title: 'Business Analytics',   desc: 'See conversion rates, revenue, case outcomes, and client satisfaction over time.' },
+]
+
+const CITIES = [
+    { label: 'Mumbai',    slug: 'mumbai'    },
+    { label: 'Delhi',     slug: 'delhi'     },
+    { label: 'Bangalore', slug: 'bangalore' },
+    { label: 'Hyderabad', slug: 'hyderabad' },
+    { label: 'Chennai',   slug: 'chennai'   },
+    { label: 'Pune',      slug: 'pune'      },
+]
+
+// ── Lead Wizard Component ────────────────────────────────────────────────────
+
+function LeadWizard({ platformStats }) {
+    const navigate = useNavigate()
+    const [step, setStep] = useState(1)   // 1 = destination, 2 = visa type, 3 = capture
+    const [dest, setDest] = useState(null)
+    const [visaType, setVisaType] = useState(null)
+    const [phone, setPhone] = useState('')
+    const [submitting, setSubmitting] = useState(false)
+    const [done, setDone] = useState(false)
+
+    function pickDest(key) {
+        setDest(key)
+        setStep(2)
+    }
+
+    function pickVisa(key) {
+        setVisaType(key)
+        setStep(3)
+    }
+
+    async function handleSubmit(e) {
+        e.preventDefault()
+        if (!phone.trim()) return
+        setSubmitting(true)
+        try {
+            // Store lead in Supabase for consultant notification
+            await supabase.from('leads').insert({
+                phone: phone.trim(),
+                destination: dest,
+                visa_type: visaType,
+                source: 'homepage_wizard',
+            }).throwOnError()
+        } catch (_) {
+            // Non-blocking — even if DB insert fails, redirect user
+        }
+        setDone(true)
+        setSubmitting(false)
+        // Redirect to filtered professionals list
+        const params = new URLSearchParams()
+        if (dest && dest !== 'other') params.set('destination', dest)
+        if (visaType && visaType !== 'other') params.set('visa', visaType)
+        setTimeout(() => navigate(`/find-professionals?${params}`), 1200)
+    }
+
+    const destLabel  = DESTINATIONS.find(d => d.key === dest)?.label
+    const visaLabel  = VISA_TYPES.find(v => v.key === visaType)?.label
+
+    if (done) {
+        return (
+            <div className="flex flex-col items-center gap-4 py-8 text-center">
+                <div className="size-16 rounded-full bg-emerald-100 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-emerald-600 text-[36px]">check_circle</span>
+                </div>
+                <h3 className="text-xl font-black text-slate-900 dark:text-white">Finding your matches…</h3>
+                <p className="text-slate-500 text-sm">Taking you to verified consultants who specialise in {destLabel} {visaLabel?.toLowerCase()}.</p>
+            </div>
+        )
+    }
+
+    return (
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 overflow-hidden">
+            {/* Progress bar */}
+            <div className="flex h-1 bg-slate-100 dark:bg-slate-700">
+                {[1,2,3].map(s => (
+                    <div key={s} className={`flex-1 transition-all duration-300 ${s <= step ? 'bg-primary' : ''}`} />
+                ))}
+            </div>
+
+            <div className="p-6 sm:p-8">
+                {step === 1 && (
+                    <>
+                        <p className="text-xs font-bold uppercase tracking-widest text-primary mb-2">Step 1 of 3</p>
+                        <h2 className="text-xl font-black text-slate-900 dark:text-white mb-1">Where do you want to immigrate?</h2>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Pick your destination country to see matched consultants.</p>
+                        <div className="grid grid-cols-3 gap-3">
+                            {DESTINATIONS.map(d => (
+                                <button key={d.key} onClick={() => pickDest(d.key)}
+                                    className="relative flex flex-col items-center gap-2 rounded-xl border-2 border-slate-200 dark:border-slate-600 p-4 text-center hover:border-primary hover:bg-primary/5 transition-all active:scale-95">
+                                    {d.popular && (
+                                        <span className="absolute -top-2 right-2 text-[9px] font-black bg-primary text-white px-1.5 py-0.5 rounded-full uppercase">Hot</span>
+                                    )}
+                                    <span className="text-3xl">{d.flag}</span>
+                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{d.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </>
+                )}
+
+                {step === 2 && (
+                    <>
+                        <button onClick={() => setStep(1)} className="flex items-center gap-1 text-xs text-slate-500 hover:text-primary mb-4 transition-colors">
+                            <span className="material-symbols-outlined text-[16px]">arrow_back</span> Back
+                        </button>
+                        <p className="text-xs font-bold uppercase tracking-widest text-primary mb-2">Step 2 of 3</p>
+                        <h2 className="text-xl font-black text-slate-900 dark:text-white mb-1">What do you need help with?</h2>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+                            {DESTINATIONS.find(d => d.key === dest)?.flag} {destLabel} — select your visa type.
+                        </p>
+                        <div className="grid grid-cols-2 gap-3">
+                            {VISA_TYPES.map(v => (
+                                <button key={v.key} onClick={() => pickVisa(v.key)}
+                                    className="flex items-center gap-3 rounded-xl border-2 border-slate-200 dark:border-slate-600 p-3.5 text-left hover:border-primary hover:bg-primary/5 transition-all active:scale-95">
+                                    <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 shrink-0">
+                                        <span className="material-symbols-outlined text-primary text-[18px]">{v.icon}</span>
+                                    </div>
+                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-200 leading-tight">{v.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </>
+                )}
+
+                {step === 3 && (
+                    <>
+                        <button onClick={() => setStep(2)} className="flex items-center gap-1 text-xs text-slate-500 hover:text-primary mb-4 transition-colors">
+                            <span className="material-symbols-outlined text-[16px]">arrow_back</span> Back
+                        </button>
+                        <p className="text-xs font-bold uppercase tracking-widest text-primary mb-2">Step 3 of 3</p>
+                        <h2 className="text-xl font-black text-slate-900 dark:text-white mb-1">Get matched with 3 experts — free</h2>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
+                            {DESTINATIONS.find(d => d.key === dest)?.flag} {destLabel} · {visaLabel}
+                        </p>
+                        <p className="text-sm text-slate-600 dark:text-slate-300 mb-6">Enter your phone number. We'll connect you with verified consultants who reply within 2 hours.</p>
+                        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+                            <div className="flex rounded-xl border-2 border-slate-200 dark:border-slate-600 overflow-hidden focus-within:border-primary transition-colors">
+                                <span className="flex items-center px-3 bg-slate-50 dark:bg-slate-700 text-slate-500 text-sm font-medium border-r border-slate-200 dark:border-slate-600">+91</span>
+                                <input
+                                    type="tel"
+                                    value={phone}
+                                    onChange={e => setPhone(e.target.value)}
+                                    placeholder="Your WhatsApp number"
+                                    className="flex-1 px-4 py-3 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 outline-none"
+                                    required
+                                />
+                            </div>
+                            <button type="submit" disabled={submitting || !phone.trim()}
+                                className="w-full flex items-center justify-center gap-2 rounded-xl bg-primary text-white font-bold py-3.5 text-sm hover:bg-primary/90 disabled:opacity-60 transition-all active:scale-95">
+                                {submitting ? (
+                                    <span className="animate-spin material-symbols-outlined text-[18px]">progress_activity</span>
+                                ) : (
+                                    <span className="material-symbols-outlined text-[18px]">send</span>
+                                )}
+                                {submitting ? 'Matching…' : 'Find My Consultants →'}
+                            </button>
+                            <p className="text-center text-[11px] text-slate-400">
+                                ✓ 100% free &nbsp;·&nbsp; ✓ No spam &nbsp;·&nbsp; ✓ Verified consultants only
+                            </p>
+                        </form>
+                        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 text-center">
+                            <Link to={`/find-professionals`} className="text-xs text-slate-500 hover:text-primary transition-colors">
+                                Prefer to browse yourself → View all consultants
+                            </Link>
+                        </div>
+                    </>
+                )}
+            </div>
+
+            {/* Trust bar */}
+            <div className="px-6 pb-5 flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                    <span className="material-symbols-outlined text-amber-400 text-[14px]">star</span>
+                    <span className="font-bold text-slate-700 dark:text-slate-300">{platformStats.avgRating || '4.9'}</span>
+                    <span>from {platformStats.reviews > 0 ? `${platformStats.reviews}+` : '500+'} reviews</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                    <span className="material-symbols-outlined text-emerald-500 text-[14px]">verified_user</span>
+                    {platformStats.consultants > 0 ? `${platformStats.consultants}+` : '500+'} verified consultants
+                </div>
+            </div>
+        </div>
+    )
+}
+
+// ── Main Page ────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
     useSEO(SEO.home)
-    const [featuredConsultant, setFeaturedConsultant] = useState(null)
     const [platformStats, setPlatformStats] = useState({ consultants: 0, avgRating: null, reviews: 0 })
+    const [featuredConsultants, setFeaturedConsultants] = useState([])
 
-    useEffect(() => {
-        fetchHeroData()
-    }, [])
+    useEffect(() => { fetchHeroData() }, [])
 
     async function fetchHeroData() {
-        // Run platform stats and featured consultant in parallel
         const [stats, consultantsRes] = await Promise.all([
             analyticsRepo.getPlatformStats(),
             supabase
                 .from('profiles')
-                .select('id, full_name, avatar_url, role, specializations, years_experience')
+                .select('id, full_name, avatar_url, role, specializations, city')
                 .in('role', ['individual', 'agency_admin'])
                 .eq('application_status', 'approved')
-                .limit(5),
+                .limit(6),
         ])
-
-        if (stats) {
-            setPlatformStats({
-                consultants: stats.consultants,
-                avgRating: stats.avgRating,
-                reviews: stats.reviews,
-            })
-        }
-
-        // Featured consultant: fetch pre-aggregated ratings for just these 5 profiles
-        const consultants = consultantsRes.data || []
-        if (consultants.length > 0) {
-            const ids = consultants.map(c => c.id)
-            const { data: ratings } = await supabase
-                .from('consultant_rating_summary')
-                .select('consultant_id, avg_rating, review_count')
-                .in('consultant_id', ids)
-
-            const ratingMap = Object.fromEntries(
-                (ratings || []).map(r => [r.consultant_id, r])
-            )
-
-            let best = null
-            let bestRating = 0
-            for (const c of consultants) {
-                const r = ratingMap[c.id]
-                const avg = r ? Number(r.avg_rating) : 0
-                if (avg > bestRating || !best) {
-                    bestRating = avg
-                    best = {
-                        ...c,
-                        rating: avg > 0 ? avg.toFixed(1) : null,
-                        reviews: r?.review_count || 0,
-                    }
-                }
-            }
-            setFeaturedConsultant(best)
-        }
+        if (stats) setPlatformStats({ consultants: stats.consultants, avgRating: stats.avgRating, reviews: stats.reviews })
+        if (consultantsRes.data?.length) setFeaturedConsultants(consultantsRes.data.slice(0, 4))
     }
 
     return (
-        <div className="min-h-screen bg-background-light dark:bg-background-dark">
-            {/* Header — shared across all public pages */}
+        <div className="min-h-screen bg-white dark:bg-[#0d1117]">
             <PublicHeader />
 
-            {/* Hero Section */}
-            <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-white to-blue-50 dark:from-slate-900 dark:via-background-dark dark:to-slate-800 py-20 md:py-32">
-                <div className="max-w-[1200px] mx-auto px-6 md:px-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                        <div className="flex flex-col gap-6">
-                            <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold w-fit">
-                                <span className="material-symbols-outlined text-[18px]">verified</span>
-                                {platformStats.consultants > 0
-                                    ? `${platformStats.consultants}+ verified professionals`
-                                    : 'Trusted by immigrants worldwide'}
-                            </div>
-                            <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
-                                Your Immigration Journey, <span className="text-primary">Simplified</span>
-                            </h1>
-                            <p className="text-lg text-slate-600 dark:text-slate-400 max-w-lg">
-                                Connect with verified immigration professionals, track your applications, and navigate the process with confidence.
-                            </p>
-                            <div className="flex flex-col sm:flex-row gap-4 mt-4">
-                                <Link to="/find-professionals">
-                                    <Button size="lg" icon="arrow_forward" iconPosition="right">
-                                        Find a Professional
-                                    </Button>
-                                </Link>
-                                <Link to="/professional-register">
-                                    <Button size="lg" variant="outline">
-                                        Register as a Professional
-                                    </Button>
-                                </Link>
-                            </div>
-                            {/* Trust indicators */}
-                            <div className="flex items-center gap-6 mt-6">
-                                <div className="flex -space-x-2">
-                                    {[
-                                        { bg: 'bg-violet-500', text: 'A' },
-                                        { bg: 'bg-emerald-500', text: 'B' },
-                                        { bg: 'bg-amber-500', text: 'C' },
-                                        { bg: 'bg-rose-500', text: 'D' },
-                                    ].map((av) => (
-                                        <div key={av.text} className={`size-10 rounded-full border-2 border-white dark:border-slate-900 ${av.bg} flex items-center justify-center text-white text-xs font-bold`}>{av.text}</div>
+            {/* ── HERO — Lead Capture Wizard ─────────────────────────────── */}
+            <section className="relative overflow-hidden bg-gradient-to-br from-[#0d1b2e] via-[#0f2a4a] to-[#0d1b2e] py-16 md:py-24 px-6">
+                {/* Subtle radial glow */}
+                <div className="pointer-events-none absolute inset-0">
+                    <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full bg-primary/20 blur-3xl opacity-40" />
+                    <div className="absolute bottom-0 right-1/4 w-72 h-72 rounded-full bg-blue-400/20 blur-3xl opacity-30" />
+                </div>
+
+                <div className="relative max-w-[1200px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                    {/* Left — headline */}
+                    <div className="flex flex-col gap-6 text-white">
+                        <div className="inline-flex w-fit items-center gap-2 bg-white/10 backdrop-blur-sm text-blue-200 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider">
+                            <span className="material-symbols-outlined text-[14px]">verified</span>
+                            {platformStats.consultants > 0 ? `${platformStats.consultants}+ verified professionals` : 'Trusted by thousands'}
+                        </div>
+                        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.1] tracking-tight">
+                            Find Your<br />
+                            <span className="text-blue-400">Immigration</span><br />
+                            Expert Today
+                        </h1>
+                        <p className="text-lg text-slate-300 max-w-md leading-relaxed">
+                            Tell us where you want to go — we'll match you with a verified consultant who has helped hundreds get there.
+                        </p>
+
+                        {/* Stats row */}
+                        <div className="flex flex-wrap gap-6 pt-2">
+                            {[
+                                { value: platformStats.consultants > 0 ? `${platformStats.consultants}+` : '500+', label: 'Verified Experts' },
+                                { value: '10K+',  label: 'Cases Handled'  },
+                                { value: '100%',  label: 'Free for Clients' },
+                            ].map(({ value, label }) => (
+                                <div key={label}>
+                                    <p className="text-2xl font-black text-white">{value}</p>
+                                    <p className="text-xs text-slate-400">{label}</p>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Featured consultant avatars */}
+                        {featuredConsultants.length > 0 && (
+                            <div className="flex items-center gap-3">
+                                <div className="flex -space-x-3">
+                                    {featuredConsultants.map(c => (
+                                        <Avatar key={c.id} src={c.avatar_url} alt={c.full_name} size="sm"
+                                            className="ring-2 ring-[#0f2748]" />
                                     ))}
                                 </div>
-                                <div className="text-sm text-slate-600 dark:text-slate-400">
-                                    <StarRating rating={parseFloat(platformStats.avgRating) || 5} />
-                                    <span className="font-semibold text-slate-900 dark:text-white">{platformStats.avgRating || '5.0'}/5</span> from {platformStats.reviews > 0 ? `${platformStats.reviews}+` : '100+'} reviews
-                                </div>
+                                <p className="text-sm text-slate-400">
+                                    <span className="text-white font-semibold">{featuredConsultants[0]?.full_name?.split(' ')[0]}</span>
+                                    {' '}and {featuredConsultants.length - 1}+ others are online
+                                </p>
                             </div>
-                        </div>
-                        <div className="relative hidden lg:block">
-                            <div className="absolute -top-10 -right-10 w-72 h-72 bg-primary/20 rounded-full blur-3xl"></div>
-                            <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-blue-400/20 rounded-full blur-3xl"></div>
-                            <div className="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 border border-slate-200 dark:border-slate-700">
-                                {featuredConsultant ? (
-                                    <>
-                                        <div className="flex items-center gap-4 mb-6">
-                                            <Avatar src={featuredConsultant.avatar_url} alt={featuredConsultant.full_name} size="lg" />
-                                            <div>
-                                                <h3 className="font-bold text-slate-900 dark:text-white">{featuredConsultant.full_name}</h3>
-                                                <p className="text-sm text-slate-500">
-                                                    {featuredConsultant.specializations?.[0] || 'Immigration Consultant'}
-                                                </p>
-                                            </div>
-                                            <span className="material-symbols-outlined text-primary ml-auto">verified</span>
-                                        </div>
-                                        {featuredConsultant.rating && (
-                                            <div className="flex items-center gap-2 mb-4">
-                                                <span className="material-symbols-outlined text-amber-500 text-[18px]">star</span>
-                                                <span className="font-semibold text-slate-900 dark:text-white">{featuredConsultant.rating}</span>
-                                                <span className="text-slate-500 text-sm">({featuredConsultant.reviews} reviews)</span>
-                                            </div>
-                                        )}
-                                        <Link to={`/consultant/${featuredConsultant.id}`}>
-                                            <Button className="w-full" icon="calendar_month">Book Consultation</Button>
-                                        </Link>
-                                    </>
-                                ) : (
-                                    <div className="flex flex-col gap-4">
-                                        <div className="flex items-center gap-4">
-                                            <div className="size-14 rounded-full bg-slate-100 dark:bg-slate-700 animate-pulse" />
-                                            <div className="flex-1 space-y-2">
-                                                <div className="h-4 bg-slate-100 dark:bg-slate-700 rounded animate-pulse" />
-                                                <div className="h-3 bg-slate-100 dark:bg-slate-700 rounded w-3/4 animate-pulse" />
-                                            </div>
-                                        </div>
-                                        <Link to="/find-professionals">
-                                            <Button className="w-full" icon="search">Find a Professional</Button>
-                                        </Link>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                        )}
+                    </div>
+
+                    {/* Right — wizard */}
+                    <div>
+                        <LeadWizard platformStats={platformStats} />
                     </div>
                 </div>
             </section>
 
-            {/* Features Section */}
-            <section id="features" className="py-20 bg-white dark:bg-slate-900">
-                <div className="max-w-[1200px] mx-auto px-6 md:px-8">
-                    <div className="text-center mb-16">
-                        <h2 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white mb-4">
-                            Everything You Need for Your Immigration Journey
-                        </h2>
-                        <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-                            We provide all the tools and resources to make your immigration process seamless and stress-free.
-                        </p>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {features.map((feature) => (
-                            <div key={feature.title} className="group flex flex-col items-center text-center p-6 rounded-xl bg-slate-50 dark:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
-                                <div className={`size-14 rounded-xl ${feature.color} flex items-center justify-center mb-4 transition-transform duration-200 group-hover:scale-110`}>
-                                    <span className="material-symbols-outlined text-2xl">{feature.icon}</span>
-                                </div>
-                                <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-2">{feature.title}</h3>
-                                <p className="text-sm text-slate-600 dark:text-slate-400">{feature.description}</p>
-                            </div>
-                        ))}
-                    </div>
+            {/* ── TRUST BAR ──────────────────────────────────────────────── */}
+            <div className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+                <div className="max-w-[1200px] mx-auto px-6 py-4 flex items-center justify-center flex-wrap gap-8 text-sm text-slate-500 dark:text-slate-400">
+                    {[
+                        { icon: 'verified_user', text: 'All consultants verified' },
+                        { icon: 'lock',          text: '100% free for clients'   },
+                        { icon: 'schedule',      text: 'Reply within 2 hours'    },
+                        { icon: 'star',          text: '4.9/5 average rating'    },
+                    ].map(({ icon, text }) => (
+                        <div key={text} className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-primary text-[16px]">{icon}</span>
+                            <span className="font-medium">{text}</span>
+                        </div>
+                    ))}
                 </div>
-            </section>
+            </div>
 
-            {/* How It Works */}
-            <section id="how-it-works" className="py-20 bg-slate-50 dark:bg-background-dark">
-                <div className="max-w-[1200px] mx-auto px-6 md:px-8">
-                    <div className="text-center mb-16">
-                        <h2 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white mb-4">
-                            How It Works
+            {/* ── HOW IT WORKS (CLIENT) ───────────────────────────────────── */}
+            <section className="py-20 px-6 bg-white dark:bg-[#0d1117]">
+                <div className="max-w-[1100px] mx-auto">
+                    <div className="text-center mb-14">
+                        <span className="inline-block text-xs font-black uppercase tracking-widest text-primary mb-3">For People Seeking Immigration Help</span>
+                        <h2 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white">
+                            Get Expert Guidance in 3 Steps
                         </h2>
-                        <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-                            Get started in just a few simple steps.
-                        </p>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {steps.map((step) => (
-                            <div key={step.number} className="relative">
-                                <div className="flex flex-col items-center text-center">
-                                    <div className="size-12 rounded-full bg-primary text-white flex items-center justify-center text-xl font-bold mb-4 shadow-lg shadow-primary/30">
-                                        {step.number}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
+                        {/* Connector line */}
+                        <div className="hidden md:block absolute top-8 left-[calc(16.66%+1rem)] right-[calc(16.66%+1rem)] h-0.5 border-t-2 border-dashed border-slate-200 dark:border-slate-700" />
+                        {[
+                            { n: '01', icon: 'tune',       title: 'Tell us your goal',     desc: 'Pick your destination and visa type. Takes 30 seconds.' },
+                            { n: '02', icon: 'connect_without_contact', title: 'Get matched instantly',  desc: 'We show you 3 verified consultants who specialize in exactly that.' },
+                            { n: '03', icon: 'verified',   title: 'Book & get approved',   desc: 'Book a free first call. Your consultant handles the rest.' },
+                        ].map(({ n, icon, title, desc }) => (
+                            <div key={n} className="flex flex-col items-center text-center relative">
+                                <div className="relative mb-6">
+                                    <div className="size-16 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/30">
+                                        <span className="material-symbols-outlined text-2xl">{icon}</span>
                                     </div>
-                                    <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-2">{step.title}</h3>
-                                    <p className="text-sm text-slate-600 dark:text-slate-400">{step.description}</p>
+                                    <span className="absolute -top-2 -right-2 text-[10px] font-black bg-slate-900 dark:bg-white text-white dark:text-slate-900 w-6 h-6 rounded-full flex items-center justify-center">{n}</span>
                                 </div>
-                                {step.number < 4 && (
-                                    <div className="hidden lg:block absolute top-6 left-[60%] w-[80%] border-t-2 border-dashed border-slate-300 dark:border-slate-700"></div>
-                                )}
+                                <h3 className="font-black text-lg text-slate-900 dark:text-white mb-2">{title}</h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">{desc}</p>
                             </div>
                         ))}
                     </div>
                     <div className="text-center mt-12">
-                        <Link to="/register">
-                            <Button size="lg" icon="arrow_forward" iconPosition="right">
-                                Get Started Now
-                            </Button>
+                        <Link to="/find-professionals">
+                            <Button size="lg" icon="arrow_forward" iconPosition="right">Browse All Consultants</Button>
                         </Link>
                     </div>
                 </div>
             </section>
 
-            {/* Testimonials */}
-            <section className="py-20 bg-white dark:bg-slate-900">
-                <div className="max-w-[1200px] mx-auto px-6 md:px-8">
+            {/* ── CLIENT TESTIMONIALS ─────────────────────────────────────── */}
+            <section className="py-20 px-6 bg-slate-50 dark:bg-slate-900">
+                <div className="max-w-[1100px] mx-auto">
                     <div className="text-center mb-12">
-                        <h2 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white mb-4">
-                            Stories from Our Community
+                        <h2 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white mb-3">
+                            Real people. Real approvals.
                         </h2>
-                        <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-                            Real people, real results. See what our clients say about their experience.
-                        </p>
+                        <p className="text-slate-500 dark:text-slate-400">Stories from clients who found their consultant on Immizy.</p>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {testimonials.map((t) => (
-                            <div key={t.name} className="flex flex-col gap-4 p-6 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-                                <div className="flex gap-1">
-                                    {[1,2,3,4,5].map(i => (
-                                        <span key={i} className="material-symbols-outlined material-filled text-amber-400 text-[18px]">star</span>
-                                    ))}
+                        {clientTestimonials.map(t => (
+                            <div key={t.name} className="flex flex-col gap-4 p-6 rounded-2xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all">
+                                <div className="flex gap-0.5">
+                                    {[1,2,3,4,5].map(i => <span key={i} className="material-symbols-outlined material-filled text-amber-400 text-[16px]">star</span>)}
                                 </div>
-                                <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed flex-1">"{t.text}"</p>
-                                <div className="flex items-center gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
-                                    <div className={`size-9 rounded-full ${t.color} flex items-center justify-center text-white text-xs font-bold`}>{t.initials}</div>
+                                <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed flex-1">"{t.text}"</p>
+                                <div className="flex items-center gap-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+                                    <div className={`size-9 rounded-full ${t.color} flex items-center justify-center text-white text-xs font-bold shrink-0`}>{t.initials}</div>
                                     <div>
                                         <p className="text-sm font-bold text-slate-900 dark:text-white">{t.name}</p>
                                         <p className="text-xs text-slate-500">{t.role}</p>
@@ -283,33 +411,113 @@ export default function HomePage() {
                 </div>
             </section>
 
-            {/* CTA Section */}
-            <section className="relative py-20 bg-primary overflow-hidden">
-                {/* Subtle dot-grid pattern */}
-                <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-                <div className="relative max-w-[1200px] mx-auto px-6 md:px-8 text-center">
-                    <h2 className="text-3xl md:text-4xl font-black text-white mb-4">
-                        Ready to Start Your Journey?
-                    </h2>
-                    <p className="text-lg text-white/80 max-w-2xl mx-auto mb-8">
-                        Join thousands of satisfied clients who have successfully navigated their immigration process with our platform.
+            {/* ── CITY QUICK LINKS ────────────────────────────────────────── */}
+            <section className="py-14 px-6 bg-white dark:bg-[#0d1117] border-b border-slate-100 dark:border-slate-800">
+                <div className="max-w-[1100px] mx-auto">
+                    <p className="text-center text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-6">
+                        Find consultants near you
                     </p>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Link to="/register">
-                            <Button size="lg" variant="secondary" className="bg-white text-primary hover:bg-slate-100">
-                                Create Free Account
-                            </Button>
-                        </Link>
-                        <Link to="/login">
-                            <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10">
-                                Sign In
-                            </Button>
-                        </Link>
+                    <div className="flex flex-wrap justify-center gap-3">
+                        {CITIES.map(({ label, slug }) => (
+                            <Link key={slug} to={`/immigration-consultant-${slug}`}
+                                className="flex items-center gap-2 rounded-full border border-slate-200 dark:border-slate-700 px-5 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-200 hover:border-primary hover:text-primary hover:bg-primary/5 transition-all">
+                                <span className="material-symbols-outlined text-[16px]">location_on</span>
+                                {label}
+                            </Link>
+                        ))}
                     </div>
                 </div>
             </section>
 
-            {/* Footer */}
+            {/* ── DIVIDER: FOR PROFESSIONALS ──────────────────────────────── */}
+            <div className="bg-gradient-to-r from-primary via-blue-600 to-indigo-700 py-3 px-6 text-center">
+                <p className="text-white text-sm font-medium">
+                    Are you an immigration consultant or agency?{' '}
+                    <Link to="/for-professionals" className="font-black underline underline-offset-2 hover:no-underline">
+                        See how Immizy grows your practice →
+                    </Link>
+                </p>
+            </div>
+
+            {/* ── FOR PROFESSIONALS SECTION ───────────────────────────────── */}
+            <section className="py-20 px-6 bg-slate-900 dark:bg-[#060d18]">
+                <div className="max-w-[1100px] mx-auto">
+                    <div className="text-center mb-14">
+                        <span className="inline-block text-xs font-black uppercase tracking-widest text-blue-400 mb-3">For Immigration Consultants & Agencies</span>
+                        <h2 className="text-3xl md:text-4xl font-black text-white mb-4">
+                            Stop chasing leads.<br />Let clients come to you.
+                        </h2>
+                        <p className="text-slate-400 max-w-xl mx-auto">
+                            Clients are searching for consultants like you every day. Immizy matches them directly to your profile — and gives you the CRM to manage every case.
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-14">
+                        {proFeatures.map(f => (
+                            <div key={f.title} className="flex flex-col gap-3 p-5 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+                                <div className="size-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-primary text-[20px]">{f.icon}</span>
+                                </div>
+                                <h3 className="font-bold text-white">{f.title}</h3>
+                                <p className="text-xs text-slate-400 leading-relaxed">{f.desc}</p>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Pro testimonials */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+                        {proTestimonials.map(t => (
+                            <div key={t.name} className="p-6 rounded-2xl bg-white/5 border border-white/10">
+                                <div className="flex gap-0.5 mb-3">
+                                    {[1,2,3,4,5].map(i => <span key={i} className="material-symbols-outlined material-filled text-amber-400 text-[14px]">star</span>)}
+                                </div>
+                                <p className="text-sm text-slate-300 leading-relaxed mb-4">"{t.text}"</p>
+                                <div className="flex items-center gap-3">
+                                    <div className={`size-9 rounded-full ${t.color} flex items-center justify-center text-white text-xs font-bold shrink-0`}>{t.initials}</div>
+                                    <div>
+                                        <p className="text-sm font-bold text-white">{t.name}</p>
+                                        <p className="text-xs text-slate-500">{t.role}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Pricing teaser */}
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4 p-6 rounded-2xl bg-white/5 border border-white/10 text-center sm:text-left">
+                        <div>
+                            <p className="text-white font-black text-lg">Starts at ₹499/month</p>
+                            <p className="text-slate-400 text-sm">15-day free trial · No credit card required · Cancel anytime</p>
+                        </div>
+                        <div className="flex gap-3 shrink-0">
+                            <Link to="/for-professionals">
+                                <Button variant="outline" className="border-white text-white hover:bg-white/10">Learn More</Button>
+                            </Link>
+                            <Link to="/professional-register?plan=solo_pro">
+                                <Button className="bg-white text-primary hover:bg-slate-100 font-black">Start Free Trial</Button>
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* ── FINAL CTA (CLIENTS) ─────────────────────────────────────── */}
+            <section className="relative overflow-hidden py-20 px-6 bg-primary">
+                <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+                <div className="relative max-w-[700px] mx-auto text-center">
+                    <h2 className="text-3xl md:text-4xl font-black text-white mb-4">
+                        Your immigration journey starts with the right expert.
+                    </h2>
+                    <p className="text-white/80 text-lg mb-8">Find a verified consultant for free — matched to your destination and visa type in under a minute.</p>
+                    <Link to="/find-professionals">
+                        <Button size="lg" className="bg-white text-primary hover:bg-slate-100 font-black" icon="arrow_forward" iconPosition="right">
+                            Find My Expert — Free
+                        </Button>
+                    </Link>
+                    <p className="text-white/60 text-xs mt-4">✓ No signup needed to browse &nbsp;·&nbsp; ✓ 500+ verified professionals &nbsp;·&nbsp; ✓ Free for clients</p>
+                </div>
+            </section>
+
             <Footer />
         </div>
     )

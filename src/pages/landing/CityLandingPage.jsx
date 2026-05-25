@@ -1,8 +1,73 @@
-import { Link, useParams, Navigate } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useParams, Navigate, useNavigate } from 'react-router-dom'
 import PublicHeader from '../../components/layout/PublicHeader'
 import Footer from '../../components/layout/Footer'
 import { useSEO } from '../../hooks/useSEO'
 import { CITIES, buildBreadcrumb, buildFAQ } from '../../lib/seo'
+import { supabase } from '../../lib/supabase'
+
+function CityLeadCapture({ cityName, citySlug }) {
+    const navigate = useNavigate()
+    const [phone, setPhone] = useState('')
+    const [submitting, setSubmitting] = useState(false)
+    const [done, setDone] = useState(false)
+
+    async function handleSubmit(e) {
+        e.preventDefault()
+        if (!phone.trim()) return
+        setSubmitting(true)
+        try {
+            await supabase.from('leads').insert({
+                phone: phone.trim(),
+                source: `city_page_${citySlug}`,
+                metadata: { city: cityName },
+            })
+        } catch (_) {}
+        setDone(true)
+        setSubmitting(false)
+        setTimeout(() => navigate(`/find-professionals?location=${cityName}`), 1200)
+    }
+
+    if (done) {
+        return (
+            <div className="flex items-center gap-3 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-5">
+                <span className="material-symbols-outlined text-emerald-600 text-[28px]">check_circle</span>
+                <div>
+                    <p className="font-bold text-emerald-900 dark:text-emerald-100">Got it! Finding your matches…</p>
+                    <p className="text-sm text-emerald-700 dark:text-emerald-300">Redirecting to verified {cityName} consultants.</p>
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-lg">
+            <p className="text-sm font-black text-slate-900 dark:text-white mb-1">Get matched with 3 consultants in {cityName} — Free</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Enter your phone. We'll send you verified experts who specialise in your visa type.</p>
+            <form onSubmit={handleSubmit} className="flex gap-3">
+                <div className="flex flex-1 rounded-xl border border-slate-200 dark:border-slate-600 overflow-hidden focus-within:border-primary transition-colors">
+                    <span className="flex items-center px-3 bg-slate-50 dark:bg-slate-700 text-slate-500 text-sm border-r border-slate-200 dark:border-slate-600">+91</span>
+                    <input
+                        type="tel"
+                        value={phone}
+                        onChange={e => setPhone(e.target.value)}
+                        placeholder="WhatsApp number"
+                        className="flex-1 px-3 py-2.5 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 outline-none"
+                        required
+                    />
+                </div>
+                <button type="submit" disabled={submitting || !phone.trim()}
+                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary/90 disabled:opacity-60 transition-all shrink-0">
+                    {submitting
+                        ? <span className="animate-spin material-symbols-outlined text-[16px]">progress_activity</span>
+                        : <span className="material-symbols-outlined text-[16px]">send</span>}
+                    {submitting ? '' : 'Match Me'}
+                </button>
+            </form>
+            <p className="text-[11px] text-slate-400 mt-2">✓ Free &nbsp;·&nbsp; ✓ No spam &nbsp;·&nbsp; ✓ Verified experts only</p>
+        </div>
+    )
+}
 
 function citySchema(city) {
     return [
@@ -86,6 +151,13 @@ export default function CityLandingPage() {
                             <span className="material-symbols-outlined text-[20px]">search</span>
                             Browse {city.name} Consultants
                         </Link>
+                    </div>
+                </section>
+
+                {/* Lead Capture */}
+                <section className="py-10 px-6 bg-white dark:bg-[#101822] border-b border-slate-100 dark:border-slate-800">
+                    <div className="max-w-2xl mx-auto">
+                        <CityLeadCapture cityName={city.name} citySlug={city.slug} />
                     </div>
                 </section>
 
