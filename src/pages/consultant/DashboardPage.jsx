@@ -9,6 +9,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useCases } from '../../hooks/useCases'
 import { useAppointments } from '../../hooks/useAppointments'
 import { useConversations } from '../../hooks/useConversations'
+import { useTrialStatus, formatTrialStatus } from '../../hooks/useTrialStatus'
 import { formatShortDate as formatDate, formatTime } from '../../utils/date'
 
 const statusColor = {
@@ -29,6 +30,7 @@ export default function ConsultantDashboard() {
     const { cases, loading: casesLoading } = useCases()
     const { upcoming, loading: apptLoading } = useAppointments()
     const { conversations, unreadCount, loading: msgLoading } = useConversations()
+    const { isOnTrial, daysRemaining, isExpired } = useTrialStatus()
 
     const activeCases = cases.filter(c => ['in_progress', 'under_review', 'docs_pending', 'action_required'].includes(c.status))
     const todayAppts = upcoming.filter(a => {
@@ -49,6 +51,50 @@ export default function ConsultantDashboard() {
                     {isAgency ? "Here's your agency overview for today" : "Here's your dashboard for today"}
                 </p>
             </div>
+
+            {/* Trial Status Banner */}
+            {isOnTrial && !isExpired && (
+                <div className={`rounded-lg border p-4 flex items-center justify-between ${
+                    daysRemaining <= 3
+                        ? 'border-orange-200 bg-orange-50 dark:border-orange-900/30 dark:bg-orange-900/10'
+                        : 'border-emerald-200 bg-emerald-50 dark:border-emerald-900/30 dark:bg-emerald-900/10'
+                }`}>
+                    <div className="flex items-center gap-3">
+                        <span className={`material-symbols-outlined text-[20px] ${
+                            daysRemaining <= 3 ? 'text-orange-600' : 'text-emerald-600'
+                        }`}>
+                            {daysRemaining <= 3 ? 'warning' : 'check_circle'}
+                        </span>
+                        <div>
+                            <p className={`text-sm font-bold ${
+                                daysRemaining <= 3
+                                    ? 'text-orange-900 dark:text-orange-100'
+                                    : 'text-emerald-900 dark:text-emerald-100'
+                            }`}>
+                                {formatTrialStatus({ isOnTrial, daysRemaining, isExpired })}
+                            </p>
+                            <p className={`text-xs ${
+                                daysRemaining <= 3
+                                    ? 'text-orange-700 dark:text-orange-200'
+                                    : 'text-emerald-700 dark:text-emerald-200'
+                            }`}>
+                                Upgrade to Pro to get unlimited cases and priority support.
+                            </p>
+                        </div>
+                    </div>
+                    <Link
+                        to="/pricing"
+                        className={`flex-shrink-0 inline-flex items-center gap-2 rounded-lg px-4 py-2 text-xs font-bold text-white transition-colors ${
+                            daysRemaining <= 3
+                                ? 'bg-orange-600 hover:bg-orange-700'
+                                : 'bg-emerald-600 hover:bg-emerald-700'
+                        }`}
+                    >
+                        Upgrade Now
+                        <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                    </Link>
+                </div>
+            )}
 
             {/* Stats */}
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4">

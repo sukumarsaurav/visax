@@ -63,11 +63,25 @@ export function AuthProvider({ children }) {
     }
 
     async function signUp({ email, password, fullName, role = 'client' }) {
-        return supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
             email,
             password,
             options: { data: { full_name: fullName, role } },
         })
+
+        // Initialize trial for individual users on successful signup
+        if (!error && data?.user?.id && role === 'individual') {
+            try {
+                await supabase.rpc('set_trial_for_individual', {
+                    p_profile_id: data.user.id,
+                })
+            } catch (trialError) {
+                console.error('Error initializing trial:', trialError)
+                // Don't fail signup if trial setup fails — log but continue
+            }
+        }
+
+        return { data, error }
     }
 
     async function signIn({ email, password }) {
