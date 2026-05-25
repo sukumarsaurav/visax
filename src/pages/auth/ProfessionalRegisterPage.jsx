@@ -546,7 +546,8 @@ export default function ProfessionalRegisterPage() {
             // Reached only when:
             //   • non-agency signup, OR
             //   • agency payment was VERIFIED successfully.
-            navigate('/professional-submitted')
+            // Navigate to onboarding experience (new UX improvement)
+            navigate(`/onboarding?plan=${selectedPlan}&accountType=${accountType}`)
         } catch (err) {
             toast.error('Something went wrong. Please try again.')
         } finally {

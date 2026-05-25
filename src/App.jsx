@@ -21,6 +21,7 @@ const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'))
 const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'))
 const ProfessionalRegisterPage = lazy(() => import('./pages/auth/ProfessionalRegisterPage'))
 const ProfessionalWelcomePage = lazy(() => import('./pages/auth/ProfessionalWelcomePage'))
+const RegistrationOnboardingPage = lazy(() => import('./pages/auth/RegistrationOnboardingPage'))
 const ProfessionalSubmittedPage = lazy(() => import('./pages/auth/ProfessionalSubmittedPage'))
 const ProfessionalApprovedPage = lazy(() => import('./pages/auth/ProfessionalApprovedPage'))
 
@@ -260,6 +261,13 @@ export default function App() {
                     {/* Professional registration flow (standalone, two-panel design) */}
                     <Route path="/professional-register" element={<ProfessionalWelcomePage />} />
                     <Route path="/professional-register/form" element={<ProfessionalRegisterPage />} />
+
+                    {/* Post-registration onboarding — requires auth */}
+                    <Route path="/onboarding" element={
+                        <ProtectedRoute allowedRoles={['individual', 'agency_admin']}>
+                            <RegistrationOnboardingPage />
+                        </ProtectedRoute>
+                    } />
 
                     {/* Professional post-registration pages — require auth */}
                     <Route path="/professional-submitted" element={
