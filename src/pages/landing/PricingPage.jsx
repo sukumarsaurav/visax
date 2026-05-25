@@ -447,6 +447,85 @@ export default function PricingPage() {
                     </div>
                 </div>
 
+                {/* ── Social Proof ── */}
+                <div className="w-full px-4 py-16 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900">
+                    <div className="max-w-[960px] mx-auto flex flex-col gap-12">
+                        {/* Trust Stats */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                            <div className="flex flex-col gap-2">
+                                <p className="text-3xl md:text-4xl font-black text-primary">500+</p>
+                                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Active Consultants</p>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <p className="text-3xl md:text-4xl font-black text-primary">50K+</p>
+                                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Cases Managed</p>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <p className="text-3xl md:text-4xl font-black text-primary">4.9</p>
+                                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Star Rating</p>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <p className="text-3xl md:text-4xl font-black text-primary">24h</p>
+                                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Support</p>
+                            </div>
+                        </div>
+
+                        {/* Testimonial */}
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 border border-slate-200 dark:border-slate-700">
+                            <div className="flex items-start gap-4 mb-4">
+                                <div className="flex gap-1">
+                                    {[1, 2, 3, 4, 5].map(i => (
+                                        <span key={i} className="text-yellow-400 material-symbols-outlined text-[20px]">star</span>
+                                    ))}
+                                </div>
+                            </div>
+                            <p className="text-lg font-medium text-slate-900 dark:text-white mb-4">
+                                "Immizy helped me organize 100+ cases and close them faster. The automation features save me 10 hours every week. Worth every rupee."
+                            </p>
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                                    <span className="text-primary font-bold">MS</span>
+                                </div>
+                                <div>
+                                    <p className="font-bold text-slate-900 dark:text-white text-sm">Maria Sharma</p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">Immigration Attorney, Mumbai</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Security Badges */}
+                        <div className="flex flex-col items-center gap-4">
+                            <p className="text-sm font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Trusted & Secure</p>
+                            <div className="flex items-center justify-center gap-8 flex-wrap">
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="w-12 h-12 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center">
+                                        <span className="text-blue-600 text-xl">🛡️</span>
+                                    </div>
+                                    <p className="text-xs font-medium text-slate-600 dark:text-slate-400">GDPR Compliant</p>
+                                </div>
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="w-12 h-12 rounded-lg bg-green-50 dark:bg-green-900/20 flex items-center justify-center">
+                                        <span className="text-green-600 text-xl">✔️</span>
+                                    </div>
+                                    <p className="text-xs font-medium text-slate-600 dark:text-slate-400">SOC 2 Type II</p>
+                                </div>
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="w-12 h-12 rounded-lg bg-purple-50 dark:bg-purple-900/20 flex items-center justify-center">
+                                        <span className="text-purple-600 text-xl">🔒</span>
+                                    </div>
+                                    <p className="text-xs font-medium text-slate-600 dark:text-slate-400">Bank-level Encryption</p>
+                                </div>
+                                <div className="flex flex-col items-center gap-2">
+                                    <div className="w-12 h-12 rounded-lg bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center">
+                                        <span className="text-orange-600 text-xl">📋</span>
+                                    </div>
+                                    <p className="text-xs font-medium text-slate-600 dark:text-slate-400">ISO 27001</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* ── Comparison Table ── */}
                 <div className="w-full px-4 md:px-10 lg:px-20 py-16 bg-white dark:bg-slate-900/50">
                     <div className="max-w-[960px] mx-auto flex flex-col gap-8">
