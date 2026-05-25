@@ -55,6 +55,7 @@ const TeamAvailabilityPage = lazy(() => import('./pages/consultant/TeamAvailabil
 const ConsultantSettingsPage = lazy(() => import('./pages/consultant/SettingsPage'))
 const ConsultantAppointmentsPage = lazy(() => import('./pages/consultant/AppointmentsPage'))
 const NotificationsPage = lazy(() => import('./pages/consultant/NotificationsPage'))
+const UpgradePlanPage = lazy(() => import('./pages/consultant/UpgradePlanPage'))
 
 // Admin Pages
 const AdminDashboard = lazy(() => import('./pages/admin/DashboardPage'))
@@ -326,6 +327,7 @@ export default function App() {
                         <Route path="appointments" element={<ConsultantAppointmentsPage />} />
                         <Route path="notifications" element={<NotificationsPage />} />
                         <Route path="analytics" element={<AnalyticsPage />} />
+                        <Route path="upgrade-plan" element={<UpgradePlanPage />} />
                     </Route>
 
                     {/* ── AGENCY ADMIN PORTAL ── */}
@@ -348,6 +350,7 @@ export default function App() {
                         <Route path="appointments" element={<ConsultantAppointmentsPage />} />
                         <Route path="notifications" element={<NotificationsPage />} />
                         <Route path="analytics" element={<AnalyticsPage />} />
+                        <Route path="upgrade-plan" element={<UpgradePlanPage />} />
                     </Route>
 
                     {/* ── AGENCY TEAM MEMBER PORTAL ── */}
@@ -368,6 +371,7 @@ export default function App() {
                         <Route path="settings" element={<ConsultantSettingsPage />} />
                         <Route path="appointments" element={<ConsultantAppointmentsPage />} />
                         <Route path="notifications" element={<NotificationsPage />} />
+                        <Route path="upgrade-plan" element={<UpgradePlanPage />} />
                     </Route>
 
                     {/* ── PLATFORM ADMIN PORTAL ── */}
