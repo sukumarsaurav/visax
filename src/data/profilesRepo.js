@@ -9,7 +9,7 @@ const AUTH_PROFILE_SELECT = `
     bio, country, timezone, onboarding_completed,
     professional_onboarding_complete, application_status,
     languages, years_experience, specializations,
-    created_at
+    plan_id, created_at
 `
 
 // Admin user-management table needs only the visible columns.

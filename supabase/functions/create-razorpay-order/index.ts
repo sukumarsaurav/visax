@@ -1,7 +1,7 @@
-// Create a Razorpay order for an agency subscription.
+// Create a Razorpay order for an individual or agency subscription.
 //
 // Inputs (request body):
-//   • planId          — 'starter' | 'growth' | 'enterprise'
+//   • planId          — 'solo_basic' | 'solo_pro' | 'agency_starter' | 'agency_growth' | 'agency_enterprise'
 //   • userId          — the authenticated user's id (must match JWT.sub)
 //   • idempotencyKey  — UUIDv4 from the client; dedups order creation
 //
@@ -29,14 +29,18 @@ const corsHeaders = {
 }
 
 // Plan prices in INR. MUST match the UI in two places:
-//   • src/pages/landing/PricingPage.jsx → plans[].monthlyPrice
-//   • src/pages/auth/ProfessionalRegisterPage.jsx → agencyPlans[].price
+//   • src/pages/landing/PricingPage.jsx  → individualPlans[]/agencyPlans[].monthlyPrice
+//   • src/pages/auth/ProfessionalRegisterPage.jsx → individualPlans[]/agencyPlans[].price
 // A mismatch here would charge the user a different amount than the UI
 // promises — silent overcharge / undercharge is unacceptable.
 const PLANS: Record<string, { name: string; price_inr: number }> = {
-  starter:    { name: 'Starter',    price_inr:  4_999 },
-  growth:     { name: 'Growth',     price_inr:  8_999 },
-  enterprise: { name: 'Enterprise', price_inr: 14_999 },
+  // Individual (solo consultant) plans
+  solo_basic:       { name: 'Solo Basic',       price_inr:    499 },
+  solo_pro:         { name: 'Solo Pro',          price_inr:    999 },
+  // Agency (team) plans
+  agency_starter:   { name: 'Agency Starter',   price_inr:  2_999 },
+  agency_growth:    { name: 'Agency Growth',     price_inr:  6_999 },
+  agency_enterprise:{ name: 'Agency Enterprise', price_inr: 14_999 },
 }
 
 function jsonError(message: string, status = 400) {

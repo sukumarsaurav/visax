@@ -131,23 +131,25 @@ export default function AdminAuditLog() {
             {/* Filters */}
             <Card className="flex flex-col gap-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                    {/* Action search */}
+                    {/* Action search — F-AL02: aria-label added since no visible label element */}
                     <div className="relative">
                         <span className="absolute inset-y-0 left-0 pl-3 flex items-center material-symbols-outlined text-slate-400 text-[18px]">search</span>
                         <input
                             className="block w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-1 focus:ring-primary text-sm"
                             placeholder="Filter by action…"
+                            aria-label="Filter by action"
                             value={actionSearch}
                             onChange={e => setActionSearch(e.target.value)}
                         />
                     </div>
 
-                    {/* User search */}
+                    {/* User search — F-AL02: aria-label added since no visible label element */}
                     <div className="relative">
                         <span className="absolute inset-y-0 left-0 pl-3 flex items-center material-symbols-outlined text-slate-400 text-[18px]">person</span>
                         <input
                             className="block w-full pl-9 pr-3 py-2 border border-slate-200 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-1 focus:ring-primary text-sm"
                             placeholder="Filter by user name or email…"
+                            aria-label="Filter by user name or email"
                             value={userSearch}
                             onChange={e => setUserSearch(e.target.value)}
                         />

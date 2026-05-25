@@ -144,9 +144,11 @@ export default function LocalizationManagementPage() {
                             <h3 className="font-semibold text-slate-900 dark:text-white">Supported Languages</h3>
                             <div className="relative">
                                 <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 material-symbols-outlined text-[18px]">search</span>
+                                {/* F-LM08: aria-label since there's no visible <label> element */}
                                 <input className="pl-9 pr-4 py-1.5 text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-1 focus:ring-primary w-48 text-slate-900 dark:text-white"
                                     placeholder="Search languages..."
                                     type="text"
+                                    aria-label="Search languages"
                                     value={search}
                                     onChange={e => setSearch(e.target.value)} />
                             </div>
@@ -185,7 +187,10 @@ export default function LocalizationManagementPage() {
                                                 {lang.isDefault ? (
                                                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">Active</span>
                                                 ) : (
+                                                    {/* F-LM06: aria-label + aria-pressed so screen readers announce language and state */}
                                                     <button onClick={() => handleToggleLang(lang.id)}
+                                                        aria-label={`${lang.isActive ? 'Disable' : 'Enable'} ${lang.name}`}
+                                                        aria-pressed={lang.isActive}
                                                         className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${lang.isActive ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-700'}`}>
                                                         <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition ${lang.isActive ? 'translate-x-4' : 'translate-x-0'}`}></span>
                                                     </button>
@@ -231,10 +236,12 @@ export default function LocalizationManagementPage() {
                                         </div>
                                         <div className="space-y-1.5">
                                             <div className="flex items-center justify-between">
-                                                <label className="text-xs font-medium text-primary">{selectedLang.name} Translation</label>
+                                                {/* F-LM07: htmlFor paired with textarea id below */}
+                                                <label htmlFor={`trans-${item.key}`} className="text-xs font-medium text-primary">{selectedLang.name} Translation</label>
                                                 {!hasTrans && <span className="text-[10px] text-amber-500 flex items-center gap-1"><span className="material-symbols-outlined text-[12px]">warning</span> Missing</span>}
                                             </div>
                                             <textarea
+                                                id={`trans-${item.key}`}
                                                 className={`w-full text-sm text-slate-900 dark:text-white p-2.5 bg-white dark:bg-slate-800 rounded-md border ${hasTrans ? 'border-slate-300 dark:border-slate-600 focus:ring-1 focus:ring-primary focus:border-primary' : 'border-amber-300 dark:border-amber-700 focus:ring-1 focus:ring-amber-500 focus:border-amber-500'} resize-none`}
                                                 rows={2}
                                                 placeholder={hasTrans ? '' : 'Enter translation...'}
@@ -276,7 +283,10 @@ export default function LocalizationManagementPage() {
                                         <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Date Format</span>
                                         <p className="text-xs text-slate-500">Auto-detect based on locale</p>
                                     </div>
+                                    {/* F-LM06: aria-label on the date format auto toggle */}
                                     <button onClick={() => setGlobalSettings(g => ({ ...g, date_format_auto: !g.date_format_auto }))}
+                                        aria-label={globalSettings.date_format_auto ? 'Disable auto date format' : 'Enable auto date format'}
+                                        aria-pressed={globalSettings.date_format_auto}
                                         className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${globalSettings.date_format_auto ? 'bg-primary' : 'bg-slate-200 dark:bg-slate-700'}`}>
                                         <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition ${globalSettings.date_format_auto ? 'translate-x-4' : 'translate-x-0'}`}></span>
                                     </button>

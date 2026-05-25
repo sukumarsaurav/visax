@@ -277,8 +277,10 @@ export default function UnclaimedProfilesPage() {
                             { key: 'years_experience', label: 'Years Experience', type: 'number', placeholder: '5', min: '0' },
                         ].map(f => (
                             <div key={f.key}>
-                                <label className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">{f.label}</label>
+                                {/* F-UP07: htmlFor/id pairing for screen reader label association */}
+                                <label htmlFor={`ucf-${f.key}`} className="text-xs font-semibold text-slate-600 dark:text-slate-300 block mb-1">{f.label}</label>
                                 <input
+                                    id={`ucf-${f.key}`}
                                     type={f.type}
                                     required={f.required}
                                     placeholder={f.placeholder}
@@ -359,9 +361,11 @@ export default function UnclaimedProfilesPage() {
                 ))}
                 <div className="ml-auto relative">
                     <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+                    {/* F-UP06: aria-label since there is no visible label element */}
                     <input
                         type="text"
                         placeholder="Search name, email, city…"
+                        aria-label="Search unclaimed profiles"
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                         className="text-sm pl-9 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary w-56"

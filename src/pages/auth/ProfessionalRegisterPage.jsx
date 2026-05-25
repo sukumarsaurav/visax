@@ -33,40 +33,67 @@ const serviceOfferings = [
     { id: 'full-representation', label: 'Full Representation' }
 ]
 
+// Individual (solo consultant) plans — must match PricingPage.jsx & Razorpay edge fn
+const individualPlans = [
+    {
+        id: 'solo_basic',
+        name: 'Solo Basic',
+        price: 499,
+        maxCases: 10,
+        maxClients: 10,
+        description: 'Up to 10 cases & 10 clients. Great for getting started.',
+        features: ['10 Active Cases', '10 Clients', 'Client Portal', '2 GB Storage', 'Email Support'],
+    },
+    {
+        id: 'solo_pro',
+        name: 'Solo Pro',
+        price: 999,
+        maxCases: 30,
+        maxClients: 30,
+        description: 'Up to 30 cases & 30 clients with advanced tools.',
+        features: ['30 Active Cases', '30 Clients', 'Advanced Analytics', 'Invoicing', 'Custom Branding', 'Priority Support'],
+        recommended: true,
+    },
+]
+
+// Agency (team) plans — must match PricingPage.jsx & Razorpay edge fn
 const agencyPlans = [
     {
-        id: 'starter',
+        id: 'agency_starter',
         name: 'Starter',
-        price: 4999,
+        price: 2999,
         maxTeamMembers: 3,
+        maxCases: 50,
         description: 'Perfect for small firms just getting started.',
         features: ['Up to 3 Team Members', '50 Cases/month', 'Basic Analytics'],
     },
     {
-        id: 'growth',
+        id: 'agency_growth',
         name: 'Growth',
-        price: 8999,
-        maxTeamMembers: 15,
+        price: 6999,
+        maxTeamMembers: 10,
+        maxCases: 200,
         description: 'For expanding agencies with active caseloads.',
-        features: ['Up to 15 Team Members', '250 Cases/month', 'Advanced Reporting', 'Priority Support'],
+        features: ['Up to 10 Team Members', '200 Cases/month', 'Advanced Reporting', 'Custom Branding', 'Priority Support'],
         recommended: true,
     },
     {
-        id: 'enterprise',
+        id: 'agency_enterprise',
         name: 'Enterprise',
         price: 14999,
         maxTeamMembers: null,
+        maxCases: null,
         description: 'Full-scale for large multinational firms.',
-        features: ['Unlimited Members', 'Unlimited Cases', 'Dedicated Account Manager', 'API Access'],
+        features: ['Unlimited Members', 'Unlimited Cases', 'API Access', 'SSO', 'Dedicated Account Manager'],
     },
 ]
 
-// Maps team size choice → minimum required plan
+// Maps team size choice → minimum required agency plan
 const TEAM_SIZE_OPTIONS = [
-    { value: '1-3',   label: '1–3 people',   plan: 'starter'    },
-    { value: '4-15',  label: '4–15 people',  plan: 'growth'     },
-    { value: '16-50', label: '16–50 people', plan: 'enterprise' },
-    { value: '50+',   label: '50+ people',   plan: 'enterprise' },
+    { value: '1-3',   label: '1–3 people',   plan: 'agency_starter'    },
+    { value: '4-10',  label: '4–10 people',  plan: 'agency_growth'     },
+    { value: '11-50', label: '11–50 people', plan: 'agency_enterprise' },
+    { value: '50+',   label: '50+ people',   plan: 'agency_enterprise' },
 ]
 
 async function loadRazorpay() {
@@ -216,8 +243,13 @@ export default function ProfessionalRegisterPage() {
     // Beforeunload guard — warn before tab close / refresh once they've
     // entered anything beyond the first identity step. Cleared on successful
     // submit (form unmounts → effect cleanup runs).
+    // F-PR05: expanded to cover all form sections — agency details, photos, uploaded docs
     useUnsavedChangesGuard(
-        !submitting && (firstName || lastName || email || bio || expertise.length > 0)
+        !submitting && (
+            firstName || lastName || email || bio ||
+            expertise.length > 0 || services.length > 0 ||
+            agencyName || avatarFile || uploadedFiles.length > 0
+        )
     )
 
     const totalSteps = accountType === 'agency' ? 3 : 2
@@ -326,6 +358,8 @@ export default function ProfessionalRegisterPage() {
                 services: services.length ? services : null,
                 phone: phone ? `${phoneCode} ${phone}`.trim() : null,
                 city: city || null,
+                // Set plan_id so the limit-enforcement hook has a source of truth.
+                plan_id: selectedPlan || (accountType === 'agency' ? 'agency_starter' : 'solo_basic'),
             }
             if (avatarUrl) profileUpdate.avatar_url = avatarUrl
 

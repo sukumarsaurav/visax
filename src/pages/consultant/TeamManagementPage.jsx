@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import Card, { CardHeader, CardTitle } from '../../components/ui/Card'
 import StatCard from '../../components/ui/StatCard'
 import Badge from '../../components/ui/Badge'
@@ -6,6 +7,8 @@ import Avatar from '../../components/ui/Avatar'
 import Button from '../../components/ui/Button'
 import ConfirmModal from '../../components/ui/ConfirmModal'
 import { useAuth } from '../../contexts/AuthContext'
+import { usePlanLimits } from '../../hooks/usePlanLimits'
+import { formatLimit } from '../../lib/planLimits'
 import toast from 'react-hot-toast'
 import * as agenciesRepo from '../../data/agenciesRepo'
 import * as profilesRepo from '../../data/profilesRepo'
@@ -14,6 +17,7 @@ const statusColors = { active: 'green', pending: 'slate', away: 'amber', inactiv
 
 export default function TeamManagementPage() {
     const { profile } = useAuth()
+    const { limits, usage, canAddMember, planName, usageLoading, refetchUsage } = usePlanLimits()
     const [members, setMembers] = useState([])
     const [agency, setAgency] = useState(null)
     const [loading, setLoading] = useState(true)
@@ -38,6 +42,13 @@ export default function TeamManagementPage() {
     async function handleInvite(e) {
         e.preventDefault()
         if (!inviteEmail.trim() || !agency) return
+
+        // Client-side limit guard (DB trigger is the server-side backstop)
+        if (!canAddMember) {
+            toast.error(`Your ${planName} plan allows up to ${formatLimit(limits.maxMembers)} team members. Upgrade to add more.`)
+            return
+        }
+
         setInviting(true)
 
         const { data: existingProfile } = await profilesRepo.getByEmail(inviteEmail.trim())
@@ -48,7 +59,7 @@ export default function TeamManagementPage() {
                 invitedBy: profile.id,
             })
             if (error) toast.error(error.message)
-            else { toast.success('Invite sent!'); setInviteEmail(''); fetchTeam() }
+            else { toast.success('Invite sent!'); setInviteEmail(''); fetchTeam(); refetchUsage() }
         } else {
             toast.error('No Immizy account found with that email')
         }
@@ -58,7 +69,7 @@ export default function TeamManagementPage() {
     async function updateMemberStatus(memberId, status) {
         const { error } = await agenciesRepo.setMemberStatus(memberId, status)
         if (error) toast.error(error.message)
-        else { toast.success('Member updated'); fetchTeam() }
+        else { toast.success('Member updated'); fetchTeam(); refetchUsage() }
     }
 
     const activeCount = members.filter(m => m.status === 'active').length
@@ -96,19 +107,48 @@ export default function TeamManagementPage() {
 
             {/* Invite form */}
             <Card>
-                <CardHeader><CardTitle>Invite Team Member</CardTitle></CardHeader>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <CardTitle>Invite Team Member</CardTitle>
+                        {/* Plan member usage indicator */}
+                        {!usageLoading && limits.maxMembers !== null && (
+                            <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                                canAddMember
+                                    ? 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                                    : 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+                            }`}>
+                                {usage.members} / {formatLimit(limits.maxMembers)} members
+                            </span>
+                        )}
+                    </div>
+                </CardHeader>
+
+                {/* At-limit upgrade banner */}
+                {!canAddMember && (
+                    <div className="mt-3 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/30 dark:bg-amber-900/10">
+                        <span className="material-symbols-outlined text-amber-500 text-[20px]">workspace_premium</span>
+                        <p className="flex-1 text-sm text-amber-700 dark:text-amber-400">
+                            You've reached the <strong>{planName}</strong> limit of {formatLimit(limits.maxMembers)} team members.
+                        </p>
+                        <Link to="/pricing" className="text-xs font-bold text-amber-700 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-300 whitespace-nowrap">
+                            Upgrade plan →
+                        </Link>
+                    </div>
+                )}
+
                 <form onSubmit={handleInvite} className="flex gap-3 mt-3">
                     <input
                         type="email"
                         value={inviteEmail}
                         onChange={e => setInviteEmail(e.target.value)}
                         placeholder="colleague@example.com"
-                        className="flex-1 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                        disabled={!canAddMember}
+                        className="flex-1 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <button
                         type="submit"
-                        disabled={inviting || !inviteEmail}
-                        className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white hover:bg-primary/90 disabled:opacity-60"
+                        disabled={inviting || !inviteEmail || !canAddMember}
+                        className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-white hover:bg-primary/90 disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                         <span className="material-symbols-outlined text-[18px]">person_add</span>
                         {inviting ? 'Sending…' : 'Send Invite'}

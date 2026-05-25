@@ -4,14 +4,16 @@ import Button from '../../components/ui/Button'
 import * as platformSettingsRepo from '../../data/platformSettingsRepo'
 import toast from 'react-hot-toast'
 
+// F-PG03: Razorpay is the active payment gateway (ProfessionalRegisterPage uses it for
+// subscription billing). It must appear here so admins can enable/disable or rotate the key.
 const GATEWAY_META = [
+    { id: 'razorpay', name: 'Razorpay', icon: '', fields: ['key_id', 'key_secret', 'webhook'], note: 'Active — used for subscription billing' },
     { id: 'stripe', name: 'Stripe', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/stripe/stripe-original.svg', fields: ['api_key', 'publishable_key', 'webhook'] },
     { id: 'paypal', name: 'PayPal', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/paypal/paypal-original.svg', fields: ['api_key', 'client_id'] },
-    { id: 'square', name: 'Square', icon: '', fields: ['api_key', 'location_id'] },
 ]
 
-const FIELD_LABELS = { api_key: 'API Secret Key', publishable_key: 'Publishable Key', webhook: 'Webhook URL', client_id: 'Client ID', location_id: 'Location ID' }
-const SECRET_FIELDS = ['api_key']
+const FIELD_LABELS = { api_key: 'API Secret Key', publishable_key: 'Publishable Key', webhook: 'Webhook URL', client_id: 'Client ID', key_id: 'Key ID (Public)', key_secret: 'Key Secret' }
+const SECRET_FIELDS = ['api_key', 'key_secret']
 
 const DEFAULT_GLOBAL = { default_gateway: 'stripe', transaction_fee: '2.9', currency: 'USD' }
 
