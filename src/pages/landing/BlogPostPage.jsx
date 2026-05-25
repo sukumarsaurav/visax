@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { Link, useParams, Navigate } from 'react-router-dom'
 import PublicHeader from '../../components/layout/PublicHeader'
 import Footer from '../../components/layout/Footer'
 import { useSEO } from '../../hooks/useSEO'
 import { buildBreadcrumb, DESTINATIONS } from '../../lib/seo'
 import { getPostBySlug, getRelatedPosts } from '../../data/blogPosts'
+import { supabase } from '../../lib/supabase'
 
 const BASE = 'https://immizy.in'
 
@@ -23,6 +25,27 @@ export default function BlogPostPage() {
     const post = getPostBySlug(slug)
     const related = getRelatedPosts(slug, 3)
     const dest = post && post.relatedDestination ? DESTINATIONS[post.relatedDestination] : null
+
+    // Inline lead capture — fire when the reader finishes the post
+    const [phone, setPhone]           = useState('')
+    const [submitting, setSubmitting] = useState(false)
+    const [done, setDone]             = useState(false)
+
+    async function handleLeadSubmit(e) {
+        e.preventDefault()
+        if (!phone.trim()) return
+        setSubmitting(true)
+        try {
+            await supabase.from('leads').insert({
+                phone: phone.trim(),
+                source: `blog_post_${slug}`,
+                destination: post?.relatedDestination || null,
+                metadata: { post_slug: slug, post_title: post?.title },
+            })
+        } catch (_) {}
+        setDone(true)
+        setSubmitting(false)
+    }
 
     useSEO({
         title: post?.title,
@@ -102,6 +125,57 @@ export default function BlogPostPage() {
                                 </p>
                             </div>
                         ))}
+                    </div>
+
+                    {/* Talk to an expert — inline lead capture after article body */}
+                    <div className="mt-12 rounded-2xl border border-primary/20 dark:border-primary/30 bg-gradient-to-br from-primary/5 to-blue-50 dark:from-primary/10 dark:to-slate-800/50 p-6">
+                        {done ? (
+                            <div className="flex items-center gap-3">
+                                <span className="material-symbols-outlined text-emerald-600 text-[32px]">check_circle</span>
+                                <div>
+                                    <p className="font-bold text-emerald-900 dark:text-emerald-100">We'll be in touch!</p>
+                                    <p className="text-sm text-emerald-700 dark:text-emerald-300 mt-0.5">
+                                        A verified immigration expert will call you at +91 {phone} within 2 hours.
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="flex items-start gap-3 mb-4">
+                                    <span className="material-symbols-outlined text-primary text-[26px] shrink-0 mt-0.5">contact_support</span>
+                                    <div>
+                                        <p className="font-black text-slate-900 dark:text-white">Talk to an immigration expert — Free</p>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                                            Get personalised advice based on what you just read — no spam, reply in 2 hours.
+                                        </p>
+                                    </div>
+                                </div>
+                                <form onSubmit={handleLeadSubmit} className="flex gap-3">
+                                    <div className="flex flex-1 rounded-xl border border-slate-200 dark:border-slate-600 overflow-hidden focus-within:border-primary transition-colors bg-white dark:bg-slate-800">
+                                        <span className="flex items-center px-3 bg-slate-50 dark:bg-slate-700 text-slate-500 text-sm border-r border-slate-200 dark:border-slate-600">+91</span>
+                                        <input
+                                            type="tel"
+                                            value={phone}
+                                            onChange={e => setPhone(e.target.value)}
+                                            placeholder="Your WhatsApp number"
+                                            className="flex-1 px-3 py-2.5 text-sm bg-transparent text-slate-900 dark:text-white placeholder:text-slate-400 outline-none"
+                                            required
+                                        />
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        disabled={submitting || !phone.trim()}
+                                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary/90 disabled:opacity-60 transition-all shrink-0"
+                                    >
+                                        {submitting
+                                            ? <span className="animate-spin material-symbols-outlined text-[16px]">progress_activity</span>
+                                            : 'Get Free Advice →'
+                                        }
+                                    </button>
+                                </form>
+                                <p className="text-[11px] text-slate-400 mt-2">✓ 100% free for clients &nbsp;·&nbsp; ✓ Verified experts only &nbsp;·&nbsp; ✓ No spam</p>
+                            </>
+                        )}
                     </div>
 
                     {/* CTA — link to related destination */}

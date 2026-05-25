@@ -1,8 +1,10 @@
-import { Link, useParams, Navigate } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useParams, Navigate, useNavigate } from 'react-router-dom'
 import PublicHeader from '../../components/layout/PublicHeader'
 import Footer from '../../components/layout/Footer'
 import { useSEO } from '../../hooks/useSEO'
 import { COMPARISONS, DESTINATIONS, buildBreadcrumb, buildFAQ } from '../../lib/seo'
+import { supabase } from '../../lib/supabase'
 
 /**
  * Route: `/compare/:slug`
@@ -17,10 +19,32 @@ import { COMPARISONS, DESTINATIONS, buildBreadcrumb, buildFAQ } from '../../lib/
  */
 export default function ComparisonPage() {
     const { slug } = useParams()
+    const navigate = useNavigate()
     const cmp = COMPARISONS[slug]
     const [aKey, bKey] = cmp?.countries || []
     const a = DESTINATIONS[aKey]
     const b = DESTINATIONS[bKey]
+
+    // Frictionless lead capture
+    const [phone, setPhone]           = useState('')
+    const [submitting, setSubmitting] = useState(false)
+    const [done, setDone]             = useState(false)
+
+    async function handleLeadSubmit(e) {
+        e.preventDefault()
+        if (!phone.trim()) return
+        setSubmitting(true)
+        try {
+            await supabase.from('leads').insert({
+                phone: phone.trim(),
+                source: `comparison_page_${slug}`,
+                metadata: { compared: [aKey, bKey] },
+            })
+        } catch (_) {}
+        setDone(true)
+        setSubmitting(false)
+        setTimeout(() => navigate('/find-professionals'), 1400)
+    }
 
     useSEO({
         title: cmp?.title || 'Immigration Pathway Comparison',
@@ -100,6 +124,59 @@ export default function ComparisonPage() {
                             {renderCountryCard(a)}
                             {renderCountryCard(b)}
                         </div>
+                    </div>
+                </section>
+
+                {/* Lead Capture — still deciding? */}
+                <section className="py-12 px-6 border-y border-slate-100 dark:border-slate-800 bg-white dark:bg-[#101822]">
+                    <div className="max-w-2xl mx-auto">
+                        {done ? (
+                            <div className="flex items-center gap-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-5">
+                                <span className="material-symbols-outlined text-emerald-600 text-[32px]">check_circle</span>
+                                <div>
+                                    <p className="font-bold text-emerald-900 dark:text-emerald-100">Got it! Finding your matches…</p>
+                                    <p className="text-sm text-emerald-700 dark:text-emerald-300">Connecting you with experts who've handled both pathways.</p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="bg-gradient-to-r from-primary/5 to-blue-50 dark:from-primary/10 dark:to-slate-800/50 rounded-2xl p-6 border border-primary/20 dark:border-primary/30">
+                                <div className="flex items-start gap-3 mb-4">
+                                    <span className="material-symbols-outlined text-primary text-[28px] shrink-0 mt-0.5">support_agent</span>
+                                    <div>
+                                        <p className="font-black text-slate-900 dark:text-white text-lg leading-snug">
+                                            Still deciding between {a?.country} and {b?.country}?
+                                        </p>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                                            Talk to a verified consultant who has handled both pathways — free assessment, no commitment.
+                                        </p>
+                                    </div>
+                                </div>
+                                <form onSubmit={handleLeadSubmit} className="flex gap-3">
+                                    <div className="flex flex-1 rounded-xl border border-slate-200 dark:border-slate-600 overflow-hidden focus-within:border-primary transition-colors bg-white dark:bg-slate-800">
+                                        <span className="flex items-center px-3 bg-slate-50 dark:bg-slate-700 text-slate-500 text-sm border-r border-slate-200 dark:border-slate-600">+91</span>
+                                        <input
+                                            type="tel"
+                                            value={phone}
+                                            onChange={e => setPhone(e.target.value)}
+                                            placeholder="Your WhatsApp number"
+                                            className="flex-1 px-3 py-2.5 text-sm bg-transparent text-slate-900 dark:text-white placeholder:text-slate-400 outline-none"
+                                            required
+                                        />
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        disabled={submitting || !phone.trim()}
+                                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary/90 disabled:opacity-60 transition-all shrink-0"
+                                    >
+                                        {submitting
+                                            ? <span className="animate-spin material-symbols-outlined text-[16px]">progress_activity</span>
+                                            : 'Get Free Advice →'
+                                        }
+                                    </button>
+                                </form>
+                                <p className="text-[11px] text-slate-400 mt-2">✓ 100% free &nbsp;·&nbsp; ✓ No spam &nbsp;·&nbsp; ✓ Reply within 2 hours</p>
+                            </div>
+                        )}
                     </div>
                 </section>
 
