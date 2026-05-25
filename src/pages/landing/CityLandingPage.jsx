@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useParams, Navigate, useNavigate } from 'react-router-dom'
+import { Link, useLocation, Navigate, useNavigate } from 'react-router-dom'
 import PublicHeader from '../../components/layout/PublicHeader'
 import Footer from '../../components/layout/Footer'
 import { useSEO } from '../../hooks/useSEO'
@@ -110,8 +110,15 @@ const visaIconMap = {
     'Portugal D7': 'sunny',
 }
 
+const CITY_PREFIX = '/immigration-consultant-'
+
 export default function CityLandingPage() {
-    const { city: citySlug } = useParams()
+    const { pathname } = useLocation()
+    // React Router v7 only captures params preceded by '/', so we derive
+    // the city slug directly from the pathname to support /immigration-consultant-:city URLs.
+    const citySlug = pathname.startsWith(CITY_PREFIX)
+        ? pathname.slice(CITY_PREFIX.length).replace(/\/+$/, '')
+        : ''
     const city = CITIES[citySlug]
 
     // Hooks must run unconditionally — fall back to safe defaults if no city,

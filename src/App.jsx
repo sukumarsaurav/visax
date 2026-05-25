@@ -4,6 +4,7 @@ import { useEffect, useState, lazy, Suspense } from 'react'
 import { trackEvent } from './lib/integrations'
 import { loadPlatformConfig, getMaintenanceMode, getMaintenanceMessage } from './lib/platformConfig'
 import { CLIENT, AGENCY_ADMIN, ADMIN } from './constants/roles'
+import { CITIES } from './lib/seo'
 import { useDocumentLang } from './hooks/useDocumentLang'
 import { UserChannelProvider } from './contexts/UserChannelContext'
 import * as platformSettingsRepo from './data/platformSettingsRepo'
@@ -235,8 +236,16 @@ export default function App() {
                     <Route path="/pricing" element={<PricingPage />} />
                     <Route path="/services" element={<ServicesDirectoryPage />} />
                     <Route path="/services/:serviceId" element={<ServiceDetailsPage />} />
-                    {/* City SEO pages — /immigration-consultant-delhi, -mumbai, etc. */}
-                    <Route path="/immigration-consultant-:city" element={<CityLandingPage />} />
+                    {/* City SEO pages — /immigration-consultant-delhi, -mumbai, etc.
+                        React Router v7 only captures params after '/', so we register
+                        an explicit route per city rather than using a dynamic segment. */}
+                    {Object.keys(CITIES).map(cityKey => (
+                        <Route
+                            key={cityKey}
+                            path={`/immigration-consultant-${cityKey}`}
+                            element={<CityLandingPage />}
+                        />
+                    ))}
                     {/* Destination + Occupation pages share /immigration/:destination via dispatcher */}
                     {/* — destination: /immigration/canada-pr */}
                     {/* — occupation:  /immigration/canada-pr-for-software-engineer */}
