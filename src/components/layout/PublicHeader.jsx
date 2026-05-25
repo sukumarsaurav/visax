@@ -6,9 +6,9 @@ import Button from '../ui/Button'
 // Two groups: client-facing (left) and pro-facing (right dropdown)
 
 const CLIENT_NAV = [
-    { to: '/find-professionals', label: 'Find Experts', icon: 'search'          },
-    { to: '/services',           label: 'Services',    icon: 'design_services'  },
-    { to: '/blog',               label: 'Visa Guides', icon: 'article'          },
+    { to: '/find-professionals',           label: 'Find Experts', icon: 'search'          },
+    { to: '/find-professionals?tab=services', label: 'Services',  icon: 'design_services' },
+    { to: '/blog',                         label: 'Visa Guides',  icon: 'article'         },
 ]
 
 const PRO_NAV = [
@@ -51,7 +51,34 @@ export default function PublicHeader() {
         return () => document.removeEventListener('mousedown', handleClickOutside)
     }, [])
 
-    const isActive = (to) => location.pathname === to || location.pathname.startsWith(to + '/')
+    const isActive = (to) => {
+        if (to.includes('?')) {
+            // e.g. /find-professionals?tab=services — compare full path+search
+            const [toPath, toQuery] = to.split('?')
+            if (location.pathname !== toPath) return false
+            const toParams   = new URLSearchParams(toQuery)
+            const locParams  = new URLSearchParams(location.search)
+            for (const [k, v] of toParams) {
+                if (locParams.get(k) !== v) return false
+            }
+            return true
+        }
+        // Plain path: active only when no other CLIENT_NAV item with a query
+        // param already claims this pathname+tab combination.
+        if (location.pathname === to || location.pathname.startsWith(to + '/')) {
+            const locTab = new URLSearchParams(location.search).get('tab')
+            if (locTab) {
+                const coveredByTabLink = CLIENT_NAV.some(n =>
+                    n.to.includes('?') &&
+                    n.to.startsWith(to) &&
+                    n.to.includes(`tab=${locTab}`)
+                )
+                if (coveredByTabLink) return false
+            }
+            return true
+        }
+        return false
+    }
 
     return (
         <>

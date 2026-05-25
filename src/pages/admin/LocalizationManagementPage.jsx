@@ -187,7 +187,7 @@ export default function LocalizationManagementPage() {
                                                 {lang.isDefault ? (
                                                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">Active</span>
                                                 ) : (
-                                                    {/* F-LM06: aria-label + aria-pressed so screen readers announce language and state */}
+                                                    /* F-LM06: aria-label + aria-pressed so screen readers announce language and state */
                                                     <button onClick={() => handleToggleLang(lang.id)}
                                                         aria-label={`${lang.isActive ? 'Disable' : 'Enable'} ${lang.name}`}
                                                         aria-pressed={lang.isActive}

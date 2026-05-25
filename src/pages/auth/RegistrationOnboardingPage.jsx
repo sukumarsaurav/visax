@@ -149,8 +149,8 @@ export default function RegistrationOnboardingPage() {
                         </h1>
                         <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
                             {accountType === 'agency'
-                                ? 'Your team is ready. Here's how to get started and maximize your plan.'
-                                : 'Your solo practice is set up. Here's how to add your first clients.'}
+                                ? "Your team is ready. Here's how to get started and maximize your plan."
+                                : "Your solo practice is set up. Here's how to add your first clients."}
                         </p>
                     </div>
 

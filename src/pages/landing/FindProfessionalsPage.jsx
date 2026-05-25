@@ -13,6 +13,7 @@ import ProfessionalCard from './findProfessionals/ProfessionalCard'
 import UnclaimedCard from './findProfessionals/UnclaimedCard'
 import FilterPanel from './findProfessionals/FilterPanel'
 import CompareBar from './findProfessionals/CompareBar'
+import ServicesTab from './findProfessionals/ServicesTab'
 
 const quickFilters = [
     { icon: 'gavel',     label: 'Lawyers',      query: 'lawyer' },
@@ -31,7 +32,18 @@ export default function FindProfessionalsPage() {
     useSEO(SEO.findProfessionals)
     const { user } = useAuth()
     const navigate = useNavigate()
-    const [searchParams] = useSearchParams()
+    const [searchParams, setSearchParams] = useSearchParams()
+
+    // tab: 'professionals' (default) | 'services'
+    const activeTab = searchParams.get('tab') === 'services' ? 'services' : 'professionals'
+    function setTab(tab) {
+        setSearchParams(prev => {
+            const next = new URLSearchParams(prev)
+            if (tab === 'professionals') next.delete('tab')
+            else next.set('tab', tab)
+            return next
+        }, { replace: true })
+    }
 
     const search = useProfessionalsSearch({
         initialSearch:   searchParams.get('q')        || '',
@@ -113,8 +125,37 @@ export default function FindProfessionalsPage() {
                 </div>
             </section>
 
+            {/* ── Top-level tab switcher ─────────────────────────────────── */}
+            <div className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 sticky top-[57px] z-30">
+                <div className="max-w-[1200px] mx-auto px-4 md:px-8 flex items-center gap-1">
+                    {[
+                        { key: 'professionals', label: 'Find Professionals', icon: 'person_search' },
+                        { key: 'services',      label: 'Browse Services',    icon: 'design_services' },
+                    ].map(tab => (
+                        <button
+                            key={tab.key}
+                            onClick={() => setTab(tab.key)}
+                            className={`flex items-center gap-2 px-5 py-3.5 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
+                                activeTab === tab.key
+                                    ? 'border-primary text-primary'
+                                    : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-600'
+                            }`}
+                        >
+                            <span className="material-symbols-outlined text-[18px]">{tab.icon}</span>
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
             {/* Main */}
             <main className="max-w-[1200px] mx-auto w-full px-4 md:px-8 py-10">
+
+                {activeTab === 'services' ? (
+                    <ServicesTab initialSearch={searchParams.get('q') || ''} />
+                ) : (
+                <>
+                {/* ── Professionals tab ─────────────────────────────────────── */}
                 {/* Type Filter Chips */}
                 <div className="mb-8 flex flex-wrap gap-3">
                     {TYPE_TABS.map(f => (
@@ -256,6 +297,7 @@ export default function FindProfessionalsPage() {
                         )}
                     </div>
                 </div>
+                </> )}
 
                 {/* Trust section */}
                 <div className="mt-20 py-12 px-6 bg-primary/5 dark:bg-slate-800/50 rounded-2xl flex flex-col md:flex-row items-center gap-10">
